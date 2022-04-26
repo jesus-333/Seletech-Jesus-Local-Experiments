@@ -84,7 +84,7 @@ def compare_results_by_loss(total_loss, recon_loss, kl_loss, figsize = (18, 6)):
     
 #%% Histogram
 
-def draw_hist_loss(good_spectra_dataset_train, good_spectra_dataset_validation, bad_spectra_dataset, vae,  device = torch.device("cpu"), batch_size = 50, n_spectra = -1, figsize = (10, 8)):
+def draw_hist_loss(good_spectra_dataset_train, good_spectra_dataset_validation, bad_spectra_dataset, vae,  device = torch.device("cpu"), batch_size = 50, n_spectra = -1, figsize = (10, 8), labels = ["Train", "Validation", "Bad"]):
     vae.to(device)
     vae.eval()
     
@@ -100,7 +100,7 @@ def draw_hist_loss(good_spectra_dataset_train, good_spectra_dataset_validation, 
     tmp_loss = [good_spectra_train_loss, good_spectra_validation_loss, bad_spectra_loss]
     plt.figure(figsize = figsize)
     color = ['C0', 'orange', 'red']
-    plt.bar(["Train", "Validation", "Bad"], tmp_loss, color = color)
+    plt.bar(labels, tmp_loss, color = color)
     plt.title("Reconstruciton Error")
     
     
