@@ -13,7 +13,7 @@ import torch
 from torch.utils.data import DataLoader
 
 from support.training import advance_recon_loss
-from support.VAE import SpectraVAE_Single_Mems, sampling_latent_space
+from support.VAE import SpectraVAE_Single_Mems, SpectraVAE_Double_Mems, sampling_latent_space
 
 #%% Visualize loss during training
 
@@ -113,9 +113,22 @@ def compute_average_loss_given_dataloader(dataloader, model, device, n_spectra):
         x = sample_data_batch.to(device)
         model.to(device)
         
-        tmp_results = model(x)
+        # Single mems
+        # tmp_results = model(x)
+        # x_loss = advance_recon_loss(x, tmp_results[0], tmp_results[1])
+       
+        # Double mems
+        x1 = x[:, 0:300]
+        x2 = x[:, (- 1 - 400):-1]
+        x_r_1, log_var_r_1, x_r_2, log_var_r_2, mu_z, log_var_z = model(x1, x2)
         
-        x_loss = advance_recon_loss(x, tmp_results[0], tmp_results[1])
+        x_r = torch.cat((x_r_1, x_r_2), 1)
+        x = torch.cat((x1,x2), 1)
+        log_var_r = torch.cat((log_var_r_1, log_var_r_2), 0)
+        sigma_r = torch.sqrt(torch.exp(log_var_r))
+        
+        x_loss = advance_recon_loss(x, x_r, sigma_r)
+
         
         tot_elements += x.shape[0]
         if(n_spectra > 0 and tot_elements >= n_spectra):
@@ -131,9 +144,11 @@ def compute_average_loss_given_dataloader(dataloader, model, device, n_spectra):
         
 #%%
 
-def visualize_latent_space_V1(dataset_list, vae, resampling, alpha = 0.8, s = 0.3):
+def visualize_latent_space_V1(dataset_list, vae, resampling, alpha = 0.8, s = 0.3, section = 'full', n_samples = -1):
     vae.cpu()
-    vae2 = SpectraVAE_Single_Mems(dataset_list[0][0].shape[0], 2, print_var = True)
+    if(section == 'full'):  vae2 = SpectraVAE_Double_Mems(300, 400, 2, print_var = True)
+    else: vae2 = SpectraVAE_Single_Mems(dataset_list[0][0].shape[0], 2, print_var = True)
+        
     marker = 'x'
 
     fig, ax = plt.subplots(1, 2, figsize=(20, 10))
@@ -141,21 +156,44 @@ def visualize_latent_space_V1(dataset_list, vae, resampling, alpha = 0.8, s = 0.
     color_list = ['c0', 'green', 'orange', 'red']
     
     for dataset, color in zip(dataset_list, color_list):
-        x_r, log_var_r, mu, log_var = vae2(dataset[:])
+        if(n_samples <= 0 or n_samples > len(dataset)): n_samples = len(dataset)
+        
+        if(section == 'full'):
+            x1 = dataset[0:n_samples][:, 0:300]
+            x2 = dataset[0:n_samples][:, (- 1 - 400):-1]
+            x_r_1, log_var_r_1, x_r_2, log_var_r_2, mu_z, log_var_z = vae2(x1, x2)
+            
+            x_r = torch.cat((x_r_1, x_r_2), 1)
+            x = torch.cat((x1,x2), 1)
+            log_var_r = torch.cat((log_var_r_1, log_var_r_2), 0)
+            sigma_r = torch.sqrt(torch.exp(log_var_r))
+        else:
+            x_r, log_var_r, mu_z, log_var_z = vae2(dataset[:])
+        
         if(resampling): 
             # p = sampling_latent_space(mu, log_var)
-            p = torch.normal(mu, torch.sqrt(torch.exp(log_var))).detach().numpy()
+            p = torch.normal(mu_z, torch.sqrt(torch.exp(log_var_z))).detach().numpy()
             ax[0].scatter(p[:, 0], p[:, 1], alpha = alpha, marker = marker, s = s)
         else: 
-            ax[0].scatter(mu[:, 0].detach().numpy(), mu[:, 1].detach().numpy(), alpha = alpha, marker = marker, s = s)
+            ax[0].scatter(mu_z[:, 0].detach().numpy(), mu_z[:, 1].detach().numpy(), alpha = alpha, marker = marker, s = s)
         
-        x_r, log_var_r, mu, log_var = vae(dataset[:]) 
+        if(section == 'full'):
+            x1 = dataset[0:n_samples][:, 0:300]
+            x2 = dataset[0:n_samples][:, (- 1 - 400):-1]
+            x_r_1, log_var_r_1, x_r_2, log_var_r_2, mu_z, log_var_z = vae(x1, x2)
+            
+            x_r = torch.cat((x_r_1, x_r_2), 1)
+            x = torch.cat((x1,x2), 1)
+            log_var_r = torch.cat((log_var_r_1, log_var_r_2), 0)
+            sigma_r = torch.sqrt(torch.exp(log_var_r))
+        else:
+            x_r, log_var_r, mu_z, log_var_z = vae(dataset[:])
         if(resampling): 
             # p = sampling_latent_space(mu, log_var)
-            p = torch.normal(mu, torch.sqrt(torch.exp(log_var))).detach().numpy()
+            p = torch.normal(mu_z, torch.sqrt(torch.exp(log_var_z))).detach().numpy()
             ax[1].scatter(p[:, 0], p[:, 1], alpha = alpha, marker = marker, s = s)
         else: 
-            ax[1].scatter(mu[:, 0].detach().numpy(), mu[:, 1].detach().numpy(), alpha = alpha, marker = marker, s = s)
+            ax[1].scatter(mu_z[:, 0].detach().numpy(), mu_z[:, 1].detach().numpy(), alpha = alpha, marker = marker, s = s)
     
 
     ax[0].set_title("Untrained VAE")

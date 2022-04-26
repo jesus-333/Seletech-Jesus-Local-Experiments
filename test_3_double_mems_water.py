@@ -9,9 +9,10 @@ import matplotlib.pyplot as plt
 import torch
 from torch.utils.data import DataLoader
 
-from support.datasets import load_spectra_data, PytorchDatasetPlantSpectra_V1
+from support.datasets import load_spectra_data, load_water_data, create_extended_water_vector, choose_spectra_based_on_water 
+from support.datasets import PytorchDatasetPlantSpectra_V1
 from support.VAE import SpectraVAE_Double_Mems
-from support.training import advanceEpochV1, VAE_loss, advance_recon_loss
+from support.training import advanceEpochV2, VAE_loss, advance_recon_loss
 from support.visualization import compare_results_by_spectra, compare_results_by_loss, draw_hist_loss
 from support.visualization import visualize_latent_space_V1
 
@@ -22,29 +23,32 @@ from support.visualization import visualize_latent_space_V1
 normalize_trials = 1
 
 hidden_space_dimension = 2
-batch_size = 50
+batch_size = 100
 epochs = 50
 learning_rate = 1e-2
-alpha = 1 # Hyperparemeter to fine tuning the value of the reconstruction error
-beta = 1.5 # Hyperparemeter to fine tuning the value of the KL Loss
+alpha = 0.1 # Hyperparemeter to fine tuning the value of the reconstruction error
+beta = 2 # Hyperparemeter to fine tuning the value of the KL Loss
 
 print_var = True
 step_show = 2
 
+#%% Load data
 
-#%%
-section = 'full'
-
+# Sepctra
 spectra_plants_numpy, wavelength, timestamp = load_spectra_data("data/[2021-08-05_to_11-26]All_PlantSpectra.csv", normalize_trials)
 
-global length_mems_1, length_mems_2
-length_mems_1 = int(1650 - min(wavelength))
-length_mems_2 = int(max(wavelength) - 1750)
+# Water
+water_data, water_timestamp = load_water_data("data/[2021-08-05_to_11-26]PlantTest_Notes.csv")
+extended_water_timestamp = create_extended_water_vector(water_timestamp, water_data, timestamp)
 
+# Due to the fact that I have much more bad spectra in this way I use them to train the network.
+# Cause I'm lazy I only flip the variable at the beggining and noth change all the variable along the script
+# good_idx, bad_idx = choose_spectra_based_on_water(extended_water_timestamp, time_interval_start = 60, time_interval_end = 300)
+bad_idx, good_idx = choose_spectra_based_on_water(extended_water_timestamp, time_interval_start = 45, time_interval_end = 360)
+
+
+#%% Dataset creation
 wavelength_idx = wavelength > 1
-
-good_idx = np.min(spectra_plants_numpy[:, wavelength_idx], 1) <= min_threeshold
-bad_idx = np.min(spectra_plants_numpy[:, wavelength_idx], 1) > min_threeshold
 
 good_spectra_dataset = PytorchDatasetPlantSpectra_V1(spectra_plants_numpy[good_idx, :])
 good_spectra_dataset_train = good_spectra_dataset[0:int(len(good_spectra_dataset) * 0.6)]
@@ -61,13 +65,16 @@ good_dataloader_train = DataLoader(good_spectra_dataset_train, batch_size = batc
 good_dataloader_test = DataLoader(good_spectra_dataset_test, batch_size = batch_size, shuffle = True)
 bad_dataloader = DataLoader(bad_spectra_dataset, batch_size = batch_size, shuffle = True)
 
+#%%
+
+length_mems_1 = int(1650 - min(wavelength))
+length_mems_2 = int(max(wavelength) - 1750)
 vae = SpectraVAE_Double_Mems(length_mems_1, length_mems_2, hidden_space_dimension, print_var = True)
 
 optimizer = torch.optim.AdamW(vae.parameters(), lr = learning_rate, weight_decay = 1e-5)
 
 device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
 
-#%%
 
 total_loss_good_train = []
 total_loss_good_test = []
@@ -84,19 +91,19 @@ kl_loss_bad = []
 
 for epoch in range(epochs):
     # Training phase
-    tmp_loss_good_total, tmp_loss_good_recon, tmp_loss_good_kl = advanceEpochV1(vae, device, good_dataloader_train, optimizer, section, is_train = True, alpha = alpha, beta = beta)
+    tmp_loss_good_total, tmp_loss_good_recon, tmp_loss_good_kl = advanceEpochV2(vae, device, good_dataloader_train, optimizer, is_train = True, alpha = alpha, beta = beta)
     total_loss_good_train.append(float(tmp_loss_good_total))
     recon_loss_good_train.append(float(tmp_loss_good_recon))
     kl_loss_good_train.append(float(tmp_loss_good_kl))
     
     # Testing phase (GOOD Spectra)
-    tmp_loss_good_total, tmp_loss_good_recon, tmp_loss_good_kl = advanceEpochV1(vae, device, good_dataloader_test, optimizer, section, is_train = False, alpha = alpha, beta = beta)
+    tmp_loss_good_total, tmp_loss_good_recon, tmp_loss_good_kl = advanceEpochV2(vae, device, good_dataloader_test, optimizer, is_train = False, alpha = alpha, beta = beta)
     total_loss_good_test.append(float(tmp_loss_good_total))
     recon_loss_good_test.append(float(tmp_loss_good_recon))
     kl_loss_good_test.append(float(tmp_loss_good_kl))
     
     # Testing phase (BAD Spectra)
-    tmp_loss_bad_total, tmp_loss_bad_recon, tmp_loss_bad_kl = advanceEpochV1(vae, device, bad_dataloader, optimizer, section, is_train = False, alpha = alpha, beta = beta)
+    tmp_loss_bad_total, tmp_loss_bad_recon, tmp_loss_bad_kl = advanceEpochV2(vae, device, bad_dataloader, optimizer, is_train = False, alpha = alpha, beta = beta)
     total_loss_bad.append(float(tmp_loss_bad_total))
     recon_loss_bad.append(float(tmp_loss_bad_recon))
     kl_loss_bad.append(float(tmp_loss_bad_kl))
@@ -138,36 +145,11 @@ n_spectra = -1
 draw_hist_loss(good_spectra_dataset_train, good_spectra_dataset_validation, bad_spectra_dataset, vae,  device = device, batch_size = 50, n_spectra = n_spectra, figsize = figsize)
 
 #%%
+n_samples = 1000
+s = 2
 
 dataset_list = [good_spectra_dataset_train, good_spectra_dataset_test, good_spectra_dataset_validation, bad_spectra_dataset]
 
-visualize_latent_space_V1(dataset_list, vae, resampling = False, alpha = 0.8, s = 0.3)
+visualize_latent_space_V1(dataset_list, vae, resampling = False, alpha = 0.8, s = s, section = 'full', n_samples = n_samples)
 
-visualize_latent_space_V1(dataset_list, vae, resampling = True, alpha = 0.8, s = 0.3)
-
-# vae.cpu()
-# vae2 = SpectraVAE_Single_Mems(good_spectra_dataset[0].shape[0], hidden_space_dimension, print_var = True)
-# alpha = 0.8
-# s = 0.3
-# marker = 'x'
-
-# fig, ax = plt.subplots(1, 2, figsize=(20, 10))
-
-
-# x_r, log_var_r, mu_bad, log_var_bad = vae2(bad_spectra_dataset[:])
-# x_r, log_var_r, mu_good_train, log_var_good_train = vae2(good_spectra_dataset_train[:])
-# x_r, log_var_r, mu_good_test, log_var_good_test = vae2(good_spectra_dataset_test[:])
-# ax[0].scatter(mu_good_train[:, 0].detach().numpy(), mu_good_train[:, 1].detach().numpy(), color = 'C0', alpha = alpha, marker = marker, s = s)
-# ax[0].scatter(mu_good_test[:, 0].detach().numpy(), mu_good_test[:, 1].detach().numpy(), color = 'orange', alpha = alpha, marker = marker, s = s)
-# ax[0].scatter(mu_bad[:, 0].detach().numpy(), mu_bad[:, 1].detach().numpy(), color = 'red', alpha = alpha, marker = marker, s = s)
-# ax[0].set_title("Untrained VAE")
-# ax[0].legend(["Good Spectra (TRAIN)", "Good Spectra (TEST)", "Bad Spectra"])
-
-# x_r, log_var_r, mu_bad, log_var_bad = vae(bad_spectra_dataset[:])
-# x_r, log_var_r, mu_good_train, log_var_good_train = vae(good_spectra_dataset_train[:])
-# x_r, log_var_r, mu_good_test, log_var_good_test = vae(good_spectra_dataset_test[:])
-# ax[1].scatter(mu_good_train[:, 0].detach().numpy(), mu_good_train[:, 1].detach().numpy(), color = 'C0', alpha = alpha, marker = marker, s = s)
-# ax[1].scatter(mu_good_test[:, 0].detach().numpy(), mu_good_test[:, 1].detach().numpy(), color = 'orange', alpha = alpha, marker = marker, s = s)
-# ax[1].scatter(mu_bad[:, 0].detach().numpy(), mu_bad[:, 1].detach().numpy(), color = 'red', alpha = alpha, marker = marker, s = s)
-# ax[1].set_title("Trained VAE")
-# ax[1].legend(["Good Spectra (TRAIN)", "Good Spectra (TEST)", "Bad Spectra"])
+visualize_latent_space_V1(dataset_list, vae, resampling = True, alpha = 0.8, s = s, section = 'full', n_samples = n_samples)

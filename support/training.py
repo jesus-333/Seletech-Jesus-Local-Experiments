@@ -12,7 +12,8 @@ from torch import nn
 
 def advanceEpochV1(vae, device, dataloader, optimizer, spectra_section, is_train = True, alpha = 1, beta = 1):
     """
-    Function used to advance one epoch of training in training script 1 (Only VAE)
+    Function used to advance one epoch of training in training script 1 and 2 (Only VAE).
+    Can be used both for single mems and double mems
     """
     
     if(is_train): vae.train()
@@ -76,6 +77,68 @@ def advanceEpochV1(vae, device, dataloader, optimizer, spectra_section, is_train
         
     return tot_vae_loss, tot_recon_loss, tot_kl_loss
 
+
+def advanceEpochV2(vae, device, dataloader, optimizer, is_train = True, alpha = 1, beta = 1):
+    """
+    Function used to advance one epoch of training in training script 3 (Only VAE).
+    Can be used only for double mems
+    """
+    
+    if(is_train): vae.train()
+    else: vae.eval()
+
+    length_mems_1 = 300
+    length_mems_2 = 400
+    
+    # Track variable
+    tot_vae_loss = 0
+    tot_recon_loss = 0
+    tot_kl_loss = 0
+    
+    for sample_data_batch in dataloader:
+        # Move data and vae to device
+        x = sample_data_batch.to(device)
+        vae.to(device)
+        
+        if(is_train): # Train step (keep track of the gradient)
+            # Zeros past gradients
+            optimizer.zero_grad()
+            
+            # VAE works
+            x1 = x[:, 0:length_mems_1]
+            x2 = x[:, (- 1 - length_mems_2):-1]
+            x_r_1, log_var_r_1, x_r_2, log_var_r_2, mu_z, log_var_z = vae(x1, x2)
+
+            x_r = torch.cat((x_r_1, x_r_2), 1)
+            log_var_r = torch.cat((log_var_r_1, log_var_r_2), 0)
+            x = torch.cat((x1,x2), 1)
+
+            # Evaluate loss
+            vae_loss, recon_loss, kl_loss = VAE_loss(x, x_r, log_var_r, mu_z, log_var_z, alpha, beta)
+
+
+            # Backward/Optimization pass
+            vae_loss.backward()
+            optimizer.step()
+        else: # Test step (don't need the gradient)
+            with torch.no_grad():
+                x1 = x[:, 0:length_mems_1]
+                x2 = x[:, (- 1 - length_mems_2):-1]
+                x_r_1, log_var_r_1, x_r_2, log_var_r_2, mu_z, log_var_z = vae(x1, x2)
+        
+                x_r = torch.cat((x_r_1, x_r_2), 1)
+                log_var_r = torch.cat((log_var_r_1, log_var_r_2), 0)
+                x = torch.cat((x1,x2), 1)
+        
+                vae_loss, recon_loss, kl_loss = VAE_loss(x, x_r, log_var_r, mu_z, log_var_z, alpha, beta)
+            
+        # Compute the total loss
+        tot_vae_loss += vae_loss
+        tot_recon_loss += recon_loss
+        tot_kl_loss += kl_loss
+            
+        
+    return tot_vae_loss, tot_recon_loss, tot_kl_loss
 
 
 #%% Loss functions
