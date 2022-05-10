@@ -15,6 +15,8 @@ from torch.utils.data import DataLoader
 from support.training import advance_recon_loss
 from support.VAE import SpectraVAE_Single_Mems, SpectraVAE_Double_Mems, sampling_latent_space
 
+from sklearn.manifold import TSNE
+
 #%% Visualize loss during training
 
 def compare_results_by_spectra(total_loss, recon_loss, kl_loss, figsize = (18, 6)):
@@ -48,6 +50,7 @@ def compare_results_by_spectra(total_loss, recon_loss, kl_loss, figsize = (18, 6
     ax[i].set_yscale('log')
     
     # plt.title("Comparison by Spectra")
+    plt.show()
     
     
 def compare_results_by_loss(total_loss, recon_loss, kl_loss, figsize = (18, 6)):
@@ -81,6 +84,7 @@ def compare_results_by_loss(total_loss, recon_loss, kl_loss, figsize = (18, 6)):
     ax[i].set_yscale('log')
     
     # plt.title("Comparison by Loss")
+    plt.show()
     
 #%% Histogram
 
@@ -98,10 +102,12 @@ def draw_hist_loss(good_spectra_dataset_train, good_spectra_dataset_validation, 
     bad_spectra_loss = float(compute_average_loss_given_dataloader(bad_dataloader, vae, device, n_spectra).cpu())
     
     tmp_loss = [good_spectra_train_loss, good_spectra_validation_loss, bad_spectra_loss]
+    
     plt.figure(figsize = figsize)
     color = ['C0', 'orange', 'red']
     plt.bar(labels, tmp_loss, color = color)
     plt.title("Reconstruciton Error")
+    plt.show()
     
     
 def compute_average_loss_given_dataloader(dataloader, model, device, n_spectra):
@@ -144,10 +150,10 @@ def compute_average_loss_given_dataloader(dataloader, model, device, n_spectra):
         
 #%%
 
-def visualize_latent_space_V1(dataset_list, vae, resampling, alpha = 0.8, s = 0.3, section = 'full', n_samples = -1):
+def visualize_latent_space_V1(dataset_list, vae, resampling, alpha = 0.8, s = 0.3, section = 'full', n_samples = -1, hidden_space_dimension = 2):
     vae.cpu()
-    if(section == 'full'):  vae2 = SpectraVAE_Double_Mems(300, 400, 2, print_var = True)
-    else: vae2 = SpectraVAE_Single_Mems(dataset_list[0][0].shape[0], 2, print_var = True)
+    if(section == 'full'):  vae2 = SpectraVAE_Double_Mems(300, 400, hidden_space_dimension, print_var = True)
+    else: vae2 = SpectraVAE_Single_Mems(dataset_list[0][0].shape[0], hidden_space_dimension, print_var = True)
         
     marker = 'x'
 
@@ -158,6 +164,9 @@ def visualize_latent_space_V1(dataset_list, vae, resampling, alpha = 0.8, s = 0.
     for dataset, color in zip(dataset_list, color_list):
         if(n_samples <= 0 or n_samples > len(dataset)): n_samples = len(dataset)
         
+        
+        # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+        # Untrained VAE
         if(section == 'full'):
             x1 = dataset[0:n_samples][:, 0:300]
             x2 = dataset[0:n_samples][:, (- 1 - 400):-1]
@@ -173,10 +182,16 @@ def visualize_latent_space_V1(dataset_list, vae, resampling, alpha = 0.8, s = 0.
         if(resampling): 
             # p = sampling_latent_space(mu, log_var)
             p = torch.normal(mu_z, torch.sqrt(torch.exp(log_var_z))).detach().numpy()
-            ax[0].scatter(p[:, 0], p[:, 1], alpha = alpha, marker = marker, s = s)
         else: 
-            ax[0].scatter(mu_z[:, 0].detach().numpy(), mu_z[:, 1].detach().numpy(), alpha = alpha, marker = marker, s = s)
+            p = mu_z.detach().numpy()
         
+        # If the hidden space has a dimensions higher than 2 use TSNE to reduce it to two
+        if(p.shape[1] > 2): p = TSNE(n_components = 2, learning_rate='auto', init='random').fit_transform(p)
+            
+        ax[0].scatter(p[:, 0], p[:, 1], alpha = alpha, marker = marker, s = s)
+        
+        # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+        # Trained VAE
         if(section == 'full'):
             x1 = dataset[0:n_samples][:, 0:300]
             x2 = dataset[0:n_samples][:, (- 1 - 400):-1]
@@ -188,12 +203,17 @@ def visualize_latent_space_V1(dataset_list, vae, resampling, alpha = 0.8, s = 0.
             sigma_r = torch.sqrt(torch.exp(log_var_r))
         else:
             x_r, log_var_r, mu_z, log_var_z = vae(dataset[:])
+            
         if(resampling): 
             # p = sampling_latent_space(mu, log_var)
             p = torch.normal(mu_z, torch.sqrt(torch.exp(log_var_z))).detach().numpy()
-            ax[1].scatter(p[:, 0], p[:, 1], alpha = alpha, marker = marker, s = s)
         else: 
-            ax[1].scatter(mu_z[:, 0].detach().numpy(), mu_z[:, 1].detach().numpy(), alpha = alpha, marker = marker, s = s)
+            p = mu_z.detach().numpy()
+            
+        # If the hidden space has a dimensions higher than 2 use TSNE to reduce it to two
+        if(p.shape[1] > 2): p = TSNE(n_components = 2, learning_rate='auto', init='random').fit_transform(p)
+        
+        ax[1].scatter(p[:, 0], p[:, 1], alpha = alpha, marker = marker, s = s)
     
 
     ax[0].set_title("Untrained VAE")
@@ -201,3 +221,4 @@ def visualize_latent_space_V1(dataset_list, vae, resampling, alpha = 0.8, s = 0.
     
     ax[1].set_title("Trained VAE")
     ax[1].legend(["Good Spectra (TRAIN)", "Good Spectra (TEST)", "Good Spectra (VAL)", "Bad Spectra"])
+    plt.show()
