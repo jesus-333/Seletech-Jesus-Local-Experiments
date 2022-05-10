@@ -22,12 +22,15 @@ from support.visualization import visualize_latent_space_V1
 # min_threeshold = 0.5 # For upper
 normalize_trials = 1
 
-hidden_space_dimension = 2
+hidden_space_dimension = 8
 batch_size = 100
 epochs = 50
 learning_rate = 1e-2
-alpha = 0.1 # Hyperparemeter to fine tuning the value of the reconstruction error
-beta = 2 # Hyperparemeter to fine tuning the value of the KL Loss
+alpha = 1 # Hyperparemeter to fine tuning the value of the reconstruction error
+beta = 7 # Hyperparemeter to fine tuning the value of the KL Loss
+
+time_interval_start = 45
+time_interval_end = 360
 
 print_var = True
 step_show = 2
@@ -43,9 +46,13 @@ extended_water_timestamp = create_extended_water_vector(water_timestamp, water_d
 
 # Due to the fact that I have much more bad spectra in this way I use them to train the network.
 # Cause I'm lazy I only flip the variable at the beggining and noth change all the variable along the script
-# good_idx, bad_idx = choose_spectra_based_on_water(extended_water_timestamp, time_interval_start = 60, time_interval_end = 300)
-bad_idx, good_idx = choose_spectra_based_on_water(extended_water_timestamp, time_interval_start = 45, time_interval_end = 360)
+# bad_idx = water, good_idx = NO water
+bad_idx, good_idx = choose_spectra_based_on_water(extended_water_timestamp, time_interval_start = time_interval_start, time_interval_end = time_interval_end)
+labels = ["NO Water (Train)", "NO Water (Test)", "Water"]
 
+# "Right" order
+# good_idx, bad_idx = choose_spectra_based_on_water(extended_water_timestamp, time_interval_start = 60, time_interval_end = 300)
+# labels = ["Water (Train)", "Water (Validation)", "NO Water"]
 
 #%% Dataset creation
 wavelength_idx = wavelength > 1
@@ -139,13 +146,16 @@ compare_results_by_spectra(total_loss, recon_loss, kl_loss, figsize)
 compare_results_by_loss(total_loss, recon_loss, kl_loss, figsize)
 
 #%%
-figsize = (10, 8)
+figsize = (15, 12)
 n_spectra = -1
 
-draw_hist_loss(good_spectra_dataset_train, good_spectra_dataset_validation, bad_spectra_dataset, vae,  device = device, batch_size = 50, n_spectra = n_spectra, figsize = figsize)
+draw_hist_loss(good_spectra_dataset_train, good_spectra_dataset_validation, bad_spectra_dataset, vae,  device = device, batch_size = 50, n_spectra = n_spectra, figsize = figsize, labels = labels)
+params = {'mathtext.default': 'regular', 'font.size': 20}       
+plt.rcParams.update(params)
+plt.tight_layout()
 
 #%%
-n_samples = 1000
+n_samples = -1
 s = 2
 
 dataset_list = [good_spectra_dataset_train, good_spectra_dataset_test, good_spectra_dataset_validation, bad_spectra_dataset]
