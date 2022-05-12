@@ -195,18 +195,21 @@ def visualize_latent_space_V2(dataset_list, vae, resampling, alpha = 0.8, s = 0.
 
     fig, ax = plt.subplots(1, 1, figsize = figsize)
     
-    color_list = ['c0', 'green', 'orange', 'red']
+    # color_list = ['c0', 'green', 'orange', 'red']
+    # color_list = ['orange', 'orange', 'orange', 'red']
+    color_list = ['blue', 'green', 'orange']
     
     for dataset, color in zip(dataset_list, color_list):
         if(n_samples <= 0 or n_samples > len(dataset)): n_samples = len(dataset)
         p = compute_latent_space_representation(dataset, vae, resampling, section, n_samples, dimensionality_reduction)
-        ax.scatter(p[:, 0], p[:, 1], alpha = alpha, marker = marker, s = s)
+        ax.scatter(p[:, 0], p[:, 1], alpha = alpha, marker = marker, s = s, c = color)
     
     ax.set_title("Latent Space ({})".format(dimensionality_reduction))
-    ax.legend(["Good Spectra (TRAIN)", "Good Spectra (TEST)", "Good Spectra (VAL)", "Bad Spectra"])
+    # ax.legend(["Good Spectra (TRAIN)", "Good Spectra (TEST)", "Good Spectra (VAL)", "Bad Spectra"])
     
-    ax.set_xlim([-0.01, 0.01])
-    ax.set_ylim([-0.01, 0.01])
+    lim = 0.0015
+    ax.set_xlim([-lim, lim])
+    ax.set_ylim([-lim, lim])
     plt.show()
 
 

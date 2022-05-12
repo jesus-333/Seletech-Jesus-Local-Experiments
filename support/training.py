@@ -153,18 +153,23 @@ def VAE_loss(x, x_r, log_var_r, mu_q, log_var_q, alpha = 1, beta = 1):
     """
     
     # Kullback-Leibler Divergence
+    # N.b. Due to implementation reasons I pass to the function the STANDARD DEVIATION, i.e. the NON-SQUARED VALUE
+    # When the variance is needed inside the function the sigmas are eventually squared
     sigma_p = torch.ones(log_var_q.shape).to(log_var_q.device) # Standard deviation of the target standard distribution
     mu_p = torch.zeros(mu_q.shape).to(mu_q.device) # Mean of the target gaussian distribution
     sigma_q = torch.sqrt(torch.exp(log_var_q)) # standard deviation obtained from the VAE
-    kl_loss = KL_Loss(sigma_p, mu_p, sigma_q, mu_q).mean()
-    # N.b. Due to implementation reasons I pass to the function the STANDARD DEVIATION, i.e. the NON-SQUARED VALUE
-    # When the variance is needed inside the function the sigmas are eventually squared
+    # kl_loss = KL_Loss(sigma_p, mu_p, sigma_q, mu_q).mean()
+    
+    # kl_loss = KL_Loss(sigma_q, mu_q, sigma_p, mu_p).mean() # TODO REMOVE
+    kl_loss =  torch.mean(-0.5 * torch.sum(1 + log_var_q - mu_q ** 2 - log_var_q.exp(), dim = 1), dim = 0) # TODO Remove
+    
   
     # Reconstruction loss 
     sigma_r = torch.sqrt(torch.exp(log_var_r))
     recon_loss = advance_recon_loss(x, x_r, sigma_r).mean()
-
+    
     vae_loss = recon_loss * alpha + kl_loss * beta
+    # print(float(kl_loss), float(recon_loss), float(vae_loss))
     return vae_loss, recon_loss * alpha, kl_loss * beta
 
 

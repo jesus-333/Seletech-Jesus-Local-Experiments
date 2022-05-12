@@ -22,12 +22,12 @@ from support.visualization import visualize_latent_space_V1, visualize_latent_sp
 # min_threeshold = 0.5 # For upper
 normalize_trials = 1
 
-hidden_space_dimension = 8
-batch_size = 100
-epochs = 40
-learning_rate = 1e-2
+hidden_space_dimension = 2
+batch_size = 101
+epochs = 25
+learning_rate = 1e-2 / 3
 alpha = 1 # Hyperparemeter to fine tuning the value of the reconstruction error
-beta = 4 # Hyperparemeter to fine tuning the value of the KL Loss
+beta = 99 # Hyperparemeter to fine tuning the value of the KL Loss
 
 time_interval_start = 45
 time_interval_end = 360
@@ -139,7 +139,7 @@ for epoch in range(epochs):
     s = 1
     alpha = 0.6
     dimensionality_reduction = 'pca'
-    dataset_list = [good_spectra_dataset_train, good_spectra_dataset_test, good_spectra_dataset_validation, bad_spectra_dataset]
+    dataset_list = [good_spectra_dataset_train, good_spectra_dataset_test, good_spectra_dataset_validation]
     visualize_latent_space_V2(dataset_list, vae, resampling = False, alpha = alpha, s = s, section = 'full', n_samples = n_samples, dimensionality_reduction = dimensionality_reduction, figsize = (15, 15))
 
         
@@ -176,6 +176,5 @@ visualize_latent_space_V1(dataset_list, vae, resampling = False, alpha = alpha, 
 
 # visualize_latent_space_V1(dataset_list, vae, resampling = True, alpha = alpha, s = s, section = 'full', n_samples = n_samples, hidden_space_dimension = hidden_space_dimension, dimensionality_reduction = dimensionality_reduction)
 
-
-visualize_latent_space_V2(dataset_list, vae, resampling = False, alpha = alpha, s = s, section = 'full', n_samples = n_samples, dimensionality_reduction = dimensionality_reduction, figsize = (15, 15))
+# visualize_latent_space_V2(dataset_list, vae, resampling = False, alpha = alpha, s = s, section = 'full', n_samples = n_samples, dimensionality_reduction = dimensionality_reduction, figsize = (15, 15))
 
