@@ -14,7 +14,7 @@ from support.datasets import PytorchDatasetPlantSpectra_V1
 from support.VAE import SpectraVAE_Double_Mems
 from support.training import advanceEpochV2, VAE_loss, advance_recon_loss
 from support.visualization import compare_results_by_spectra, compare_results_by_loss, draw_hist_loss
-from support.visualization import visualize_latent_space_V1
+from support.visualization import visualize_latent_space_V1, visualize_latent_space_V2
 
 #%% Parameters
 
@@ -25,9 +25,9 @@ normalize_trials = 1
 hidden_space_dimension = 8
 batch_size = 100
 epochs = 40
-learning_rate = 1e-4
+learning_rate = 1e-2
 alpha = 1 # Hyperparemeter to fine tuning the value of the reconstruction error
-beta = 15 # Hyperparemeter to fine tuning the value of the KL Loss
+beta = 4 # Hyperparemeter to fine tuning the value of the KL Loss
 
 time_interval_start = 45
 time_interval_end = 360
@@ -134,7 +134,14 @@ for epoch in range(epochs):
         print("- - - - - - - - - - - - - - - - - - - - - - - - ")
         
     scheduler.step()
-        
+    
+    n_samples = -1
+    s = 1
+    alpha = 0.6
+    dimensionality_reduction = 'pca'
+    dataset_list = [good_spectra_dataset_train, good_spectra_dataset_test, good_spectra_dataset_validation, bad_spectra_dataset]
+    visualize_latent_space_V2(dataset_list, vae, resampling = False, alpha = alpha, s = s, section = 'full', n_samples = n_samples, dimensionality_reduction = dimensionality_reduction, figsize = (15, 15))
+
         
 #%%
 
@@ -158,7 +165,7 @@ draw_hist_loss(good_spectra_dataset_train, good_spectra_dataset_validation, bad_
 plt.tight_layout()
 
 #%%
-n_samples = 6666
+n_samples = -1
 s = 1
 alpha = 0.6
 dimensionality_reduction = 'pca'
@@ -168,3 +175,7 @@ dataset_list = [good_spectra_dataset_train, good_spectra_dataset_test, good_spec
 visualize_latent_space_V1(dataset_list, vae, resampling = False, alpha = alpha, s = s, section = 'full', n_samples = n_samples, hidden_space_dimension = hidden_space_dimension, dimensionality_reduction = dimensionality_reduction)
 
 # visualize_latent_space_V1(dataset_list, vae, resampling = True, alpha = alpha, s = s, section = 'full', n_samples = n_samples, hidden_space_dimension = hidden_space_dimension, dimensionality_reduction = dimensionality_reduction)
+
+
+visualize_latent_space_V2(dataset_list, vae, resampling = False, alpha = alpha, s = s, section = 'full', n_samples = n_samples, dimensionality_reduction = dimensionality_reduction, figsize = (15, 15))
+

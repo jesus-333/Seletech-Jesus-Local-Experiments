@@ -152,72 +152,29 @@ def compute_average_loss_given_dataloader(dataloader, model, device, n_spectra):
 #%%
 
 def visualize_latent_space_V1(dataset_list, vae, resampling, alpha = 0.8, s = 0.3, section = 'full', n_samples = -1, hidden_space_dimension = 2, dimensionality_reduction = 'pca'):
+    """
+    Represent the latent space of the VAE and make a comparison with an untrained VAE.
+    """
+    
     vae.cpu()
     if(section == 'full'):  vae2 = SpectraVAE_Double_Mems(300, 400, hidden_space_dimension, print_var = True)
     else: vae2 = SpectraVAE_Single_Mems(dataset_list[0][0].shape[0], hidden_space_dimension, print_var = True)
         
     marker = 'x'
 
-    fig, ax = plt.subplots(1, 2, figsize=(20, 10))
+    fig, ax = plt.subplots(1, 2, figsize = (20, 10))
     
     color_list = ['c0', 'green', 'orange', 'red']
     
-    for dataset, color in zip(dataset_list, color_list):
-        if(n_samples <= 0 or n_samples > len(dataset)): n_samples = len(dataset)
-        
-        
+    for dataset, color in zip(dataset_list, color_list):     
         # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-        # Untrained VAE
-        if(section == 'full'):
-            x1 = dataset[0:n_samples][:, 0:300]
-            x2 = dataset[0:n_samples][:, (- 1 - 400):-1]
-            x_r_1, log_var_r_1, x_r_2, log_var_r_2, mu_z, log_var_z = vae2(x1, x2)
-            
-            x_r = torch.cat((x_r_1, x_r_2), 1)
-            x = torch.cat((x1,x2), 1)
-            log_var_r = torch.cat((log_var_r_1, log_var_r_2), 0)
-            sigma_r = torch.sqrt(torch.exp(log_var_r))
-        else:
-            x_r, log_var_r, mu_z, log_var_z = vae2(dataset[:])
-        
-        if(resampling): 
-            # p = sampling_latent_space(mu, log_var)
-            p = torch.normal(mu_z, torch.sqrt(torch.exp(log_var_z))).detach().numpy()
-        else: 
-            p = mu_z.detach().numpy()
-        
-        # If the hidden space has a dimensions higher than 2 use TSNE to reduce it to two
-        if(p.shape[1] > 2): 
-            if(dimensionality_reduction == 'tsne'): p = TSNE(n_components = 2, learning_rate='auto', init='random').fit_transform(p)
-            if(dimensionality_reduction == 'pca'): p = PCA(n_components=2).fit_transform(p)
-            
+        # Untrained VAE 
+        p = compute_latent_space_representation(dataset, vae2, resampling, section, n_samples, dimensionality_reduction)
         ax[0].scatter(p[:, 0], p[:, 1], alpha = alpha, marker = marker, s = s)
         
         # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-        # Trained VAE
-        if(section == 'full'):
-            x1 = dataset[0:n_samples][:, 0:300]
-            x2 = dataset[0:n_samples][:, (- 1 - 400):-1]
-            x_r_1, log_var_r_1, x_r_2, log_var_r_2, mu_z, log_var_z = vae(x1, x2)
-            
-            x_r = torch.cat((x_r_1, x_r_2), 1)
-            x = torch.cat((x1,x2), 1)
-            log_var_r = torch.cat((log_var_r_1, log_var_r_2), 0)
-            sigma_r = torch.sqrt(torch.exp(log_var_r))
-        else:
-            x_r, log_var_r, mu_z, log_var_z = vae(dataset[:])
-            
-        if(resampling): 
-            # p = sampling_latent_space(mu, log_var)
-            p = torch.normal(mu_z, torch.sqrt(torch.exp(log_var_z))).detach().numpy()
-        else: 
-            p = mu_z.detach().numpy()
-            
-        # If the hidden space has a dimensions higher than 2 use TSNE to reduce it to two
-        if(p.shape[1] > 2): 
-            if(dimensionality_reduction == 'tsne'): p = TSNE(n_components = 2, learning_rate='auto', init='random').fit_transform(p)
-            if(dimensionality_reduction == 'pca'): p = PCA(n_components=2).fit_transform(p)
-        
+        # Trained VAE 
+        p = compute_latent_space_representation(dataset, vae, resampling, section, n_samples, dimensionality_reduction)
         ax[1].scatter(p[:, 0], p[:, 1], alpha = alpha, marker = marker, s = s)
     
 
@@ -227,3 +184,58 @@ def visualize_latent_space_V1(dataset_list, vae, resampling, alpha = 0.8, s = 0.
     ax[1].set_title("Trained VAE")
     ax[1].legend(["Good Spectra (TRAIN)", "Good Spectra (TEST)", "Good Spectra (VAL)", "Bad Spectra"])
     plt.show()
+    
+    
+def visualize_latent_space_V2(dataset_list, vae, resampling, alpha = 0.8, s = 0.3, section = 'full', n_samples = -1, dimensionality_reduction = 'pca', figsize = (13, 13)):
+    """
+    Represent the latent space of the VAE.
+    """
+    
+    marker = 'x'
+
+    fig, ax = plt.subplots(1, 1, figsize = figsize)
+    
+    color_list = ['c0', 'green', 'orange', 'red']
+    
+    for dataset, color in zip(dataset_list, color_list):
+        if(n_samples <= 0 or n_samples > len(dataset)): n_samples = len(dataset)
+        p = compute_latent_space_representation(dataset, vae, resampling, section, n_samples, dimensionality_reduction)
+        ax.scatter(p[:, 0], p[:, 1], alpha = alpha, marker = marker, s = s)
+    
+    ax.set_title("Latent Space ({})".format(dimensionality_reduction))
+    ax.legend(["Good Spectra (TRAIN)", "Good Spectra (TEST)", "Good Spectra (VAL)", "Bad Spectra"])
+    
+    ax.set_xlim([-0.01, 0.01])
+    ax.set_ylim([-0.01, 0.01])
+    plt.show()
+
+
+def compute_latent_space_representation(dataset, vae, resampling, section = 'full', n_samples = -1, dimensionality_reduction = 'pca'):
+    # Check the number of samples
+    if(n_samples <= 0 or n_samples > len(dataset)): n_samples = len(dataset)
+    
+    # Compute latent space representation
+    if(section == 'full'): # Double mems
+        x1 = dataset[0:n_samples][:, 0:300]
+        x2 = dataset[0:n_samples][:, (- 1 - 400):-1]
+        x_r_1, log_var_r_1, x_r_2, log_var_r_2, mu_z, log_var_z = vae(x1, x2)
+        
+        x_r = torch.cat((x_r_1, x_r_2), 1)
+        x = torch.cat((x1,x2), 1)
+        log_var_r = torch.cat((log_var_r_1, log_var_r_2), 0)
+        sigma_r = torch.sqrt(torch.exp(log_var_r))
+    else: # Single mems
+        x_r, log_var_r, mu_z, log_var_z = vae(dataset[:])
+        
+    if(resampling): 
+        p = torch.normal(mu_z, torch.sqrt(torch.exp(log_var_z))).detach().numpy()
+    else: 
+        p = mu_z.detach().numpy()
+        
+    # If the hidden space has a dimensions higher than 2 use PCA/TSNE to reduce it to two
+    if(p.shape[1] > 2): 
+        if(dimensionality_reduction == 'tsne'): p = TSNE(n_components = 2, learning_rate='auto', init='random').fit_transform(p)
+        if(dimensionality_reduction == 'pca'): p = PCA(n_components=2).fit_transform(p)
+            
+    return p
+        
