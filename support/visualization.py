@@ -16,17 +16,18 @@ from support.training import advance_recon_loss
 from support.VAE import SpectraVAE_Single_Mems, SpectraVAE_Double_Mems, sampling_latent_space
 
 from sklearn.manifold import TSNE
+from sklearn.decomposition import PCA
 
 #%% Visualize loss during training
 
-def compare_results_by_spectra(total_loss, recon_loss, kl_loss, figsize = (18, 6)):
+def compare_results_by_spectra(total_loss, recon_loss, kl_loss, labels, figsize = (18, 6)):
     fig, ax = plt.subplots(1, 3, figsize = figsize)
     
     i = 0
     ax[i].plot(total_loss[i])
     ax[i].plot(recon_loss[i])
     ax[i].plot(kl_loss[i])
-    ax[i].set_title("Good Spectra (TRAIN)")
+    ax[i].set_title(labels[i])
     ax[i].legend(["Total Loss", "Reconstruction loss", "KL Loss"])
     ax[i].set_xlabel("Epochs")
     ax[i].set_yscale('log')
@@ -35,7 +36,7 @@ def compare_results_by_spectra(total_loss, recon_loss, kl_loss, figsize = (18, 6
     ax[i].plot(total_loss[i])
     ax[i].plot(recon_loss[i])
     ax[i].plot(kl_loss[i])
-    ax[i].set_title("Good Spectra (TEST)")
+    ax[i].set_title(labels[i])
     ax[i].legend(["Total Loss", "Reconstruction loss", "KL Loss"])
     ax[i].set_xlabel("Epochs")
     ax[i].set_yscale('log')
@@ -44,7 +45,7 @@ def compare_results_by_spectra(total_loss, recon_loss, kl_loss, figsize = (18, 6
     ax[i].plot(total_loss[i])
     ax[i].plot(recon_loss[i])
     ax[i].plot(kl_loss[i])
-    ax[i].set_title("Bad Spectra ")
+    ax[i].set_title(labels[i])
     ax[i].legend(["Total Loss", "Reconstruction loss", "KL Loss"])
     ax[i].set_xlabel("Epochs")
     ax[i].set_yscale('log')
@@ -53,7 +54,7 @@ def compare_results_by_spectra(total_loss, recon_loss, kl_loss, figsize = (18, 6
     plt.show()
     
     
-def compare_results_by_loss(total_loss, recon_loss, kl_loss, figsize = (18, 6)):
+def compare_results_by_loss(total_loss, recon_loss, kl_loss, labels, figsize = (18, 6)):
     fig, ax = plt.subplots(1, 3, figsize = figsize)
     
     i = 0
@@ -61,7 +62,7 @@ def compare_results_by_loss(total_loss, recon_loss, kl_loss, figsize = (18, 6)):
     ax[i].plot(total_loss[1])
     ax[i].plot(total_loss[2])
     ax[i].set_title("Total loss")
-    ax[i].legend(["Good Spectra (TRAIN)", "Good Spectra (TEST)", "Bad Spectra"])
+    ax[i].legend(labels)
     ax[i].set_xlabel("Epochs")
     ax[i].set_yscale('log')
     
@@ -70,7 +71,7 @@ def compare_results_by_loss(total_loss, recon_loss, kl_loss, figsize = (18, 6)):
     ax[i].plot(recon_loss[1])
     ax[i].plot(recon_loss[2])
     ax[i].set_title("Reconstruction loss")
-    ax[i].legend(["Good Spectra (TRAIN)", "Good Spectra (TEST)", "Bad Spectra"])
+    ax[i].legend(labels)
     ax[i].set_xlabel("Epochs")
     ax[i].set_yscale('log')
     
@@ -79,7 +80,7 @@ def compare_results_by_loss(total_loss, recon_loss, kl_loss, figsize = (18, 6)):
     ax[i].plot(kl_loss[1])
     ax[i].plot(kl_loss[2])
     ax[i].set_title("KL loss")
-    ax[i].legend(["Good Spectra (TRAIN)", "Good Spectra (TEST)", "Bad Spectra"])
+    ax[i].legend(labels)
     ax[i].set_xlabel("Epochs")
     ax[i].set_yscale('log')
     
@@ -150,7 +151,7 @@ def compute_average_loss_given_dataloader(dataloader, model, device, n_spectra):
         
 #%%
 
-def visualize_latent_space_V1(dataset_list, vae, resampling, alpha = 0.8, s = 0.3, section = 'full', n_samples = -1, hidden_space_dimension = 2):
+def visualize_latent_space_V1(dataset_list, vae, resampling, alpha = 0.8, s = 0.3, section = 'full', n_samples = -1, hidden_space_dimension = 2, dimensionality_reduction = 'pca'):
     vae.cpu()
     if(section == 'full'):  vae2 = SpectraVAE_Double_Mems(300, 400, hidden_space_dimension, print_var = True)
     else: vae2 = SpectraVAE_Single_Mems(dataset_list[0][0].shape[0], hidden_space_dimension, print_var = True)
@@ -186,7 +187,9 @@ def visualize_latent_space_V1(dataset_list, vae, resampling, alpha = 0.8, s = 0.
             p = mu_z.detach().numpy()
         
         # If the hidden space has a dimensions higher than 2 use TSNE to reduce it to two
-        if(p.shape[1] > 2): p = TSNE(n_components = 2, learning_rate='auto', init='random').fit_transform(p)
+        if(p.shape[1] > 2): 
+            if(dimensionality_reduction == 'tsne'): p = TSNE(n_components = 2, learning_rate='auto', init='random').fit_transform(p)
+            if(dimensionality_reduction == 'pca'): p = PCA(n_components=2).fit_transform(p)
             
         ax[0].scatter(p[:, 0], p[:, 1], alpha = alpha, marker = marker, s = s)
         
@@ -211,7 +214,9 @@ def visualize_latent_space_V1(dataset_list, vae, resampling, alpha = 0.8, s = 0.
             p = mu_z.detach().numpy()
             
         # If the hidden space has a dimensions higher than 2 use TSNE to reduce it to two
-        if(p.shape[1] > 2): p = TSNE(n_components = 2, learning_rate='auto', init='random').fit_transform(p)
+        if(p.shape[1] > 2): 
+            if(dimensionality_reduction == 'tsne'): p = TSNE(n_components = 2, learning_rate='auto', init='random').fit_transform(p)
+            if(dimensionality_reduction == 'pca'): p = PCA(n_components=2).fit_transform(p)
         
         ax[1].scatter(p[:, 0], p[:, 1], alpha = alpha, marker = marker, s = s)
     

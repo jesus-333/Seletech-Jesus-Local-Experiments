@@ -24,10 +24,10 @@ normalize_trials = 1
 
 hidden_space_dimension = 8
 batch_size = 100
-epochs = 50
-learning_rate = 1e-2
+epochs = 40
+learning_rate = 1e-4
 alpha = 1 # Hyperparemeter to fine tuning the value of the reconstruction error
-beta = 7 # Hyperparemeter to fine tuning the value of the KL Loss
+beta = 15 # Hyperparemeter to fine tuning the value of the KL Loss
 
 time_interval_start = 45
 time_interval_end = 360
@@ -78,7 +78,8 @@ length_mems_1 = int(1650 - min(wavelength))
 length_mems_2 = int(max(wavelength) - 1750)
 vae = SpectraVAE_Double_Mems(length_mems_1, length_mems_2, hidden_space_dimension, print_var = True)
 
-optimizer = torch.optim.AdamW(vae.parameters(), lr = learning_rate, weight_decay = 1e-5)
+optimizer = torch.optim.AdamW(vae.parameters(), lr = learning_rate, weight_decay = 1e-3)
+scheduler = torch.optim.lr_scheduler.ExponentialLR(optimizer, gamma = 0.9)
 
 device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
 
@@ -116,7 +117,7 @@ for epoch in range(epochs):
     kl_loss_bad.append(float(tmp_loss_bad_kl))
     
     if(print_var and epoch % step_show == 0):
-        print("Epoch: {} ({:.2f}%)".format(epoch, epoch/epochs * 100))
+        print("Epoch: {} ({:.2f}%)".format(epoch, epoch/epochs * 100), optimizer.param_groups[0]['lr'])
       
         print("\tLoss (GOOD)(TRAIN)\t\t: ", float(total_loss_good_train[-1]))
         print("\t\tReconstr (GOOD)(TRAIN)\t: ", float(recon_loss_good_train[-1]))
@@ -132,6 +133,8 @@ for epoch in range(epochs):
       
         print("- - - - - - - - - - - - - - - - - - - - - - - - ")
         
+    scheduler.step()
+        
         
 #%%
 
@@ -141,25 +144,27 @@ total_loss = [total_loss_good_train, total_loss_good_test, total_loss_bad]
 recon_loss = [recon_loss_good_train, recon_loss_good_test, recon_loss_bad]
 kl_loss = [kl_loss_good_train, kl_loss_good_test, kl_loss_bad]
 
-compare_results_by_spectra(total_loss, recon_loss, kl_loss, figsize)
+compare_results_by_spectra(total_loss, recon_loss, kl_loss, labels, figsize)
 
-compare_results_by_loss(total_loss, recon_loss, kl_loss, figsize)
+compare_results_by_loss(total_loss, recon_loss, kl_loss, labels, figsize)
 
 #%%
 figsize = (15, 12)
 n_spectra = -1
 
 draw_hist_loss(good_spectra_dataset_train, good_spectra_dataset_validation, bad_spectra_dataset, vae,  device = device, batch_size = 50, n_spectra = n_spectra, figsize = figsize, labels = labels)
-params = {'mathtext.default': 'regular', 'font.size': 20}       
-plt.rcParams.update(params)
+# params = {'mathtext.default': 'regular', 'font.size': 20}       
+# plt.rcParams.update(params)
 plt.tight_layout()
 
 #%%
-n_samples = -1
-s = 2
+n_samples = 6666
+s = 1
+alpha = 0.6
+dimensionality_reduction = 'pca'
 
 dataset_list = [good_spectra_dataset_train, good_spectra_dataset_test, good_spectra_dataset_validation, bad_spectra_dataset]
 
-visualize_latent_space_V1(dataset_list, vae, resampling = False, alpha = 0.8, s = s, section = 'full', n_samples = n_samples)
+visualize_latent_space_V1(dataset_list, vae, resampling = False, alpha = alpha, s = s, section = 'full', n_samples = n_samples, hidden_space_dimension = hidden_space_dimension, dimensionality_reduction = dimensionality_reduction)
 
-visualize_latent_space_V1(dataset_list, vae, resampling = True, alpha = 0.8, s = s, section = 'full', n_samples = n_samples)
+# visualize_latent_space_V1(dataset_list, vae, resampling = True, alpha = alpha, s = s, section = 'full', n_samples = n_samples, hidden_space_dimension = hidden_space_dimension, dimensionality_reduction = dimensionality_reduction)
