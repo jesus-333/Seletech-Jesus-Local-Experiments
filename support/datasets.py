@@ -141,7 +141,7 @@ def choose_spectra_based_on_water(extended_water_timestamp, time_interval_start,
     bad_idx = good_idx_tmp != 1 
     
     return good_idx, bad_idx                                 
-    
+   
 
 #%% Dataset declaration
 

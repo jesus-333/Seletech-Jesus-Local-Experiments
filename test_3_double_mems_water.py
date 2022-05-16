@@ -14,7 +14,7 @@ from support.datasets import PytorchDatasetPlantSpectra_V1
 from support.VAE import SpectraVAE_Double_Mems
 from support.training import advanceEpochV2, VAE_loss, advance_recon_loss
 from support.visualization import compare_results_by_spectra, compare_results_by_loss, draw_hist_loss
-from support.visualization import visualize_latent_space_V1, visualize_latent_space_V2
+from support.visualization import visualize_latent_space_V1, visualize_latent_space_V2, visualize_latent_space_V3
 
 #%% Parameters
 
@@ -23,11 +23,11 @@ from support.visualization import visualize_latent_space_V1, visualize_latent_sp
 normalize_trials = 1
 
 hidden_space_dimension = 2
-batch_size = 101
-epochs = 25
-learning_rate = 1e-2 / 3
+batch_size = 75
+epochs = 200
+learning_rate = 1e-4
 alpha = 1 # Hyperparemeter to fine tuning the value of the reconstruction error
-beta = 99 # Hyperparemeter to fine tuning the value of the KL Loss
+beta = 7 # Hyperparemeter to fine tuning the value of the KL Loss
 
 time_interval_start = 45
 time_interval_end = 360
@@ -140,8 +140,7 @@ for epoch in range(epochs):
     alpha = 0.6
     dimensionality_reduction = 'pca'
     dataset_list = [good_spectra_dataset_train, good_spectra_dataset_test, good_spectra_dataset_validation]
-    visualize_latent_space_V2(dataset_list, vae, resampling = False, alpha = alpha, s = s, section = 'full', n_samples = n_samples, dimensionality_reduction = dimensionality_reduction, figsize = (15, 15))
-
+    visualize_latent_space_V2(dataset_list, vae, resampling = False, alpha = alpha, s = s, section = 'full', n_samples = n_samples, dimensionality_reduction = dimensionality_reduction, figsize = (15, 15), device = device)
         
 #%%
 

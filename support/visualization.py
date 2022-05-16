@@ -186,7 +186,7 @@ def visualize_latent_space_V1(dataset_list, vae, resampling, alpha = 0.8, s = 0.
     plt.show()
     
     
-def visualize_latent_space_V2(dataset_list, vae, resampling, alpha = 0.8, s = 0.3, section = 'full', n_samples = -1, dimensionality_reduction = 'pca', figsize = (13, 13)):
+def visualize_latent_space_V2(dataset_list, vae, resampling, alpha = 0.8, s = 0.3, section = 'full', n_samples = -1, dimensionality_reduction = 'pca', figsize = (13, 13), device = 'cpu'):
     """
     Represent the latent space of the VAE.
     """
@@ -201,26 +201,51 @@ def visualize_latent_space_V2(dataset_list, vae, resampling, alpha = 0.8, s = 0.
     
     for dataset, color in zip(dataset_list, color_list):
         if(n_samples <= 0 or n_samples > len(dataset)): n_samples = len(dataset)
-        p = compute_latent_space_representation(dataset, vae, resampling, section, n_samples, dimensionality_reduction)
+        p = compute_latent_space_representation(dataset, vae, resampling, section, n_samples, dimensionality_reduction, device)
         ax.scatter(p[:, 0], p[:, 1], alpha = alpha, marker = marker, s = s, c = color)
     
     ax.set_title("Latent Space ({})".format(dimensionality_reduction))
     # ax.legend(["Good Spectra (TRAIN)", "Good Spectra (TEST)", "Good Spectra (VAL)", "Bad Spectra"])
     
-    lim = 0.0015
+    lim = 0.75
     ax.set_xlim([-lim, lim])
     ax.set_ylim([-lim, lim])
     plt.show()
+    
+    
+def  visualize_latent_space_V3(full_spectra_dataset, extended_water_timestamp, vae, resampling, alpha = 0.8, s = 0.3, section = 'full', n_samples = -1, dimensionality_reduction = 'pca', figsize = (13, 13), device = 'cpu'):
+    """
+    Given all the spectra and the relative water timestamp vector create a scatter plor where each point is colored based on the time passed from when receive water.
+    N.b. The extended_water_timestamp is obtained from the function create_extended_water_vector in dataset.py file
+    """
+    
+    # Create water gradient vector
+    water_gradient = np.zeros(len(extended_water_timestamp) - 1)
+    for i in range(len(water_gradient)):
+        if(i == 0): pass
+        if(extended_water_timestamp[i] == 1): water_gradient[i] = 0
+        elif(extended_water_timestamp[i] == 0): water_gradient[i] = water_gradient[i - 1] + 1
+    
+    # Rescale between 0 and 1
+    water_gradient /= np.max(water_gradient)
+    
+    fig, ax = plt.subplots(1, 1, figsize = figsize)
+    marker = 'x'
+    p = compute_latent_space_representation(full_spectra_dataset, vae, resampling, section, n_samples, dimensionality_reduction, device)
+    ax.scatter(p[:, 0], p[:, 1], alpha = alpha, marker = marker, s = s, c = water_gradient, cmap = 'Greens_r')
+    plt.show()
 
 
-def compute_latent_space_representation(dataset, vae, resampling, section = 'full', n_samples = -1, dimensionality_reduction = 'pca'):
+def compute_latent_space_representation(dataset, vae, resampling, section = 'full', n_samples = -1, dimensionality_reduction = 'pca', device = 'cpu'):
     # Check the number of samples
     if(n_samples <= 0 or n_samples > len(dataset)): n_samples = len(dataset)
     
+    vae.to(device)
+    
     # Compute latent space representation
     if(section == 'full'): # Double mems
-        x1 = dataset[0:n_samples][:, 0:300]
-        x2 = dataset[0:n_samples][:, (- 1 - 400):-1]
+        x1 = dataset[0:n_samples][:, 0:300].to(device)
+        x2 = dataset[0:n_samples][:, (- 1 - 400):-1].to(device)
         x_r_1, log_var_r_1, x_r_2, log_var_r_2, mu_z, log_var_z = vae(x1, x2)
         
         x_r = torch.cat((x_r_1, x_r_2), 1)
@@ -231,9 +256,9 @@ def compute_latent_space_representation(dataset, vae, resampling, section = 'ful
         x_r, log_var_r, mu_z, log_var_z = vae(dataset[:])
         
     if(resampling): 
-        p = torch.normal(mu_z, torch.sqrt(torch.exp(log_var_z))).detach().numpy()
+        p = torch.normal(mu_z, torch.sqrt(torch.exp(log_var_z))).cpu().detach().numpy()
     else: 
-        p = mu_z.detach().numpy()
+        p = mu_z.cpu().detach().numpy()
         
     # If the hidden space has a dimensions higher than 2 use PCA/TSNE to reduce it to two
     if(p.shape[1] > 2): 
