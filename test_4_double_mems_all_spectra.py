@@ -12,6 +12,7 @@ from torch.utils.data import DataLoader
 from support.datasets import load_spectra_data, load_water_data, create_extended_water_vector, choose_spectra_based_on_water 
 from support.datasets import PytorchDatasetPlantSpectra_V1
 from support.VAE import SpectraVAE_Double_Mems
+from support.VAE_Conv import SpectraVAE_Double_Mems_Conv
 from support.training import advanceEpochV2, VAE_loss, advance_recon_loss
 from support.visualization import compare_results_by_spectra, compare_results_by_loss, draw_hist_loss
 from support.visualization import visualize_latent_space_V1, visualize_latent_space_V2, visualize_latent_space_V3
@@ -24,14 +25,11 @@ normalize_trials = 1
 percentage_train = 0.77
 
 hidden_space_dimension = 2
-batch_size = 75
-epochs = 200
-learning_rate = 1e-4
+batch_size = 77
+epochs = 60
+learning_rate = 1e-3 / 2
 alpha = 1 # Hyperparemeter to fine tuning the value of the reconstruction error
-beta = 7 # Hyperparemeter to fine tuning the value of the KL Loss
-
-time_interval_start = 45
-time_interval_end = 360
+beta = 3 # Hyperparemeter to fine tuning the value of the KL Loss
 
 print_var = True
 step_show = 2
@@ -65,10 +63,12 @@ test_dataloader = DataLoader(full_spectra_dataset[test_idx], batch_size = batch_
 
 length_mems_1 = int(1650 - min(wavelength))
 length_mems_2 = int(max(wavelength) - 1750)
-vae = SpectraVAE_Double_Mems(length_mems_1, length_mems_2, hidden_space_dimension, print_var = True)
+# vae = SpectraVAE_Double_Mems(length_mems_1, length_mems_2, hidden_space_dimension, print_var = True)
+vae = SpectraVAE_Double_Mems_Conv(length_mems_1, length_mems_2, hidden_space_dimension, print_var = True)
 
 optimizer = torch.optim.AdamW(vae.parameters(), lr = learning_rate, weight_decay = 1e-3)
-scheduler = torch.optim.lr_scheduler.ExponentialLR(optimizer, gamma = 0.9)
+# scheduler = torch.optim.lr_scheduler.ExponentialLR(optimizer, gamma = 0.9)
+scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=10, eta_min=0)
 
 device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
 

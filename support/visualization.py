@@ -233,6 +233,10 @@ def  visualize_latent_space_V3(full_spectra_dataset, extended_water_timestamp, v
     marker = 'x'
     p = compute_latent_space_representation(full_spectra_dataset, vae, resampling, section, n_samples, dimensionality_reduction, device)
     ax.scatter(p[:, 0], p[:, 1], alpha = alpha, marker = marker, s = s, c = water_gradient, cmap = 'Greens_r')
+    
+    # lim = 0.01
+    # ax.set_xlim([-lim, lim])
+    # ax.set_ylim([-lim, lim])
     plt.show()
 
 
