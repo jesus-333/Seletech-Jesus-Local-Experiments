@@ -105,13 +105,13 @@ def advanceEpochV2(vae, device, dataloader, optimizer, is_train = True, alpha = 
             optimizer.zero_grad()
             
             # VAE works
-            x1 = x[:, 0:length_mems_1]
-            x2 = x[:, (- 1 - length_mems_2):-1]
+            x1 = x[..., 0:length_mems_1]
+            x2 = x[..., (- 1 - length_mems_2):-1]
             x_r_1, log_var_r_1, x_r_2, log_var_r_2, mu_z, log_var_z = vae(x1, x2)
 
-            x_r = torch.cat((x_r_1, x_r_2), 1)
-            log_var_r = torch.cat((log_var_r_1, log_var_r_2), 0)
-            x = torch.cat((x1,x2), 1)
+            x_r = torch.cat((x_r_1, x_r_2), -1)
+            log_var_r = torch.cat((log_var_r_1, log_var_r_2), -1)
+            x = torch.cat((x1,x2), -1)
 
             # Evaluate loss
             vae_loss, recon_loss, kl_loss = VAE_loss(x, x_r, log_var_r, mu_z, log_var_z, alpha, beta)
@@ -122,13 +122,13 @@ def advanceEpochV2(vae, device, dataloader, optimizer, is_train = True, alpha = 
             optimizer.step()
         else: # Test step (don't need the gradient)
             with torch.no_grad():
-                x1 = x[:, 0:length_mems_1]
-                x2 = x[:, (- 1 - length_mems_2):-1]
+                x1 = x[..., 0:length_mems_1]
+                x2 = x[..., (- 1 - length_mems_2):-1]
                 x_r_1, log_var_r_1, x_r_2, log_var_r_2, mu_z, log_var_z = vae(x1, x2)
         
-                x_r = torch.cat((x_r_1, x_r_2), 1)
-                log_var_r = torch.cat((log_var_r_1, log_var_r_2), 0)
-                x = torch.cat((x1,x2), 1)
+                x_r = torch.cat((x_r_1, x_r_2), -1)
+                log_var_r = torch.cat((log_var_r_1, log_var_r_2), -1)
+                x = torch.cat((x1,x2), -1)
         
                 vae_loss, recon_loss, kl_loss = VAE_loss(x, x_r, log_var_r, mu_z, log_var_z, alpha, beta)
             
@@ -139,6 +139,61 @@ def advanceEpochV2(vae, device, dataloader, optimizer, is_train = True, alpha = 
             
         
     return tot_vae_loss, tot_recon_loss, tot_kl_loss
+
+
+def advanceEpochV3(model, device, dataloader, optimizer, loss_function, is_train, double_mems = True):
+    """
+    Used in training script 5 (Only autencoder)
+    """
+    
+    if(is_train): model.train()
+    else: model.eval()
+    
+    length_mems_1 = 300
+    length_mems_2 = 400
+    
+    # Track variable
+    tot_recon_loss = 0
+    
+    for sample_data_batch in dataloader:
+        x = sample_data_batch.to(device)
+        model.to(device)
+        
+        if(is_train): # Executed during training
+            if(double_mems):
+                x1 = x[:, 0:length_mems_1]
+                x2 = x[:, (- 1 - length_mems_2):-1]
+                
+                x_r_1, x_r_2 = model(x1, x2)
+                x_r = torch.cat((x_r_1, x_r_2), 1)
+            else:
+                x_r = model(x)
+            
+        else: # Executed during testing
+            with torch.no_grad(): # Deactivate the tracking of the gradient
+                if(double_mems):
+                    x1 = x[:, 0:length_mems_1]
+                    x2 = x[:, (- 1 - length_mems_2):-1]
+                    
+                    x_r_1, x_r_2 = model(x1, x2)
+                    x_r = torch.cat((x_r_1, x_r_2), 1)
+                else:
+                    x_r = model(x)
+        
+        # Compute loss
+        recon_loss = loss_function(x, x_r)
+        
+        # If is training update model weights
+        if(is_train):
+            model.backward()
+            optimizer.step()
+        
+        # Compute the total loss
+        tot_recon_loss += recon_loss
+        
+        
+    return tot_recon_loss
+
 
 
 #%% Loss functions

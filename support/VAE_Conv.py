@@ -106,16 +106,16 @@ class SpectraVAE_Encoder_Double_Mems_Conv(nn.Module):
         if(print_var): print("\nNumber of trainable parameters (VAE - ENCODER) = ", sum(p.numel() for p in self.parameters() if p.requires_grad), "\n")
         
     def forward(self, x1, x2):
-      x1 = self.input_mems_1(x1)
-      x2 = self.input_mems_2(x2)
-      x1 = x1.view([x1.shape[0], -1])
-      x2 = x2.view([x2.shape[0], -1])
-      x = torch.cat((x1, x2), 1)
-      x = self.inner_layers(x)
-      mu = x[:, 0:self.hidden_space_dimension]
-      log_var = x[:, self.hidden_space_dimension:]
-      
-      return mu, log_var
+        x1 = self.input_mems_1(x1)
+        x2 = self.input_mems_2(x2)
+        x1 = x1.view([x1.shape[0], -1])
+        x2 = x2.view([x2.shape[0], -1])
+        x = torch.cat((x1, x2), 1)
+        x = self.inner_layers(x)
+        mu = x[:, 0:self.hidden_space_dimension]
+        log_var = x[:, self.hidden_space_dimension:]
+        
+        return mu, log_var
 
 
 class SpectraVAE_Decoder_Double_Mems_Conv(nn.Module):

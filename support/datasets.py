@@ -151,8 +151,10 @@ class PytorchDatasetPlantSpectra_V1(torch.utils.data.Dataset):
     """
     
     # Inizialization method
-    def __init__(self, spectra_data):
-        self.spectra = torch.from_numpy(spectra_data).float() 
+    def __init__(self, spectra_data, used_in_cnn = False):
+        self.spectra = torch.from_numpy(spectra_data).float()
+        
+        if(used_in_cnn): self.spectra = self.spectra.unsqueeze(1)
       
     def __getitem__(self, idx):
         return self.spectra[idx, :]

@@ -248,13 +248,15 @@ def compute_latent_space_representation(dataset, vae, resampling, section = 'ful
     
     # Compute latent space representation
     if(section == 'full'): # Double mems
-        x1 = dataset[0:n_samples][:, 0:300].to(device)
-        x2 = dataset[0:n_samples][:, (- 1 - 400):-1].to(device)
+        # x1 = dataset[0:n_samples][:, 0:300].to(device)
+        # x2 = dataset[0:n_samples][:, (- 1 - 400):-1].to(device)
+        x1 = dataset[0:n_samples, ..., 0:300].to(device)
+        x2 = dataset[0:n_samples, ..., (- 1 - 400):-1].to(device)
         x_r_1, log_var_r_1, x_r_2, log_var_r_2, mu_z, log_var_z = vae(x1, x2)
         
-        x_r = torch.cat((x_r_1, x_r_2), 1)
-        x = torch.cat((x1,x2), 1)
-        log_var_r = torch.cat((log_var_r_1, log_var_r_2), 0)
+        x_r = torch.cat((x_r_1, x_r_2), -1)
+        x = torch.cat((x1,x2), -1)
+        log_var_r = torch.cat((log_var_r_1, log_var_r_2), -1)
         sigma_r = torch.sqrt(torch.exp(log_var_r))
     else: # Single mems
         x_r, log_var_r, mu_z, log_var_z = vae(dataset[:])

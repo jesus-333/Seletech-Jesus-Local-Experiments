@@ -36,6 +36,8 @@ step_show = 2
 
 #%% Load data
 
+used_in_cnn = True
+
 # Sepctra
 spectra_plants_numpy, wavelength, timestamp = load_spectra_data("data/[2021-08-05_to_11-26]All_PlantSpectra.csv", normalize_trials)
 
@@ -43,7 +45,7 @@ spectra_plants_numpy, wavelength, timestamp = load_spectra_data("data/[2021-08-0
 water_data, water_timestamp = load_water_data("data/[2021-08-05_to_11-26]PlantTest_Notes.csv")
 extended_water_timestamp = create_extended_water_vector(water_timestamp, water_data, timestamp)
 
-full_spectra_dataset = PytorchDatasetPlantSpectra_V1(spectra_plants_numpy)
+full_spectra_dataset = PytorchDatasetPlantSpectra_V1(spectra_plants_numpy, used_in_cnn = used_in_cnn)
 
 # Select randomly a percentage of indices
 idx = np.linspace(0, len(full_spectra_dataset) - 1, len(full_spectra_dataset), dtype = int)
