@@ -15,7 +15,7 @@ from torch import nn
 
 class SpectraVAE_Double_Mems_Conv(nn.Module):
     
-    def __init__(self, N_mems_1, N_mems_2, hidden_space_dimension, print_var = False):
+    def __init__(self, N_mems_1, N_mems_2, hidden_space_dimension, print_var = False, use_as_autoencoder = False):
         """
         N = Input length
         hidden_space_dimension = Dimension of the hidden (latent) space. Defaul is 2 
@@ -23,11 +23,12 @@ class SpectraVAE_Double_Mems_Conv(nn.Module):
         
         super().__init__()
 
-        self.encoder = SpectraVAE_Encoder_Double_Mems_Conv(N_mems_1, N_mems_2, hidden_space_dimension, print_var)
+        self.encoder = SpectraVAE_Encoder_Double_Mems_Conv(N_mems_1, N_mems_2, hidden_space_dimension, print_var, use_as_autoencoder)
         
         self.decoder = SpectraVAE_Decoder_Double_Mems_Conv(self.encoder.mems_1_output_shape, self.encoder.mems_2_output_shape, hidden_space_dimension, print_var)
         
         self.hidden_space_dimension = hidden_space_dimension
+        self.use_as_autoencoder = use_as_autoencoder
         
         if(print_var): print("Number of trainable parameters (VAE) = ", sum(p.numel() for p in self.parameters() if p.requires_grad), "\n")
         
@@ -54,7 +55,7 @@ class SpectraVAE_Double_Mems_Conv(nn.Module):
 
 class SpectraVAE_Encoder_Double_Mems_Conv(nn.Module):
     
-    def __init__(self, N_mems_1, N_mems_2, hidden_space_dimension = 2, print_var = False):
+    def __init__(self, N_mems_1, N_mems_2, hidden_space_dimension = 2, print_var = False, use_as_autoencoder = False):
         """
         Encoder of the VAE 
         N = Input length
@@ -103,6 +104,8 @@ class SpectraVAE_Encoder_Double_Mems_Conv(nn.Module):
         self.N_mems_2 = N_mems_2
         self.hidden_space_dimension = hidden_space_dimension
         
+        self.use_as_autoencoder = use_as_autoencoder
+        
         if(print_var): print("\nNumber of trainable parameters (VAE - ENCODER) = ", sum(p.numel() for p in self.parameters() if p.requires_grad), "\n")
         
     def forward(self, x1, x2):
@@ -112,10 +115,14 @@ class SpectraVAE_Encoder_Double_Mems_Conv(nn.Module):
         x2 = x2.view([x2.shape[0], -1])
         x = torch.cat((x1, x2), 1)
         x = self.inner_layers(x)
-        mu = x[:, 0:self.hidden_space_dimension]
-        log_var = x[:, self.hidden_space_dimension:]
         
-        return mu, log_var
+        if(self.use_as_autoencoder):
+            return x
+        else:
+            mu = x[:, 0:self.hidden_space_dimension]
+            log_var = x[:, self.hidden_space_dimension:]
+            
+            return mu, log_var
 
 
 class SpectraVAE_Decoder_Double_Mems_Conv(nn.Module):
