@@ -111,7 +111,7 @@ def advanceEpochV2(vae, device, dataloader, optimizer, is_train = True, alpha = 
 
             x_r = torch.cat((x_r_1, x_r_2), -1)
             log_var_r = torch.cat((log_var_r_1, log_var_r_2), -1)
-            x = torch.cat((x1,x2), -1)
+            x = torch.cat((x1,x2), -1) # N.b. the original x is long 702 sample not 700.
 
             # Evaluate loss
             vae_loss, recon_loss, kl_loss = VAE_loss(x, x_r, log_var_r, mu_z, log_var_z, alpha, beta)
@@ -128,7 +128,7 @@ def advanceEpochV2(vae, device, dataloader, optimizer, is_train = True, alpha = 
         
                 x_r = torch.cat((x_r_1, x_r_2), -1)
                 log_var_r = torch.cat((log_var_r_1, log_var_r_2), -1)
-                x = torch.cat((x1,x2), -1)
+                x = torch.cat((x1,x2), -1) # N.b. the original x is long 702 sample not 700.
         
                 vae_loss, recon_loss, kl_loss = VAE_loss(x, x_r, log_var_r, mu_z, log_var_z, alpha, beta)
             
@@ -141,9 +141,9 @@ def advanceEpochV2(vae, device, dataloader, optimizer, is_train = True, alpha = 
     return tot_vae_loss, tot_recon_loss, tot_kl_loss
 
 
-def advanceEpochV3(model, device, dataloader, optimizer, loss_function, is_train, double_mems = True):
+def advanceEpochV3(model, device, dataloader, optimizer, is_train, double_mems = True):
     """
-    Used in training script 5 (Only autencoder)
+    Used in training script 5 (Only autencoder).
     """
     
     if(is_train): model.train()
@@ -155,37 +155,45 @@ def advanceEpochV3(model, device, dataloader, optimizer, loss_function, is_train
     # Track variable
     tot_recon_loss = 0
     
+    loss_function = nn.MSELoss()
+    
     for sample_data_batch in dataloader:
         x = sample_data_batch.to(device)
         model.to(device)
         
         if(is_train): # Executed during training
             if(double_mems):
-                x1 = x[:, 0:length_mems_1]
-                x2 = x[:, (- 1 - length_mems_2):-1]
+                x1 = x[:, ..., 0:length_mems_1]
+                x2 = x[:, ..., (- 1 - length_mems_2):-1]
                 
-                x_r_1, x_r_2 = model(x1, x2)
-                x_r = torch.cat((x_r_1, x_r_2), 1)
+                x_r_1, x_r_2, z = model(x1, x2)
+                x_r = torch.cat((x_r_1, x_r_2), -1)
+                
+                # N.b. the original x is long 702 sample not 700.
+                x = torch.cat((x1,x2), -1)
             else:
-                x_r = model(x)
+                x_r, z = model(x)
             
         else: # Executed during testing
             with torch.no_grad(): # Deactivate the tracking of the gradient
                 if(double_mems):
-                    x1 = x[:, 0:length_mems_1]
-                    x2 = x[:, (- 1 - length_mems_2):-1]
+                    x1 = x[:, ..., 0:length_mems_1]
+                    x2 = x[:, ..., (- 1 - length_mems_2):-1]
                     
-                    x_r_1, x_r_2 = model(x1, x2)
-                    x_r = torch.cat((x_r_1, x_r_2), 1)
+                    x_r_1, x_r_2, z = model(x1, x2)
+                    x_r = torch.cat((x_r_1, x_r_2), -1)
+                    
+                    # N.b. the original x is long 702 sample not 700.
+                    x = torch.cat((x1,x2), -1)
                 else:
-                    x_r = model(x)
+                    x_r, z = model(x)
         
         # Compute loss
         recon_loss = loss_function(x, x_r)
         
         # If is training update model weights
         if(is_train):
-            model.backward()
+            recon_loss.backward()
             optimizer.step()
         
         # Compute the total loss
@@ -229,49 +237,49 @@ def VAE_loss(x, x_r, log_var_r, mu_q, log_var_q, alpha = 1, beta = 1):
 
 
 def advance_recon_loss(x, x_r, std_r):
-  """
-  Advance versione of the recontruction loss for the VAE when the output distribution is gaussian.
-  Instead of the simple L2 loss we use the log-likelihood formula so we can also encode the variance in the output of the decoder.
-  Input parameters:
-    x = Original data
-    x_r = mean of the reconstructed output
-    std_r = standard deviation of the reconstructed output. This is a scalar value.
-  
-  More info: 
-  https://www.statlect.com/fundamentals-of-statistics/normal-distribution-maximum-likelihood
-  https://arxiv.org/pdf/2006.13202.pdf
-  """
-
-  total_loss = 0
-
-  # MSE part
-  mse_core = torch.pow((x - x_r), 2).sum(1)/ x.shape[1]
-  mse_scale = (x[0].shape[0]/(2 * torch.pow(std_r, 2)))
-  total_loss += (mse_core * mse_scale)
-
-  # Variance part
-  # total_loss += x[0].shape[0] * torch.log(std_r).mean()
-
-  return total_loss
+    """
+    Advance versione of the recontruction loss for the VAE when the output distribution is gaussian.
+    Instead of the simple L2 loss we use the log-likelihood formula so we can also encode the variance in the output of the decoder.
+    Input parameters:
+      x = Original data
+      x_r = mean of the reconstructed output
+      std_r = standard deviation of the reconstructed output. This is a scalar value.
+    
+    More info: 
+    https://www.statlect.com/fundamentals-of-statistics/normal-distribution-maximum-likelihood
+    https://arxiv.org/pdf/2006.13202.pdf
+    """
+    
+    total_loss = 0
+    
+    # MSE part
+    mse_core = torch.pow((x - x_r), 2).sum(1)/ x.shape[1]
+    mse_scale = (x[0].shape[0]/(2 * torch.pow(std_r, 2)))
+    total_loss += (mse_core * mse_scale)
+    
+    # Variance part
+    # total_loss += x[0].shape[0] * torch.log(std_r).mean()
+    
+    return total_loss
 
     
 def KL_Loss(sigma_p, mu_p, sigma_q, mu_q):
-  """
-  General function for a KL loss with specified the paramters of two gaussian distributions p and q
-  The parameter must be sigma (standard deviation) and mu (mean).
-  The order of the parameter must be the following: sigma_p, mu_p, sigma_q, mu_q
-  """
-  
-  tmp_el_1 = torch.log(sigma_q/sigma_p)
-  
-  tmp_el_2_num = torch.pow(sigma_q, 2) + torch.pow((mu_q - mu_p), 2)
-  tmp_el_2_den = 2 * torch.pow(sigma_p, 2)
-  tmp_el_2 = tmp_el_2_num / tmp_el_2_den
-  
-  kl_loss = - (tmp_el_1  - tmp_el_2 + 0.5)
-  
-  # P.s. The sigmas and mus have length equals to the hinner space dimension. So the final shape is [n_sample_in_batch, hidden_sapce_dimension]
-  return kl_loss.sum(dim = 1)
+    """
+    General function for a KL loss with specified the paramters of two gaussian distributions p and q
+    The parameter must be sigma (standard deviation) and mu (mean).
+    The order of the parameter must be the following: sigma_p, mu_p, sigma_q, mu_q
+    """
+    
+    tmp_el_1 = torch.log(sigma_q/sigma_p)
+    
+    tmp_el_2_num = torch.pow(sigma_q, 2) + torch.pow((mu_q - mu_p), 2)
+    tmp_el_2_den = 2 * torch.pow(sigma_p, 2)
+    tmp_el_2 = tmp_el_2_num / tmp_el_2_den
+    
+    kl_loss = - (tmp_el_1  - tmp_el_2 + 0.5)
+    
+    # P.s. The sigmas and mus have length equals to the hinner space dimension. So the final shape is [n_sample_in_batch, hidden_sapce_dimension]
+    return kl_loss.sum(dim = 1)
 
 # - - - -  - - - -  - - - -  - - - -  - - - - 
 # TODO Future stuff

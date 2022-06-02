@@ -216,22 +216,43 @@ def visualize_latent_space_V2(dataset_list, vae, resampling, alpha = 0.8, s = 0.
 def  visualize_latent_space_V3(full_spectra_dataset, extended_water_timestamp, vae, resampling, alpha = 0.8, s = 0.3, section = 'full', n_samples = -1, dimensionality_reduction = 'pca', figsize = (13, 13), device = 'cpu'):
     """
     Given all the spectra and the relative water timestamp vector create a scatter plor where each point is colored based on the time passed from when receive water.
+    Used for the VAE
     N.b. The extended_water_timestamp is obtained from the function create_extended_water_vector in dataset.py file
     """
     
-    # Create water gradient vector
-    water_gradient = np.zeros(len(extended_water_timestamp) - 1)
-    for i in range(len(water_gradient)):
-        if(i == 0): pass
-        if(extended_water_timestamp[i] == 1): water_gradient[i] = 0
-        elif(extended_water_timestamp[i] == 0): water_gradient[i] = water_gradient[i - 1] + 1
-    
-    # Rescale between 0 and 1
-    water_gradient /= np.max(water_gradient)
+    water_gradient = compute_water_gradient_vector(extended_water_timestamp)
     
     fig, ax = plt.subplots(1, 1, figsize = figsize)
     marker = 'x'
     p = compute_latent_space_representation(full_spectra_dataset, vae, resampling, section, n_samples, dimensionality_reduction, device)
+    ax.scatter(p[:, 0], p[:, 1], alpha = alpha, marker = marker, s = s, c = water_gradient, cmap = 'Greens_r')
+    
+    # lim = 0.01
+    # ax.set_xlim([-lim, lim])
+    # ax.set_ylim([-lim, lim])
+    plt.show()
+    
+
+def  visualize_latent_space_V4(full_spectra_dataset, extended_water_timestamp, autoencoder, alpha = 0.8, s = 0.3, section = 'full', n_samples = -1, dimensionality_reduction = 'pca', figsize = (13, 13), device = 'cpu'):
+    """
+    Given all the spectra and the relative water timestamp vector create a scatter plor where each point is colored based on the time passed from when receive water.
+    Used for the autoencoder
+    N.b. The extended_water_timestamp is obtained from the function create_extended_water_vector in dataset.py file
+    """
+    
+    water_gradient = compute_water_gradient_vector(extended_water_timestamp)
+    
+    fig, ax = plt.subplots(1, 1, figsize = figsize)
+    marker = 'x'
+    
+    x1 = full_spectra_dataset[0:n_samples, ..., 0:300].to(device)
+    x2 = full_spectra_dataset[0:n_samples, ..., (- 1 - 400):-1].to(device)
+    _, p = autoencoder(x1, x2)
+    # If the hidden space has a dimensions higher than 2 use PCA/TSNE to reduce it to two
+    if(p.shape[1] > 2): 
+        if(dimensionality_reduction == 'tsne'): p = TSNE(n_components = 2, learning_rate='auto', init='random').fit_transform(p)
+        if(dimensionality_reduction == 'pca'): p = PCA(n_components=2).fit_transform(p)
+        
     ax.scatter(p[:, 0], p[:, 1], alpha = alpha, marker = marker, s = s, c = water_gradient, cmap = 'Greens_r')
     
     # lim = 0.01
@@ -272,4 +293,18 @@ def compute_latent_space_representation(dataset, vae, resampling, section = 'ful
         if(dimensionality_reduction == 'pca'): p = PCA(n_components=2).fit_transform(p)
             
     return p
+
+
+def compute_water_gradient_vector(extended_water_timestamp):
+    # Create water gradient vector
+    water_gradient = np.zeros(len(extended_water_timestamp) - 1)
+    for i in range(len(water_gradient)):
+        if(i == 0): pass
+        if(extended_water_timestamp[i] == 1): water_gradient[i] = 0
+        elif(extended_water_timestamp[i] == 0): water_gradient[i] = water_gradient[i - 1] + 1
+    
+    # Rescale between 0 and 1
+    water_gradient /= np.max(water_gradient)
+    
+    return water_gradient
         
