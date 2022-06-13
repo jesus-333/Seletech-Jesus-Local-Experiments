@@ -14,7 +14,7 @@ from torch import nn
 
 class SpectraVAE_Single_Mems(nn.Module):
     
-    def __init__(self, N, hidden_space_dimension, print_var = False):
+    def __init__(self, N, hidden_space_dimension, print_var = False, use_in_autoencoder = False):
         """
         N = Input length
         hidden_space_dimension = Dimension of the hidden (latent) space. Defaul is 2 
@@ -22,9 +22,9 @@ class SpectraVAE_Single_Mems(nn.Module):
         
         super().__init__()
 
-        self.encoder = SpectraVAE_Encoder_Single_Mems(N, hidden_space_dimension, print_var)
+        self.encoder = SpectraVAE_Encoder_Single_Mems(N, hidden_space_dimension, print_var, use_in_autoencoder)
         
-        self.decoder = SpectraVAE_Decoder_Single_Mems(N, hidden_space_dimension, print_var)
+        self.decoder = SpectraVAE_Decoder_Single_Mems(N, hidden_space_dimension, print_var, use_in_autoencoder)
         
         self.hidden_space_dimension = hidden_space_dimension
         
@@ -53,7 +53,7 @@ class SpectraVAE_Single_Mems(nn.Module):
 
 class SpectraVAE_Encoder_Single_Mems(nn.Module):
     
-    def __init__(self, N, hidden_space_dimension = 2, print_var = False):
+    def __init__(self, N, hidden_space_dimension = 2, print_var = False, use_in_autoencoder = False):
         """
         Encoder of the VAE 
         N = Input length
@@ -85,7 +85,7 @@ class SpectraVAE_Encoder_Single_Mems(nn.Module):
 
 class SpectraVAE_Decoder_Single_Mems(nn.Module):
     
-    def __init__(self, N, hidden_space_dimension = 2, print_var = False):
+    def __init__(self, N, hidden_space_dimension = 2, print_var = False, use_in_autoencoder = False):
         """
         Encoder of the VAE. The output distribution is hypothesized gaussian so the decoder will return two value: mean and distributoin.
         (More info: https://arxiv.org/pdf/2006.13202.pdf)
@@ -123,7 +123,7 @@ class SpectraVAE_Decoder_Single_Mems(nn.Module):
 
 class SpectraVAE_Double_Mems(nn.Module):
     
-    def __init__(self, N_mems_1, N_mems_2, hidden_space_dimension, print_var = False):
+    def __init__(self, N_mems_1, N_mems_2, hidden_space_dimension, print_var = False, use_in_autoencoder = False):
         """
         N = Input length
         hidden_space_dimension = Dimension of the hidden (latent) space. Defaul is 2 
@@ -131,22 +131,29 @@ class SpectraVAE_Double_Mems(nn.Module):
         
         super().__init__()
 
-        self.encoder = SpectraVAE_Encoder_Double_Mems(N_mems_1, N_mems_2, hidden_space_dimension, print_var)
+        self.encoder = SpectraVAE_Encoder_Double_Mems(N_mems_1, N_mems_2, hidden_space_dimension, print_var, use_in_autoencoder)
         
-        self.decoder = SpectraVAE_Decoder_Double_Mems(N_mems_1, N_mems_2, hidden_space_dimension, print_var)
+        self.decoder = SpectraVAE_Decoder_Double_Mems(N_mems_1, N_mems_2, hidden_space_dimension, print_var, use_in_autoencoder)
         
         self.hidden_space_dimension = hidden_space_dimension
         
+        self.use_in_autoencoder = use_in_autoencoder
+        
         if(print_var): print("Number of trainable parameters (VAE) = ", sum(p.numel() for p in self.parameters() if p.requires_grad), "\n")
+       
         
     def forward(self, x1, x2):
-        z_mu, z_log_var = self.encoder(x1, x2)
-
-        z = self.reparametrize(z_mu, z_log_var)
-        
-        x_mean_1, x_log_var_1, x_mean_2, x_log_var_2 = self.decoder(z)
-        
-        return x_mean_1, x_log_var_1, x_mean_2, x_log_var_2, z_mu, z_log_var
+        if self.use_in_autoencoder:
+            return x1
+        else:
+            z_mu, z_log_var = self.encoder(x1, x2)
+    
+            z = self.reparametrize(z_mu, z_log_var)
+            
+            x_mean_1, x_log_var_1, x_mean_2, x_log_var_2 = self.decoder(z)
+            
+            return x_mean_1, x_log_var_1, x_mean_2, x_log_var_2, z_mu, z_log_var
+    
     
     def reparametrize(self, mu, log_var):
       """
@@ -162,7 +169,7 @@ class SpectraVAE_Double_Mems(nn.Module):
 
 class SpectraVAE_Encoder_Double_Mems(nn.Module):
     
-    def __init__(self, N_mems_1, N_mems_2, hidden_space_dimension = 2, print_var = False):
+    def __init__(self, N_mems_1, N_mems_2, hidden_space_dimension = 2, print_var = False, use_in_autoencoder = False):
         """
         Encoder of the VAE 
         N = Input length
@@ -199,7 +206,7 @@ class SpectraVAE_Encoder_Double_Mems(nn.Module):
 
 class SpectraVAE_Decoder_Double_Mems(nn.Module):
     
-    def __init__(self, N_mems_1, N_mems_2, hidden_space_dimension = 2, print_var = False):
+    def __init__(self, N_mems_1, N_mems_2, hidden_space_dimension = 2, print_var = False, use_in_autoencoder = False):
         """
         Encoder of the VAE. The output distribution is hypothesized gaussian so the decoder will return two value: mean and distributoin.
         (More info: https://arxiv.org/pdf/2006.13202.pdf)

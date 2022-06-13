@@ -143,7 +143,7 @@ def advanceEpochV2(vae, device, dataloader, optimizer, is_train = True, alpha = 
 
 def advanceEpochV3(model, device, dataloader, optimizer, is_train, double_mems = True):
     """
-    Used in training script 5 (Only autencoder).
+    Used in training script 4 (Only autencoder).
     """
     
     if(is_train): model.train()

@@ -89,18 +89,18 @@ def compare_results_by_loss(total_loss, recon_loss, kl_loss, labels, figsize = (
     
 #%% Histogram
 
-def draw_hist_loss(good_spectra_dataset_train, good_spectra_dataset_validation, bad_spectra_dataset, vae,  device = torch.device("cpu"), batch_size = 50, n_spectra = -1, figsize = (10, 8), labels = ["Train", "Validation", "Bad"]):
+def draw_hist_loss(good_spectra_dataset_train, good_spectra_dataset_validation, bad_spectra_dataset, vae,  device = torch.device("cpu"), batch_size = 50, n_spectra = -1, figsize = (10, 8), labels = ["Train", "Validation", "Bad"], use_as_autoencoder = False):
     vae.to(device)
     vae.eval()
     
     good_train_dataloader = DataLoader(good_spectra_dataset_train, batch_size = batch_size, shuffle = True)
-    good_spectra_train_loss = float(compute_average_loss_given_dataloader(good_train_dataloader, vae, device, n_spectra).cpu())
+    good_spectra_train_loss = float(compute_average_loss_given_dataloader(good_train_dataloader, vae, device, n_spectra, use_as_autoencoder).cpu())
     
     good_validation_dataloader = DataLoader(good_spectra_dataset_validation, batch_size = batch_size, shuffle = True)
-    good_spectra_validation_loss = float(compute_average_loss_given_dataloader(good_validation_dataloader, vae, device, n_spectra).cpu())
+    good_spectra_validation_loss = float(compute_average_loss_given_dataloader(good_validation_dataloader, vae, device, n_spectra, use_as_autoencoder).cpu())
     
     bad_dataloader = DataLoader(bad_spectra_dataset, batch_size = batch_size, shuffle = True)
-    bad_spectra_loss = float(compute_average_loss_given_dataloader(bad_dataloader, vae, device, n_spectra).cpu())
+    bad_spectra_loss = float(compute_average_loss_given_dataloader(bad_dataloader, vae, device, n_spectra, use_as_autoencoder).cpu())
     
     tmp_loss = [good_spectra_train_loss, good_spectra_validation_loss, bad_spectra_loss]
     
@@ -111,10 +111,13 @@ def draw_hist_loss(good_spectra_dataset_train, good_spectra_dataset_validation, 
     plt.show()
     
     
-def compute_average_loss_given_dataloader(dataloader, model, device, n_spectra):
+def compute_average_loss_given_dataloader(dataloader, model, device, n_spectra, use_as_autoencoder):
+    model.eval()
     
     total_loss = 0
     tot_elements = 0
+    
+    if(use_as_autoencoder): loss_function = torch.nn.MSELoss()
     
     for sample_data_batch in dataloader:
         x = sample_data_batch.to(device)
@@ -125,18 +128,25 @@ def compute_average_loss_given_dataloader(dataloader, model, device, n_spectra):
         # x_loss = advance_recon_loss(x, tmp_results[0], tmp_results[1])
        
         # Double mems
-        x1 = x[:, 0:300]
-        x2 = x[:, (- 1 - 400):-1]
-        x_r_1, log_var_r_1, x_r_2, log_var_r_2, mu_z, log_var_z = model(x1, x2)
-        
-        x_r = torch.cat((x_r_1, x_r_2), 1)
-        x = torch.cat((x1,x2), 1)
-        log_var_r = torch.cat((log_var_r_1, log_var_r_2), 0)
-        sigma_r = torch.sqrt(torch.exp(log_var_r))
-        
-        x_loss = advance_recon_loss(x, x_r, sigma_r)
+        x1 = x[:, ..., 0:300]
+        x2 = x[:, ..., (- 1 - 400):-1]
+        if(use_as_autoencoder):
+            x_r_1, x_r_2, z = model(x1, x2)
+            
+            x_r = torch.cat((x_r_1, x_r_2), -1)
+            x = torch.cat((x1,x2), -1)
+            
+            x_loss = loss_function(x, x_r)
+        else:
+            x_r_1, log_var_r_1, x_r_2, log_var_r_2, mu_z, log_var_z = model(x1, x2)
+            
+            x_r = torch.cat((x_r_1, x_r_2), -1)
+            x = torch.cat((x1,x2), -1)
+            log_var_r = torch.cat((log_var_r_1, log_var_r_2), -1)
+            sigma_r = torch.sqrt(torch.exp(log_var_r))
+            
+            x_loss = advance_recon_loss(x, x_r, sigma_r)
 
-        
         tot_elements += x.shape[0]
         if(n_spectra > 0 and tot_elements >= n_spectra):
             tmp_n_elements = x.shape[0] - (tot_elements - n_spectra)
@@ -146,7 +156,7 @@ def compute_average_loss_given_dataloader(dataloader, model, device, n_spectra):
             total_loss += torch.sum(x_loss)
             
 
-    
+    print(tot_elements)
     return total_loss/tot_elements
         
 #%%
@@ -220,7 +230,7 @@ def  visualize_latent_space_V3(full_spectra_dataset, extended_water_timestamp, v
     N.b. The extended_water_timestamp is obtained from the function create_extended_water_vector in dataset.py file
     """
     
-    water_gradient = compute_water_gradient_vector(extended_water_timestamp)
+    water_gradient = compute_water_gradient_vector(extended_water_timestamp, n_samples)
     
     fig, ax = plt.subplots(1, 1, figsize = figsize)
     marker = 'x'
@@ -240,14 +250,16 @@ def  visualize_latent_space_V4(full_spectra_dataset, extended_water_timestamp, a
     N.b. The extended_water_timestamp is obtained from the function create_extended_water_vector in dataset.py file
     """
     
-    water_gradient = compute_water_gradient_vector(extended_water_timestamp)
+    water_gradient = compute_water_gradient_vector(extended_water_timestamp, n_samples)
     
     fig, ax = plt.subplots(1, 1, figsize = figsize)
     marker = 'x'
     
     x1 = full_spectra_dataset[0:n_samples, ..., 0:300].to(device)
     x2 = full_spectra_dataset[0:n_samples, ..., (- 1 - 400):-1].to(device)
-    _, p = autoencoder(x1, x2)
+    _, _, p = autoencoder(x1, x2)
+    p = p.cpu().detach().numpy()
+    
     # If the hidden space has a dimensions higher than 2 use PCA/TSNE to reduce it to two
     if(p.shape[1] > 2): 
         if(dimensionality_reduction == 'tsne'): p = TSNE(n_components = 2, learning_rate='auto', init='random').fit_transform(p)
@@ -295,9 +307,11 @@ def compute_latent_space_representation(dataset, vae, resampling, section = 'ful
     return p
 
 
-def compute_water_gradient_vector(extended_water_timestamp):
+def compute_water_gradient_vector(extended_water_timestamp, n_samples):
+    if(n_samples <= 0): n_samples = len(extended_water_timestamp) - 1
+    
     # Create water gradient vector
-    water_gradient = np.zeros(len(extended_water_timestamp) - 1)
+    water_gradient = np.zeros(n_samples)
     for i in range(len(water_gradient)):
         if(i == 0): pass
         if(extended_water_timestamp[i] == 1): water_gradient[i] = 0

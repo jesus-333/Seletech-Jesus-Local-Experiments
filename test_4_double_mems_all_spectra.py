@@ -27,7 +27,7 @@ percentage_train = 0.77
 hidden_space_dimension = 2
 batch_size = 77
 epochs = 60
-learning_rate = 1e-3 / 2
+learning_rate = 1e-2
 alpha = 1 # Hyperparemeter to fine tuning the value of the reconstruction error
 beta = 3 # Hyperparemeter to fine tuning the value of the KL Loss
 
@@ -134,7 +134,7 @@ for epoch in range(epochs):
     # Learning rate scheduler
     scheduler.step()
     
-    n_samples = -1
+    n_samples = 60000 * 2
     s = 1
     alpha = 0.6
     dimensionality_reduction = 'pca'
@@ -144,3 +144,8 @@ for epoch in range(epochs):
         visualize_latent_space_V4(full_spectra_dataset[1:], extended_water_timestamp, vae, alpha = alpha, s = s, section = 'full', n_samples = n_samples, dimensionality_reduction = dimensionality_reduction, figsize = (15, 15), device = device)
     else:
         visualize_latent_space_V3(full_spectra_dataset[1:], extended_water_timestamp, vae, resampling = False, alpha = alpha, s = s, section = 'full', n_samples = n_samples, dimensionality_reduction = dimensionality_reduction, figsize = (15, 15), device = device)
+
+
+plt.figure(figsize = (15, 10))
+plt.plot(total_loss_train)
+plt.plot(total_loss_test)
