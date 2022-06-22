@@ -34,6 +34,8 @@ while(True):
     tmp_full_spectra_batch = spectra_plants_numpy[minute:minute + minute_windows, :]
     tmp_timestamp_batch = timestamp[minute:minute + minute_windows]
     
+    avg_spectra = np.mean(tmp_full_spectra_batch, 0)
+    
     minute += minute_shift
     if(minute > 10): break
 
