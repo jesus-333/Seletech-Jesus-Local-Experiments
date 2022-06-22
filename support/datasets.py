@@ -12,7 +12,7 @@ import pandas as pd
 import torch
 from torch import nn
 
-from support.other import extract_data_from_timestamp, compare_timestamp
+from support.timestamp_function import extract_data_from_timestamp, compare_timestamp
 
 #%% Spectra related function
 
@@ -151,7 +151,7 @@ def aaa():
 
 class PytorchDatasetPlantSpectra_V1(torch.utils.data.Dataset):
     """
-    Extension of PyTorch Dataset class to work with spectra plants data.
+    Extension of PyTorch Dataset class to work with spectra plants data. It DON'T DIVIDE the spectra in mems1 and mems2
     """
     
     # Inizialization method
@@ -162,6 +162,38 @@ class PytorchDatasetPlantSpectra_V1(torch.utils.data.Dataset):
       
     def __getitem__(self, idx):
         return self.spectra[idx, :]
+    
+    def __len__(self):
+        return self.spectra.shape[0]
+    
+
+class PytorchDatasetPlantSpectra_V2(torch.utils.data.Dataset):
+    """
+    Extension of PyTorch Dataset class to work with spectra plants data. It DIVIDE the spectra in mems1 and mems2
+    """
+    
+    # Inizialization method
+    def __init__(self, spectra_data, used_in_cnn = False, length_mems_1 = -1, length_mems_2 = -1):
+        self.spectra = torch.from_numpy(spectra_data).float()
+        
+        if(used_in_cnn): self.spectra = self.spectra.unsqueeze(1)
+        
+        if(length_mems_1 > 0 and length_mems_2 > 0):
+            self.divide_spectra = True
+            self.length_mems_1 = length_mems_1
+            self.length_mems_2 = length_mems_2
+        else:
+            self.divide_spectra = False
+      
+    def __getitem__(self, idx):
+        if(self.divide_spectra):
+            tmp_spectra = self.spectra[idx, :]
+            spectra_mems_1 = tmp_spectra[..., 0:self.length_mems_1]
+            spectra_mems_2 = tmp_spectra[..., (- 1 - self.length_mems_2):-1]
+            
+            return spectra_mems_1, spectra_mems_2
+        else:   
+            return self.spectra[idx, :]
     
     def __len__(self):
         return self.spectra.shape[0]
