@@ -252,7 +252,7 @@ class SpectraVAE_Decoder_Double_Mems(nn.Module):
         return x_mean_1, x_log_var_1, x_mean_2, x_log_var_2
     
     
-#%%
+#%% Other functions
 
 def sampling_latent_space(mu, log_var):
   std = np.sqrt(np.exp(log_var.detach().numpy()))
