@@ -234,8 +234,9 @@ class SpectraVAE_Decoder_Double_Mems(nn.Module):
         self.N_mems_1 = N_mems_1
         self.N_mems_2 = N_mems_2
         self.hidden_space_dimension = hidden_space_dimension
+        self.trainable_parameters = sum(p.numel() for p in self.parameters() if p.requires_grad)
         
-        if(print_var): print("Number of trainable parameters (VAE - DECODER) = ", sum(p.numel() for p in self.parameters() if p.requires_grad), "\n")
+        if(print_var): print("Number of trainable parameters (VAE - DECODER) = ", self.trainable_parameters, "\n")
         
     def forward(self, z):
         x = self.inner_layer(z)
