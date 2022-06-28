@@ -14,7 +14,7 @@ from torch import nn
 
 class SpectraVAE_Single_Mems(nn.Module):
     
-    def __init__(self, N, hidden_space_dimension, print_var = False, use_in_autoencoder = False):
+    def __init__(self, N, hidden_space_dimension, print_var = False, use_as_autoencoder = False):
         """
         N = Input length
         hidden_space_dimension = Dimension of the hidden (latent) space. Defaul is 2 
@@ -22,9 +22,9 @@ class SpectraVAE_Single_Mems(nn.Module):
         
         super().__init__()
 
-        self.encoder = SpectraVAE_Encoder_Single_Mems(N, hidden_space_dimension, print_var, use_in_autoencoder)
+        self.encoder = SpectraVAE_Encoder_Single_Mems(N, hidden_space_dimension, print_var, use_as_autoencoder)
         
-        self.decoder = SpectraVAE_Decoder_Single_Mems(N, hidden_space_dimension, print_var, use_in_autoencoder)
+        self.decoder = SpectraVAE_Decoder_Single_Mems(N, hidden_space_dimension, print_var, use_as_autoencoder)
         
         self.hidden_space_dimension = hidden_space_dimension
         
@@ -53,7 +53,7 @@ class SpectraVAE_Single_Mems(nn.Module):
 
 class SpectraVAE_Encoder_Single_Mems(nn.Module):
     
-    def __init__(self, N, hidden_space_dimension = 2, print_var = False, use_in_autoencoder = False):
+    def __init__(self, N, hidden_space_dimension = 2, print_var = False, use_as_autoencoder = False):
         """
         Encoder of the VAE 
         N = Input length
@@ -85,7 +85,7 @@ class SpectraVAE_Encoder_Single_Mems(nn.Module):
 
 class SpectraVAE_Decoder_Single_Mems(nn.Module):
     
-    def __init__(self, N, hidden_space_dimension = 2, print_var = False, use_in_autoencoder = False):
+    def __init__(self, N, hidden_space_dimension = 2, print_var = False, use_as_autoencoder = False):
         """
         Encoder of the VAE. The output distribution is hypothesized gaussian so the decoder will return two value: mean and distributoin.
         (More info: https://arxiv.org/pdf/2006.13202.pdf)
@@ -123,7 +123,7 @@ class SpectraVAE_Decoder_Single_Mems(nn.Module):
 
 class SpectraVAE_Double_Mems(nn.Module):
     
-    def __init__(self, N_mems_1, N_mems_2, hidden_space_dimension, print_var = False, use_in_autoencoder = False):
+    def __init__(self, N_mems_1, N_mems_2, hidden_space_dimension, print_var = False, use_as_autoencoder = False):
         """
         N = Input length
         hidden_space_dimension = Dimension of the hidden (latent) space. Defaul is 2 
@@ -131,13 +131,13 @@ class SpectraVAE_Double_Mems(nn.Module):
         
         super().__init__()
 
-        self.encoder = SpectraVAE_Encoder_Double_Mems(N_mems_1, N_mems_2, hidden_space_dimension, print_var, use_in_autoencoder)
+        self.encoder = SpectraVAE_Encoder_Double_Mems(N_mems_1, N_mems_2, hidden_space_dimension, print_var, use_as_autoencoder)
         
-        self.decoder = SpectraVAE_Decoder_Double_Mems(N_mems_1, N_mems_2, hidden_space_dimension, print_var, use_in_autoencoder)
+        self.decoder = SpectraVAE_Decoder_Double_Mems(N_mems_1, N_mems_2, hidden_space_dimension, print_var, use_as_autoencoder)
         
         self.hidden_space_dimension = hidden_space_dimension
         
-        self.use_in_autoencoder = use_in_autoencoder
+        self.use_as_autoencoder = use_as_autoencoder
         
         if(print_var): print("Number of trainable parameters (VAE) = ", sum(p.numel() for p in self.parameters() if p.requires_grad), "\n")
        
@@ -169,7 +169,7 @@ class SpectraVAE_Double_Mems(nn.Module):
 
 class SpectraVAE_Encoder_Double_Mems(nn.Module):
     
-    def __init__(self, N_mems_1, N_mems_2, hidden_space_dimension = 2, print_var = False, use_in_autoencoder = False):
+    def __init__(self, N_mems_1, N_mems_2, hidden_space_dimension = 2, print_var = False, use_as_autoencoder = False):
         """
         Encoder of the VAE 
         N = Input length
@@ -181,32 +181,43 @@ class SpectraVAE_Encoder_Double_Mems(nn.Module):
         self.input_mems_1 = torch.nn.Sequential(torch.nn.Linear(N_mems_1, 64), torch.nn.SELU())
         self.input_mems_2 = torch.nn.Sequential(torch.nn.Linear(N_mems_2, 64), torch.nn.SELU())
         
-        self.inner_layers = torch.nn.Sequential(
-            torch.nn.Linear(128, 36),
-            torch.nn.SELU(),
-            torch.nn.Linear(36, hidden_space_dimension * 2),
-        )
+        if(use_as_autoencoder):
+            self.inner_layers = torch.nn.Sequential(
+                torch.nn.Linear(128, 36),
+                torch.nn.SELU(),
+                torch.nn.Linear(36, hidden_space_dimension),
+            )
+        else:
+            self.inner_layers = torch.nn.Sequential(
+                torch.nn.Linear(128, 36),
+                torch.nn.SELU(),
+                torch.nn.Linear(36, hidden_space_dimension * 2),
+            )
 
         self.N_mems_1 = N_mems_1
         self.N_mems_2 = N_mems_2
         self.hidden_space_dimension = hidden_space_dimension
+        self.use_as_autoencoder = use_as_autoencoder
         
         if(print_var): print("Number of trainable parameters (VAE - ENCODER) = ", sum(p.numel() for p in self.parameters() if p.requires_grad), "\n")
         
     def forward(self, x1, x2):
-      x1 = self.input_mems_1(x1)
-      x2 = self.input_mems_2(x2)
-      x = torch.cat((x1, x2), 1)
-      x = self.inner_layers(x)
-      mu = x[:, 0:self.hidden_space_dimension]
-      log_var = x[:, self.hidden_space_dimension:]
-      
-      return mu, log_var
+        x1 = self.input_mems_1(x1)
+        x2 = self.input_mems_2(x2)
+        x = torch.cat((x1, x2), 1)
+        z = self.inner_layers(x)
+        if(self.use_as_autoencoder):
+            return z
+        else:  
+            mu = z[:, 0:self.hidden_space_dimension]
+            log_var = z[:, self.hidden_space_dimension:]
+        
+            return mu, log_var
 
 
 class SpectraVAE_Decoder_Double_Mems(nn.Module):
     
-    def __init__(self, N_mems_1, N_mems_2, hidden_space_dimension = 2, print_var = False, use_in_autoencoder = False):
+    def __init__(self, N_mems_1, N_mems_2, hidden_space_dimension = 2, print_var = False, use_as_autoencoder = False):
         """
         Encoder of the VAE. The output distribution is hypothesized gaussian so the decoder will return two value: mean and distributoin.
         (More info: https://arxiv.org/pdf/2006.13202.pdf)
@@ -226,10 +237,11 @@ class SpectraVAE_Decoder_Double_Mems(nn.Module):
         )
 
         self.output_layer_mean_mems_1 = torch.nn.Linear(64, N_mems_1)
-        self.output_layer_log_var_mems_1 = torch.nn.Linear(64, 1)
-
         self.output_layer_mean_mems_2 = torch.nn.Linear(64, N_mems_2)
-        self.output_layer_log_var_mems_2 = torch.nn.Linear(64, 1)
+        
+        if(self.use_as_autoencoder):
+            self.output_layer_log_var_mems_1 = torch.nn.Linear(64, 1)
+            self.output_layer_log_var_mems_2 = torch.nn.Linear(64, 1)
         
         self.N_mems_1 = N_mems_1
         self.N_mems_2 = N_mems_2
@@ -245,12 +257,17 @@ class SpectraVAE_Decoder_Double_Mems(nn.Module):
         x2 = x[:, int(x.shape[1]/2):]
         
         x_mean_1 = self.output_layer_mean_mems_1(x1)
-        x_log_var_1 = self.output_layer_log_var_mems_1(x1)
+        
 
         x_mean_2 = self.output_layer_mean_mems_2(x2)
-        x_log_var_2 = self.output_layer_log_var_mems_1(x2)
         
-        return x_mean_1, x_log_var_1, x_mean_2, x_log_var_2
+        if(self.use_as_autoencoder):
+            return x_mean_1, x_mean_2
+        else:
+            x_log_var_1 = self.output_layer_log_var_mems_1(x1)
+            x_log_var_2 = self.output_layer_log_var_mems_1(x2)
+            
+            return x_mean_1, x_log_var_1, x_mean_2, x_log_var_2
     
     
 #%% Other functions
