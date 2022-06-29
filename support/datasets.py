@@ -78,7 +78,7 @@ def load_water_data(filename):
     water = water[2:]
     
     print("Water vector length =\t" , len(water))
-    print("Log timestamp length =\t" , len(log_timestamp))
+    print("Log timestamp length =\t" , len(log_timestamp), "\n")
     
     return water, log_timestamp
 
@@ -196,12 +196,14 @@ class PytorchDatasetPlantSpectra_V1(torch.utils.data.Dataset):
 
 class PytorchDatasetPlantSpectra_V2(torch.utils.data.Dataset):
     """
-    Extension of PyTorch Dataset class to work with spectra plants data. It DIVIDE the spectra in mems1 and mems2
+    Extension of PyTorch Dataset class to work with spectra plants data. Used for VAE + Classifier
+    It CAN DIVIDE the spectra in mems1 and mems2 
     """
     
     # Inizialization method
-    def __init__(self, spectra_data, used_in_cnn = False, length_mems_1 = -1, length_mems_2 = -1):
+    def __init__(self, spectra_data, count_water, used_in_cnn = False, length_mems_1 = -1, length_mems_2 = -1):
         self.spectra = torch.from_numpy(spectra_data).float()
+        self.label = torch.from_numpy(count_water).int()
         
         if(used_in_cnn): self.spectra = self.spectra.unsqueeze(1)
         
@@ -218,9 +220,9 @@ class PytorchDatasetPlantSpectra_V2(torch.utils.data.Dataset):
             spectra_mems_1 = tmp_spectra[..., 0:self.length_mems_1]
             spectra_mems_2 = tmp_spectra[..., (- 1 - self.length_mems_2):-1]
             
-            return spectra_mems_1, spectra_mems_2
+            return spectra_mems_1, spectra_mems_2, self.label[idx]
         else:   
-            return self.spectra[idx, :]
+            return self.spectra[idx, :], self.label[idx]
     
     def __len__(self):
         return self.spectra.shape[0]

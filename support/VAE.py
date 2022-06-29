@@ -244,7 +244,7 @@ class SpectraVAE_Decoder_Double_Mems(nn.Module):
         self.output_layer_mean_mems_1 = torch.nn.Linear(64, N_mems_1)
         self.output_layer_mean_mems_2 = torch.nn.Linear(64, N_mems_2)
         
-        if(use_as_autoencoder):
+        if not use_as_autoencoder:
             self.output_layer_log_var_mems_1 = torch.nn.Linear(64, 1)
             self.output_layer_log_var_mems_2 = torch.nn.Linear(64, 1)
         

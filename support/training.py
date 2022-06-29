@@ -78,10 +78,11 @@ def advanceEpochV1(vae, device, dataloader, optimizer, spectra_section, is_train
     return tot_vae_loss, tot_recon_loss, tot_kl_loss
 
 
-def advanceEpochV2(vae, device, dataloader, optimizer, is_train = True, alpha = 1, beta = 1):
+def advanceEpochV2(vae, device, dataloader, optimizer, is_train = True, alpha = 1, beta = 1, used_clf = False):
     """
     Function used to advance one epoch of training in training script 3 (Only VAE).
-    Can be used only for double mems
+    Can be used only for double mems.
+    Can be used both for FC architecture and Convolutional architecture
     """
     
     if(is_train): vae.train()
@@ -97,7 +98,10 @@ def advanceEpochV2(vae, device, dataloader, optimizer, is_train = True, alpha = 
     
     for sample_data_batch in dataloader:
         # Move data and vae to device
-        x = sample_data_batch.to(device)
+        if(used_clf):
+            x = sample_data_batch[0].to(device)
+        else:
+            x = sample_data_batch.to(device)
         vae.to(device)
         
         if(is_train): # Train step (keep track of the gradient)
@@ -107,18 +111,26 @@ def advanceEpochV2(vae, device, dataloader, optimizer, is_train = True, alpha = 
             # VAE works
             x1 = x[..., 0:length_mems_1]
             x2 = x[..., (- 1 - length_mems_2):-1]
-            x_r_1, log_var_r_1, x_r_2, log_var_r_2, mu_z, log_var_z = vae(x1, x2)
+            vae_output = vae(x1, x2)
+            
+            x_r_1, log_var_r_1 = vae_output[0], vae_output[1]
+            x_r_2, log_var_r_2 = vae_output[2], vae_output[3] 
+            mu_z, log_var_z = vae_output[4], vae_output[5]
 
             x_r = torch.cat((x_r_1, x_r_2), -1)
             log_var_r = torch.cat((log_var_r_1, log_var_r_2), -1)
             x = torch.cat((x1,x2), -1) # N.b. the original x is long 702 sample not 700.
 
             # Evaluate loss
-            vae_loss, recon_loss, kl_loss = VAE_loss(x, x_r, log_var_r, mu_z, log_var_z, alpha, beta)
-
-
-            # Backward/Optimization pass
-            vae_loss.backward()
+            if(used_clf):
+                total_loss, recon_loss, kl_loss, classifier_loss = VAE_and_classifier_loss(x, x_r, mu, log_var, true_label, predict_label, alpha = 1, beta = 1, gamma = 1)
+            else:
+                vae_loss, recon_loss, kl_loss = VAE_loss(x, x_r, log_var_r, mu_z, log_var_z, alpha, beta)
+                
+                # Backward pass
+                vae_loss.backward()
+            
+            # Optimization pass
             optimizer.step()
         else: # Test step (don't need the gradient)
             with torch.no_grad():
@@ -201,6 +213,27 @@ def advanceEpochV3(model, device, dataloader, optimizer, is_train, double_mems =
         
         
     return tot_recon_loss
+
+
+def advanceEpochV4(model, device, dataloader, optimizer, is_train, is_autoencoder):
+    """
+    Used in training script 5 (VAE + CLF).
+    Work only for Double MEMS.
+    """
+    
+    if(is_train): model.train()
+    else: model.eval()
+    
+    length_mems_1 = 300
+    length_mems_2 = 400
+    
+    # Track variable
+    tot_recon_loss = 0
+    
+    reconstruction_loss = nn.MSELoss()
+    
+    for x_1, x_2, label in dataloader: 
+        pass
 
 
 
@@ -291,15 +324,15 @@ def classifierLoss(predict_label, true_label):
     return classifier_loss_criterion(predict_label, true_label)
 
 
-def VAE_and_classifier_loss(x, x_r, mu, log_var, true_label, predict_label, alpha = 1, beta = 1):
+def VAE_and_classifier_loss(x, x_r, mu, log_var, true_label, predict_label, alpha = 1, beta = 1, gamma = 1):
     # VAE loss (reconstruction + kullback)
-    vae_loss, recon_loss, kl_loss = VAE_loss(x, x_r, mu, log_var, alpha)
+    vae_loss, recon_loss, kl_loss = VAE_loss(x, x_r, mu, log_var, alpha, beta)
        
     # Classifier (discriminator) loss
     classifier_loss = classifierLoss(predict_label, true_label) 
     
     # Total loss
-    total_loss = vae_loss + classifier_loss * beta
+    total_loss = vae_loss + classifier_loss * gamma
     
-    return total_loss, recon_loss, kl_loss, classifier_loss * beta
+    return total_loss, recon_loss, kl_loss, classifier_loss * gamma
 

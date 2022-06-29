@@ -19,8 +19,6 @@ from support.visualization import visualize_latent_space_V1, visualize_latent_sp
 
 #%% Parameters
 
-# min_threeshold = 0.64 # For lower
-# min_threeshold = 0.5 # For upper
 normalize_trials = 1
 
 hidden_space_dimension = 2
