@@ -123,7 +123,9 @@ def advanceEpochV2(vae, device, dataloader, optimizer, is_train = True, alpha = 
 
             # Evaluate loss
             if(used_clf):
-                total_loss, recon_loss, kl_loss, classifier_loss = VAE_and_classifier_loss(x, x_r, mu, log_var, true_label, predict_label, alpha = 1, beta = 1, gamma = 1)
+                predict_label = vae_output[6]
+                true_label = sample_data_batch[1]
+                total_loss, recon_loss, kl_loss, classifier_loss = VAE_and_classifier_loss(x, x_r, mu_z, log_var_z, true_label, predict_label, alpha, beta, gamma = 1)
             else:
                 vae_loss, recon_loss, kl_loss = VAE_loss(x, x_r, log_var_r, mu_z, log_var_z, alpha, beta)
                 
