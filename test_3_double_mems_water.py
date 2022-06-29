@@ -9,7 +9,7 @@ import matplotlib.pyplot as plt
 import torch
 from torch.utils.data import DataLoader
 
-from support.datasets import load_spectra_data, load_water_data, create_extended_water_vector, choose_spectra_based_on_water 
+from support.datasets import load_spectra_data, load_water_data, create_extended_water_vector, choose_spectra_based_on_water_V1
 from support.datasets import PytorchDatasetPlantSpectra_V1
 from support.VAE import SpectraVAE_Double_Mems
 from support.VAE_Conv import SpectraVAE_Double_Mems_Conv
@@ -38,7 +38,7 @@ step_show = 2
 
 use_as_autoencoder = True
 
-use_cnn = True
+use_cnn = False
 
 #%% Load data
 
@@ -52,7 +52,7 @@ extended_water_timestamp = create_extended_water_vector(water_timestamp, water_d
 # Due to the fact that I have much more bad spectra in this way I use them to train the network.
 # Cause I'm lazy I only flip the variable at the beggining and noth change all the variable along the script
 # bad_idx = water, good_idx = NO water
-bad_idx, good_idx = choose_spectra_based_on_water(extended_water_timestamp, time_interval_start = time_interval_start, time_interval_end = time_interval_end)
+bad_idx, good_idx = choose_spectra_based_on_water_V1(extended_water_timestamp, time_interval_start = time_interval_start, time_interval_end = time_interval_end)
 labels = ["NO Water (Train)", "NO Water (Test)", "Water"]
 
 # "Right" order
@@ -77,7 +77,7 @@ good_dataloader_train = DataLoader(good_spectra_dataset_train, batch_size = batc
 good_dataloader_test = DataLoader(good_spectra_dataset_test, batch_size = batch_size, shuffle = True)
 bad_dataloader = DataLoader(bad_spectra_dataset, batch_size = batch_size, shuffle = True)
 
-#%%
+#%% Training
 
 length_mems_1 = int(1650 - min(wavelength))
 length_mems_2 = int(max(wavelength) - 1750)
@@ -167,11 +167,10 @@ for epoch in range(epochs):
         dataset_list = [good_spectra_dataset_train, good_spectra_dataset_test, good_spectra_dataset_validation]
         visualize_latent_space_V2(dataset_list, vae, resampling = False, alpha = alpha, s = s, section = 'full', n_samples = n_samples, dimensionality_reduction = dimensionality_reduction, figsize = (15, 15), device = device)
         
-#%%
+#%% Plot Loss vs Epochs
+figsize = (18, 6)
 
 if not use_as_autoencoder:
-    figsize = (18, 6)
-    
     total_loss = [total_loss_good_train, total_loss_good_test, total_loss_bad]
     recon_loss = [recon_loss_good_train, recon_loss_good_test, recon_loss_bad]
     kl_loss = [kl_loss_good_train, kl_loss_good_test, kl_loss_bad]
@@ -188,7 +187,8 @@ else:
     plt.yscale('log')
     plt.legend(labels)
     
-#%%
+#%% Plot Loss Average Hist
+
 figsize = (15, 12)
 n_spectra = -1
 

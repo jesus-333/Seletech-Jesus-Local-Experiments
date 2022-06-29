@@ -139,12 +139,16 @@ class SpectraVAE_Double_Mems(nn.Module):
         
         self.use_as_autoencoder = use_as_autoencoder
         
+        self.trainable_parameters = sum(p.numel() for p in self.parameters() if p.requires_grad)
+        
         if(print_var): print("Number of trainable parameters (VAE) = ", sum(p.numel() for p in self.parameters() if p.requires_grad), "\n")
        
         
     def forward(self, x1, x2):
-        if self.use_in_autoencoder:
-            return x1
+        if self.use_as_autoencoder:
+            z = self.encoder(x1, x2)
+            x_1_r, x_2_r = self.decoder(z)
+            return x_1_r, x_2_r, z
         else:
             z_mu, z_log_var = self.encoder(x1, x2)
     
@@ -198,6 +202,7 @@ class SpectraVAE_Encoder_Double_Mems(nn.Module):
         self.N_mems_2 = N_mems_2
         self.hidden_space_dimension = hidden_space_dimension
         self.use_as_autoencoder = use_as_autoencoder
+        self.trainable_parameters = sum(p.numel() for p in self.parameters() if p.requires_grad)
         
         if(print_var): print("Number of trainable parameters (VAE - ENCODER) = ", sum(p.numel() for p in self.parameters() if p.requires_grad), "\n")
         
@@ -239,13 +244,14 @@ class SpectraVAE_Decoder_Double_Mems(nn.Module):
         self.output_layer_mean_mems_1 = torch.nn.Linear(64, N_mems_1)
         self.output_layer_mean_mems_2 = torch.nn.Linear(64, N_mems_2)
         
-        if(self.use_as_autoencoder):
+        if(use_as_autoencoder):
             self.output_layer_log_var_mems_1 = torch.nn.Linear(64, 1)
             self.output_layer_log_var_mems_2 = torch.nn.Linear(64, 1)
         
         self.N_mems_1 = N_mems_1
         self.N_mems_2 = N_mems_2
         self.hidden_space_dimension = hidden_space_dimension
+        self.use_as_autoencoder = use_as_autoencoder
         self.trainable_parameters = sum(p.numel() for p in self.parameters() if p.requires_grad)
         
         if(print_var): print("Number of trainable parameters (VAE - DECODER) = ", self.trainable_parameters, "\n")

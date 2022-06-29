@@ -22,7 +22,7 @@ extended_water_timestamp = create_extended_water_vector(water_timestamp, water_d
 hour_windows = 12
 minute_windows = hour_windows * 60
 
-minute_shift = 10
+minute_shift = 7
 
 avg_spectra_matrix = []
 count_water = []
@@ -45,5 +45,7 @@ while(True):
 
 avg_spectra_matrix = np.asarray(avg_spectra_matrix)
 count_water = np.asarray(count_water).astype(int)
+
+print("\n", "Total number of samples:", len(count_water))
 for n in np.unique(count_water):
-    print(n, len(count_water[count_water == n]))
+    print("\t", n, len(count_water[count_water == n]))
