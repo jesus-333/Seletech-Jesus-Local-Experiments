@@ -156,7 +156,7 @@ class SpectraVAE_Double_Mems(nn.Module):
             
             x_mean_1, x_log_var_1, x_mean_2, x_log_var_2 = self.decoder(z)
             
-            return x_mean_1, x_log_var_1, x_mean_2, x_log_var_2, z_mu, z_log_var
+            return x_mean_1, x_mean_2, x_log_var_1, x_log_var_2, z_mu, z_log_var
     
     
     def reparametrize(self, mu, log_var):

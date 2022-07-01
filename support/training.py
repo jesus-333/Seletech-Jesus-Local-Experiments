@@ -78,7 +78,7 @@ def advanceEpochV1(vae, device, dataloader, optimizer, spectra_section, is_train
     return tot_vae_loss, tot_recon_loss, tot_kl_loss
 
 
-def advanceEpochV2(vae, device, dataloader, optimizer, is_train = True, alpha = 1, beta = 1, used_clf = False):
+def advanceEpochV2(vae, device, dataloader, optimizer, is_train = True, alpha = 1, beta = 1):
     """
     Function used to advance one epoch of training in training script 3 (Only VAE).
     Can be used only for double mems.
@@ -98,50 +98,31 @@ def advanceEpochV2(vae, device, dataloader, optimizer, is_train = True, alpha = 
     
     for sample_data_batch in dataloader:
         # Move data and vae to device
-        if(used_clf):
-            x = sample_data_batch[0].to(device)
-        else:
-            x = sample_data_batch.to(device)
+        x = sample_data_batch.to(device)
         vae.to(device)
         
+        x1 = x[..., 0:length_mems_1]
+        x2 = x[..., (- 1 - length_mems_2):-1]
+
         if(is_train): # Train step (keep track of the gradient)
             # Zeros past gradients
             optimizer.zero_grad()
             
             # VAE works
-            x1 = x[..., 0:length_mems_1]
-            x2 = x[..., (- 1 - length_mems_2):-1]
-            vae_output = vae(x1, x2)
-            
-            x_r_1, log_var_r_1 = vae_output[0], vae_output[1]
-            x_r_2, log_var_r_2 = vae_output[2], vae_output[3] 
-            mu_z, log_var_z = vae_output[4], vae_output[5]
-
-            x_r = torch.cat((x_r_1, x_r_2), -1)
-            log_var_r = torch.cat((log_var_r_1, log_var_r_2), -1)
+            x_r, log_var_r, mu_z, log_var_z = double_mems_step(x1, x2, vae, False, False, alpha, beta)
             x = torch.cat((x1,x2), -1) # N.b. the original x is long 702 sample not 700.
 
             # Evaluate loss
-            if(used_clf):
-                predict_label = vae_output[6]
-                true_label = sample_data_batch[1]
-                total_loss, recon_loss, kl_loss, classifier_loss = VAE_and_classifier_loss(x, x_r, mu_z, log_var_z, true_label, predict_label, alpha, beta, gamma = 1)
-            else:
-                vae_loss, recon_loss, kl_loss = VAE_loss(x, x_r, log_var_r, mu_z, log_var_z, alpha, beta)
-                
-                # Backward pass
-                vae_loss.backward()
+            vae_loss, recon_loss, kl_loss = VAE_loss(x, x_r, log_var_r, mu_z, log_var_z, alpha, beta)
+            
+            # Backward pass
+            vae_loss.backward()
             
             # Optimization pass
             optimizer.step()
         else: # Test step (don't need the gradient)
             with torch.no_grad():
-                x1 = x[..., 0:length_mems_1]
-                x2 = x[..., (- 1 - length_mems_2):-1]
-                x_r_1, log_var_r_1, x_r_2, log_var_r_2, mu_z, log_var_z = vae(x1, x2)
-        
-                x_r = torch.cat((x_r_1, x_r_2), -1)
-                log_var_r = torch.cat((log_var_r_1, log_var_r_2), -1)
+                x_r, log_var_r, mu_z, log_var_z = double_mems_step(x1, x2, vae, False, False, alpha, beta)
                 x = torch.cat((x1,x2), -1) # N.b. the original x is long 702 sample not 700.
         
                 vae_loss, recon_loss, kl_loss = VAE_loss(x, x_r, log_var_r, mu_z, log_var_z, alpha, beta)
@@ -175,30 +156,21 @@ def advanceEpochV3(model, device, dataloader, optimizer, is_train, double_mems =
         x = sample_data_batch.to(device)
         model.to(device)
         
+        x1 = x[:, ..., 0:length_mems_1]
+        x2 = x[:, ..., (- 1 - length_mems_2):-1]
+        
         if(is_train): # Executed during training
             if(double_mems):
-                x1 = x[:, ..., 0:length_mems_1]
-                x2 = x[:, ..., (- 1 - length_mems_2):-1]
-                
-                x_r_1, x_r_2, z = model(x1, x2)
-                x_r = torch.cat((x_r_1, x_r_2), -1)
-                
-                # N.b. the original x is long 702 sample not 700.
-                x = torch.cat((x1,x2), -1)
+                x_r, z = double_mems_step(x1, x2, model, True, False)
+                x = torch.cat((x1,x2), -1) # N.b. the original x is long 702 sample not 700.
             else:
                 x_r, z = model(x)
             
         else: # Executed during testing
             with torch.no_grad(): # Deactivate the tracking of the gradient
                 if(double_mems):
-                    x1 = x[:, ..., 0:length_mems_1]
-                    x2 = x[:, ..., (- 1 - length_mems_2):-1]
-                    
-                    x_r_1, x_r_2, z = model(x1, x2)
-                    x_r = torch.cat((x_r_1, x_r_2), -1)
-                    
-                    # N.b. the original x is long 702 sample not 700.
-                    x = torch.cat((x1,x2), -1)
+                    x_r, z = double_mems_step(x1, x2, model, True, False)
+                    x = torch.cat((x1,x2), -1)  # N.b. the original x is long 702 sample not 700.
                 else:
                     x_r, z = model(x)
         
@@ -217,10 +189,13 @@ def advanceEpochV3(model, device, dataloader, optimizer, is_train, double_mems =
     return tot_recon_loss
 
 
-def advanceEpochV4(model, device, dataloader, optimizer, is_train, is_autoencoder):
+
+
+def advance_Epoch_Double_Mems(model, device, dataloader, optimizer, is_train, 
+                              only_autoencoder = False, use_clf = False, alpha = 1, beta = 1, gamma = 1):
     """
-    Used in training script 5 (VAE + CLF).
-    Work only for Double MEMS.
+    Function to train/test the architecture when data from both the mems are used.
+    Can train the VAE (alone), Autoencoder (alone), VAE + CLF
     """
     
     if(is_train): model.train()
@@ -232,12 +207,66 @@ def advanceEpochV4(model, device, dataloader, optimizer, is_train, is_autoencode
     # Track variable
     tot_recon_loss = 0
     
-    reconstruction_loss = nn.MSELoss()
+    if only_autoencoder: recon_loss_function = nn.MSELoss()
+    else: recon_loss_function = advance_recon_loss
     
-    for x_1, x_2, label in dataloader: 
-        pass
+    model.to(device)
+    
+    for sample_data_batch in dataloader:
+        if use_clf:
+            x1, x2, true_label = sample_data_batch[0].to(device), sample_data_batch[1].to(device), sample_data_batch[2].to(device)
+        else:
+            x = sample_data_batch.to(device)
+            x1 = x[:, ..., 0:length_mems_1]
+            x2 = x[:, ..., (- 1 - length_mems_2):-1]
+            
 
 
+def double_mems_step(x1, x2, model, only_autoencoder = False, use_clf = False, alpha = 1, beta = 1, gamma = 1, split_output = False):
+    # Compute output
+    model_output = model(x1, x2)
+    
+    # Reconstructed output (mean of reconstructed output for VAE)
+    x_r_1, x_r_2 = model_output[0], model_output[1]
+    x_r = torch.cat((x_r_1, x_r_2), -1)
+    
+    if only_autoencoder: 
+        # Latent space embedding
+        z = model_output[2]
+        
+        if use_clf: 
+            predicted_label = model_output[-1]
+            if split_output: 
+                return x_r_1, x_r_2, z, predicted_label
+            else: 
+                return x_r, z, predicted_label
+        else: 
+            if split_output: 
+                return x_r_1, x_r_2, z
+            else: 
+                return x_r, z
+    else: # I.e. IF it is a VAE
+    
+        # Variance of the reconstructed output
+        log_var_r_1, log_var_r_2 = model_output[2], model_output[3]
+        log_var_r = torch.cat((log_var_r_1, log_var_r_2), -1)
+        
+        # Latent space mean and variance
+        mu_z, log_var_z = model_output[4], model_output[5]
+        
+        if use_clf: 
+            predicted_label = model_output[-1]
+            if split_output: 
+                return x_r_1, x_r_2, log_var_r_1, log_var_r_2, mu_z, log_var_z, predicted_label
+            else: 
+                return x_r, log_var_r, mu_z, log_var_z, predicted_label
+        else: 
+            if split_output: 
+                return x_r_1, x_r_2, log_var_r_1, log_var_r_2, mu_z, log_var_z
+            else: 
+                return x_r, log_var_r, mu_z, log_var_z
+    
+    
 
 #%% Loss functions
 
@@ -321,7 +350,6 @@ def KL_Loss(sigma_p, mu_p, sigma_q, mu_q):
 
 def classifierLoss(predict_label, true_label):
     classifier_loss_criterion = torch.nn.NLLLoss()
-    # classifier_loss_criterion = torch.nn.CrossEntropyLoss()
     
     return classifier_loss_criterion(predict_label, true_label)
 
