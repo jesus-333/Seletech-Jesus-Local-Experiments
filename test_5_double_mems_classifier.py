@@ -23,7 +23,7 @@ batch_size = 75
 epochs = 200
 learning_rate = 1e-3
 alpha = 1 # Hyperparemeter to fine tuning the value of the reconstruction error
-beta = 2 # Hyperparemeter to fine tuning the value of the KL Loss
+beta = 1 # Hyperparemeter to fine tuning the value of the KL Loss
 
 print_var = True
 step_show = 2
@@ -31,7 +31,6 @@ step_show = 2
 use_as_autoencoder = True
 
 use_cnn = False
-
 
 #%% Load data
 

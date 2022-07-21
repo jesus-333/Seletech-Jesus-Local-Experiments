@@ -158,7 +158,31 @@ def compute_average_loss_given_dataloader(dataloader, model, device, n_spectra, 
 
     print(tot_elements)
     return total_loss/tot_elements
-        
+
+
+def compute_recon_loss_given_dataset_autoencoder(dataset, model, device, compute_std = False):
+    length_mems_1 = 300
+    length_mems_2 = 400
+    loss_function = torch.nn.MSELoss()
+    model = model.to(device)
+    
+    x = dataset[:].to(device)
+    
+    x1 = x[:, 0:length_mems_1]
+    x2 = x[:, (- 1 - length_mems_2):-1]
+    
+    x1_r, x2_r, z = model(x1, x2)
+    
+    x = torch.cat((x1,x2), -1)
+    x_r = torch.cat((x1_r,x2_r), -1)
+    
+    loss = torch.pow(torch.abs(x - x_r), 2)
+    
+    if compute_std:
+        return loss.mean(), loss.std()
+    else:
+        return loss.mean()
+    
 #%%
 
 def visualize_latent_space_V1(dataset_list, vae, resampling, alpha = 0.8, s = 0.3, section = 'full', n_samples = -1, hidden_space_dimension = 2, dimensionality_reduction = 'pca'):

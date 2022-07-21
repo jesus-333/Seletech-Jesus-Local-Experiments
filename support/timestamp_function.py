@@ -132,7 +132,7 @@ def extract_spectra_month_day_hour(all_spectra, all_timestamp, month, day, hour)
     day_spectra, day_timestamp = extract_spectra_day(month_spectra, month_timestamp, day)
     hour_spectra, hour_timestamp = extract_spectra_hour(day_spectra, day_timestamp, hour)
     
-    return day_spectra, day_timestamp
+    return hour_spectra, hour_spectra
 
 
 def divide_spectra_per_day(spectra, timestamp):

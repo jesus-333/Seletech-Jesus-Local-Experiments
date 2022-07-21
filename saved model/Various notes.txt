@@ -1,0 +1,1 @@
+ae_script_3_2_ FULL Model = Autoencoder trained with the script "test_3_2_double_mems_water_multiple_level.py"
