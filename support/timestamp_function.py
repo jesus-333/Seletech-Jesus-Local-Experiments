@@ -8,6 +8,7 @@
 import torch
 from torch import nn
 import numpy as np
+import pandas as pd
 
 #%% Information from timestamp
 
@@ -163,3 +164,32 @@ def divide_spectra_per_day(spectra, timestamp):
             actual_day = tmp_day
     
     return spectra_per_day, timestamp_per_day
+
+
+
+#%% Timestamp conversion
+
+def convert_timestamps_in_dataframe(timestamp_list):
+    """
+    Convert the list of timestamp string in an dataframe of timestamp of dimension len(timestamp_list) x 6
+    The 6 columns represents (in order): year, month, day, hour, minute, second
+    Each value is saved as a number
+    """
+    
+    timestamp_array = np.zeros((len(timestamp_list), 6))
+    
+    for i in range(len(timestamp_list)):
+        timestamp = timestamp_list[i]
+        
+        year, month, day, hour, minutes, seconds = extract_data_from_timestamp(timestamp)
+        
+        timestamp_array[i, 0] = year
+        timestamp_array[i, 1] = month
+        timestamp_array[i, 2] = day
+        timestamp_array[i, 3] = hour
+        timestamp_array[i, 4] = minutes
+        timestamp_array[i, 5] = seconds
+        
+    timestamp_dataframe = pd.DataFrame(timestamp_array, columns = ['year', 'month', 'day', 'hour', 'minutes', 'seconds'])
+    
+    return timestamp_dataframe
