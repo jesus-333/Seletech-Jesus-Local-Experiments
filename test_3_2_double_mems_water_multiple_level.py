@@ -200,7 +200,7 @@ for epoch in range(epochs):
     #     visualize_latent_space_V2(dataset_list, vae, resampling = False, alpha = alpha, s = s, section = 'full', n_samples = n_samples, dimensionality_reduction = dimensionality_reduction, figsize = (15, 15), device = device)
         
 #%%
-figsize = (15, 10)
+figsize = (6, 12)
 
 # def compute_loss_given_dataset_autoencoder(dataset, model, device, compute_std = False):
 #     length_mems_1 = 300
@@ -239,6 +239,6 @@ if(use_as_autoencoder):
     color = ['C0', 'orange', 'red', 'blue']
     labels = ['BAD TRAIN', 'BAD TEST', 'GOOD 1', 'GOOD 2']
     labels = ['BAD TEST', 'GOOD 1', 'GOOD 2']
-    plt.errorbar(labels, tmp_loss, yerr = yerr, color = color)
+    plt.bar(labels, tmp_loss, yerr = yerr, color = color)
     plt.title("Reconstruciton Error")
     plt.show()
