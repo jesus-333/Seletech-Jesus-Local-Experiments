@@ -190,6 +190,6 @@ def convert_timestamps_in_dataframe(timestamp_list):
         timestamp_array[i, 4] = minutes
         timestamp_array[i, 5] = seconds
         
-    timestamp_dataframe = pd.DataFrame(timestamp_array, columns = ['year', 'month', 'day', 'hour', 'minutes', 'seconds'])
+    timestamp_dataframe = pd.DataFrame(timestamp_array, columns = ['year', 'month', 'day', 'hour', 'minutes', 'seconds']).astype(int)
     
     return timestamp_dataframe

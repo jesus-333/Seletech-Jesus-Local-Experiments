@@ -1,0 +1,32 @@
+1) Presente:
+	- MetroLiv (Feedback, cercare roba)
+	- Piantine (Seletech)
+	- MetroAgriFor (Possibile collaborazione con Laurenti/Laura)
+
+2) Futuro prossimo:
+	- Filone di ricerca: AoI, Machine Learning
+
+	- 15/09: Sottomettere transaction (articolo su rivista di classe A)(Puntare sulla teoria). 
+		 Lavoro Machine Learning su sensori (rete distribuite). 
+		 Modellistica, intepretabilità, robustezza, interpretazione(XAI) (ML ---> XAI ---> Robustezza modello)
+		 Sistemi MIMO (?)
+		 Dati i parametri più importanti vedere se si può confondere l'algoritmo
+		 Underling life cylce (giorno, notte, temperatura etc... parametri che non posso controllare io). Da tenere in considerazione
+	
+	- Campagna di misure col MEMS
+		Classificare notte/giorno
+		Plottare spettri intensità diversa (intensità della lampadina)
+
+
+Transaction: categoria particolare di rivista. E' come la IEEE chiama le riviste
+
+
+
+
+- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
+
+Obiettivo (secondo Cisotto): approfondire analisi dati stile machine learning
+Controllo istogrammi
+Analisi errore 3 livelli di acqua
+Mostrare andamento nel tempo di umidità e acqua per creare nuovi labelling
+Test lampadine

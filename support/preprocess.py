@@ -73,5 +73,63 @@ def aggregate_HT_data_V2(ht_timestamp, spectra_timestamp, h_array, t_array):
     Used timestamp in the new formmat (array)
     """
     
+    prev_month, prev_day, prev_hour = -1, -1, -1
+    
+    aggregate_h_array = []
+    aggregate_t_array = []
+    
     for i in range(spectra_timestamp.shape[0]):
+        year, month, day, hour, minute, second = spectra_timestamp[i]
         
+        # TODO Add section with year
+        
+        if(month != prev_month):
+            prev_month = month
+            
+            tmp_idx = ht_timestamp[:, 1] == month
+            
+            h_data_month = h_array[tmp_idx]
+            t_data_month = t_array[tmp_idx]
+            ht_timestamp_month = ht_timestamp[tmp_idx]
+            
+        if(day != prev_day):
+            prev_day = day
+            
+            tmp_idx = ht_timestamp_month[:, 2] == day
+            
+            h_data_day = h_data_month[tmp_idx]
+            t_data_day = t_data_month[tmp_idx]
+            ht_timestamp_day = ht_timestamp_month[tmp_idx]
+            
+        if(hour != prev_hour):
+            prev_hour = hour
+            
+            tmp_idx = ht_timestamp_day[:, 3] == hour
+            
+            h_data_hour = h_data_day[tmp_idx]
+            t_data_hour = t_data_day[tmp_idx]
+            ht_timestamp_hour = ht_timestamp_day[tmp_idx]
+            
+        
+        tmp_idx = ht_timestamp_hour[:, 4] == minute
+        
+        h_data_minute = h_data_hour[tmp_idx]
+        t_data_minute = t_data_hour[tmp_idx]
+        # ht_timestamp_minute = ht_timestamp_hour[tmp_idx]
+
+        if(len(h_data_minute) > 0):
+            aggregate_h_array.append(np.mean(h_data_minute))
+        else:
+            # aggregate_h_array.append(np.mean(h_data_hour))
+            if(len(aggregate_h_array) > 0): aggregate_h_array.append(aggregate_h_array[-1])
+            else: aggregate_h_array.append(np.mean(h_data_hour))
+      
+        if(len(t_data_minute) > 0):
+            aggregate_t_array.append(np.mean(t_data_minute))
+        else:
+            # aggregate_t_array.append(np.mean(t_data_hour))
+            if(len(aggregate_t_array) > 0): aggregate_t_array.append(aggregate_t_array[-1])
+            else: aggregate_t_array.append(np.mean(t_data_hour))
+    
+    aggregate_timestamp = np.copy(spectra_timestamp)
+    return aggregate_h_array, aggregate_t_array, aggregate_timestamp
