@@ -1,0 +1,65 @@
+"""
+Created on Mon Sep 12 11:51:56 2022
+
+@author: jesus
+"""
+
+#%%
+
+import numpy as np
+import torch
+from torch import nn
+
+#%%
+
+class Embedder(nn.Module):
+    
+    def __init__(self, input_size, embedding_size = 2, use_activation = False):
+        """
+        Simple feedforward network that project the input in another space.
+        Eventually a non linear operation could be activated.
+        """
+        super.__init__()
+        
+        self.embedder = nn.Linear(input_size, embedding_size)
+        self.activation = nn.SELU()
+        
+        self.use_activation = use_activation
+        
+    def forward(self, x):
+        x = self.embedder(x)
+        
+        if self.use_activation:
+            return self.activation(x)
+        else:
+            return x
+
+    
+class SelfAttention1D(nn.Module): 
+    def __init__(self, input_size, embedding_size = 2, use_activation = False):
+        """
+        Modified version of self attention explained in https://arxiv.org/pdf/1805.08318.pdf
+        This version is used to work with 1D array, NOT SEQUENCE OF DATA. 
+
+        """
+        super.__init__()
+        
+        self.softmax = nn.Softmax()
+        
+        self.query_embedder = Embedder(input_size, embedding_size, use_activation)
+        self.key_embedder = Embedder(input_size, embedding_size, use_activation)
+        self.value_embedder = Embedder(input_size, embedding_size, use_activation)
+        
+    def forward(self, x):
+        f = self.query_embedder(x)
+        g = self.key_embedder(x)
+        h = self.value_embedder(x)
+        
+        s = torch.bmm(f.unsqueeze(2), g.unsqueeze(1))
+        print(s.shape)
+        
+        pass
+    
+#%% Test
+
+if __name__ == "__main__":
