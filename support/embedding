@@ -19,7 +19,7 @@ class Embedder(nn.Module):
         Simple feedforward network that project the input in another space.
         Eventually a non linear operation could be activated.
         """
-        super.__init__()
+        super().__init__()
         
         self.embedder = nn.Linear(input_size, embedding_size)
         self.activation = nn.SELU()
@@ -42,24 +42,38 @@ class SelfAttention1D(nn.Module):
         This version is used to work with 1D array, NOT SEQUENCE OF DATA. 
 
         """
-        super.__init__()
+        super().__init__()
         
-        self.softmax = nn.Softmax()
+        self.softmax = nn.Softmax(dim = 2)
         
         self.query_embedder = Embedder(input_size, embedding_size, use_activation)
         self.key_embedder = Embedder(input_size, embedding_size, use_activation)
         self.value_embedder = Embedder(input_size, embedding_size, use_activation)
         
     def forward(self, x):
+        # Compute the query, key and value embedding
+        # The name f,g and h came from the paper
         f = self.query_embedder(x)
         g = self.key_embedder(x)
         h = self.value_embedder(x)
         
+        # Create the attention map
         s = torch.bmm(f.unsqueeze(2), g.unsqueeze(1))
-        print(s.shape)
+        s = self.softmax(s)
         
-        pass
+        # Compute the output
+        o = torch.bmm(s, h.unsqueeze(2))
+        
+        return o, s, h
     
 #%% Test
 
 if __name__ == "__main__":
+    n_batch = 16
+    spectra_size = 250
+    spectra_1 = torch.rand((16, 250))
+    
+    SA_embedder = SelfAttention1D(spectra_size, 2, False)
+    
+    o, s, h = SA_embedder(spectra_1)
+    
