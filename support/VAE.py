@@ -10,6 +10,8 @@ import numpy as np
 import torch
 from torch import nn
 
+from support.embedding import Attention1D
+
 #%%  VAE Single MEMS
 
 class SpectraVAE_Single_Mems(nn.Module):
@@ -274,7 +276,57 @@ class SpectraVAE_Decoder_Double_Mems(nn.Module):
             x_log_var_2 = self.output_layer_log_var_mems_1(x2)
             
             return x_mean_1, x_log_var_1, x_mean_2, x_log_var_2
+
+#%% Attention VAE
+
+class AttentionVAE(nn.Module):
     
+    def __init__(self, N_mems_1, N_mems_2, hidden_space_dimension, embedding_size = 64, print_var = False, use_as_autoencoder = False):
+        """
+        Modified versione of the SpectraVAE_Double_Mems where the input are first passed through an attention module
+        """
+        
+        super().__init__()
+        
+        # Attention module
+        self.attention_module = AttentionHead(N_mems_1, N_mems_2, embedding_size)
+        
+        # VAE
+        self.vae = SpectraVAE_Double_Mems(embedding_size * 2, embedding_size * 2, hidden_space_dimension, print_var, use_as_autoencoder)
+        
+        # Declare again the decoder to have the right output dimension
+        self.vae.decoder = SpectraVAE_Decoder_Double_Mems(N_mems_1, N_mems_2, hidden_space_dimension, print_var, use_as_autoencoder)
+        
+    def forward(self, x1, x2):
+        x1, x2 = self.attention_module(x1, x2)
+        
+        return self.vae(x1, x2)
+    
+    
+class AttentionHead(nn.Module):
+    
+    def __init__(self,  N_mems_1, N_mems_2, embedding_size = 64):
+        super().__init__()
+        
+        # Self attention (mems1 on mems1)
+        self.attention_1_1 = Attention1D(N_mems_1, embedding_size, use_activation = False)
+        # Self attention (mems2 on mems2)
+        self.attention_2_2 = Attention1D(N_mems_2, embedding_size, use_activation = False)
+        # Attention mems1 on mems2
+        self.attention_1_2 = Attention1D(N_mems_1, embedding_size, N_mems_2, use_activation = False)
+        # Attention mems2 on mems1
+        self.attention_2_1 = Attention1D(N_mems_2, embedding_size, N_mems_1, use_activation = False)
+        
+    def forward(self, x1, x2):
+        x11 = self.attention_1_1(x1).squeeze()
+        x22 = self.attention_2_2(x2).squeeze()
+        x12 = self.attention_1_2(x1, x2).squeeze()
+        x21 = self.attention_2_1(x2, x1).squeeze()
+        
+        x1 = torch.cat((x11, x12), 1)
+        x2 = torch.cat((x22, x21), 1)
+        
+        return x1, x2
     
 #%% Other functions
 

@@ -70,12 +70,12 @@ def advanceEpochV1(vae, device, dataloader, optimizer, spectra_section, is_train
               vae_loss, recon_loss, kl_loss = VAE_loss(x, x_r, log_var_r, mu_z, log_var_z, alpha, beta)
             
         # Compute the total loss
-        tot_vae_loss += vae_loss
-        tot_recon_loss += recon_loss
-        tot_kl_loss += kl_loss
+        tot_vae_loss += vae_loss * x.size(0)
+        tot_recon_loss += recon_loss * x.size(0)
+        tot_kl_loss += kl_loss * x.size(0)
             
         
-    return tot_vae_loss, tot_recon_loss, tot_kl_loss
+    return tot_vae_loss/len(dataloader.sampler), tot_recon_loss/len(dataloader.sampler), tot_kl_loss/len(dataloader.sampler)
 
 
 def advanceEpochV2(vae, device, dataloader, optimizer, is_train = True, alpha = 1, beta = 1):
@@ -128,12 +128,12 @@ def advanceEpochV2(vae, device, dataloader, optimizer, is_train = True, alpha = 
                 vae_loss, recon_loss, kl_loss = VAE_loss(x, x_r, log_var_r, mu_z, log_var_z, alpha, beta)
             
         # Compute the total loss
-        tot_vae_loss += vae_loss
-        tot_recon_loss += recon_loss
-        tot_kl_loss += kl_loss
+        tot_vae_loss += vae_loss * x.size(0)
+        tot_recon_loss += recon_loss * x.size(0)
+        tot_kl_loss += kl_loss * x.size(0)
             
         
-    return tot_vae_loss, tot_recon_loss, tot_kl_loss
+    return tot_vae_loss/len(dataloader.sampler), tot_recon_loss/len(dataloader.sampler), tot_kl_loss/len(dataloader.sampler)
 
 
 def advanceEpochV3(model, device, dataloader, optimizer, is_train, double_mems = True):
@@ -183,10 +183,10 @@ def advanceEpochV3(model, device, dataloader, optimizer, is_train, double_mems =
             optimizer.step()
         
         # Compute the total loss
-        tot_recon_loss += recon_loss
+        tot_recon_loss += recon_loss * x.size(0)
         
         
-    return tot_recon_loss
+    return tot_recon_loss/len(dataloader.sampler)
 
 
 
@@ -196,6 +196,8 @@ def advance_Epoch_Double_Mems(model, device, dataloader, optimizer, is_train,
     """
     Function to train/test the architecture when data from both the mems are used.
     Can train the VAE (alone), Autoencoder (alone), VAE + CLF
+    
+    TODO. This function is not complete
     """
     
     if(is_train): model.train()
@@ -223,6 +225,9 @@ def advance_Epoch_Double_Mems(model, device, dataloader, optimizer, is_train,
 
 
 def double_mems_step(x1, x2, model, only_autoencoder = False, use_clf = False, alpha = 1, beta = 1, gamma = 1, split_output = False):
+    """
+    Common part of code through various training function
+    """
     # Compute output
     model_output = model(x1, x2)
     

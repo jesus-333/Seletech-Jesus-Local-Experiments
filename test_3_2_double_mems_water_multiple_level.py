@@ -1,5 +1,4 @@
 # Imports 
-
 import sys
 sys.path.insert(1, 'support')
 
@@ -11,7 +10,7 @@ from torch.utils.data import DataLoader
 
 from support.datasets import load_spectra_data, load_water_data, create_extended_water_vector, choose_spectra_based_on_water_V1, choose_spectra_based_on_water_V2
 from support.datasets import PytorchDatasetPlantSpectra_V1
-from support.VAE import SpectraVAE_Double_Mems
+from support.VAE import SpectraVAE_Double_Mems, AttentionVAE
 from support.VAE_Conv import SpectraVAE_Double_Mems_Conv
 from support.training import advanceEpochV2, VAE_loss, advance_recon_loss, advanceEpochV3
 from support.visualization import compare_results_by_spectra, compare_results_by_loss, draw_hist_loss, compute_recon_loss_given_dataset_autoencoder
@@ -23,7 +22,7 @@ normalize_trials = 1
 
 hidden_space_dimension = 2
 batch_size = 65
-epochs = 200
+epochs = 150
 learning_rate = 1e-3
 alpha = 1 # Hyperparemeter to fine tuning the value of the reconstruction error
 beta = 3 # Hyperparemeter to fine tuning the value of the KL Loss
@@ -38,7 +37,12 @@ use_as_autoencoder = True
 
 use_cnn = False
 
+use_attention = True
+embedding_size = 64
+
 #%% Load data
+
+if use_attention and use_cnn: raise ValueError("Both use_attention and use_cnn are True. You can't use both together because I don't have implemented attention for CNN (yet)")
 
 # Sepctra
 spectra_plants_numpy, wavelength, timestamp = load_spectra_data("data/[2021-08-05_to_11-26]All_PlantSpectra.csv", normalize_trials)
@@ -97,7 +101,12 @@ length_mems_2 = int(max(wavelength) - 1750)
 if use_cnn:
     vae = SpectraVAE_Double_Mems_Conv(length_mems_1, length_mems_2, hidden_space_dimension, print_var = print_var, use_as_autoencoder = use_as_autoencoder)
 else:
-    vae = SpectraVAE_Double_Mems(length_mems_1, length_mems_2, hidden_space_dimension, print_var = print_var, use_as_autoencoder = use_as_autoencoder )
+    if use_attention:
+        vae = AttentionVAE(length_mems_1, length_mems_2, hidden_space_dimension, embedding_size,
+                                     print_var = print_var, use_as_autoencoder = use_as_autoencoder )
+    else:
+        vae = SpectraVAE_Double_Mems(length_mems_1, length_mems_2, hidden_space_dimension, 
+                                     print_var = print_var, use_as_autoencoder = use_as_autoencoder )
 
     
 optimizer = torch.optim.AdamW(vae.parameters(), lr = learning_rate, weight_decay = 1e-3)
