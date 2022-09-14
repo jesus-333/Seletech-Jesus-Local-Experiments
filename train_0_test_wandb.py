@@ -16,7 +16,7 @@ import wandb
 
 from logger import AnotherLogger
 from support.initialization import load_data_and_create_dataset, split_dataset, make_dataloader, get_model_optimizer_scheduler
-# from support.training_wandb import * 
+from support.training_wandb import train_model_wandb
 
 #%% Wandb login and log file inizialization
 
@@ -55,7 +55,8 @@ settings = dict(
     beta = 3,
     # Other parameters
     print_var = True,
-    training_type = "double mnist water single level"
+    training_type = "double mnist water single level",
+    log_freq = 1
     )
 
 logger.debug("Hyperparameter created")
@@ -80,7 +81,9 @@ with wandb.init(project="test_spectra_wandb", config = settings):
     
     vae, optimizer, lr_scheduler = get_model_optimizer_scheduler(config)
     
-    # train(model, train_loader, criterion, optimizer, config)
+    train_model_wandb(vae, optimizer, 
+                      bad_spectra_train_dataloader, bad_spectra_validation_dataloader, good_dataloader, 
+                      config)
     
     # # and test its final performance
     # test(model, test_loader)

@@ -36,7 +36,7 @@ step_show = 2
 
 plot_latent_space_during_training = False
 
-use_as_autoencoder = False
+use_as_autoencoder = True
 
 use_cnn = False
 
