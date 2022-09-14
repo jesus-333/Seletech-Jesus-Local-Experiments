@@ -15,7 +15,7 @@ import os
 import wandb
 
 from logger import AnotherLogger
-from support.initialization import load_data_and_create_dataset, split_dataset
+from support.initialization import load_data_and_create_dataset, split_dataset, make_dataloader, get_model_optimizer_scheduler
 # from support.training_wandb import * 
 
 #%% Wandb login and log file inizialization
@@ -40,9 +40,10 @@ settings = dict(
     length_mems_2 = 400,
     percentage_train = 0.6,
     percentage_test = 0.2,
-    percentage_validation = 0.9,
+    percentage_validation = 0.2,
     # Model parameters
     hidden_space_dimension = 2,
+    use_as_autoencoder = True,
     use_cnn = False,
     use_attention = False,
     embedding_size = 64,
@@ -72,11 +73,13 @@ with wandb.init(project="test_spectra_wandb", config = settings):
     # Split in training, test and validation
     bad_spectra_train, bad_spectra_test, bad_spectra_validaton = split_dataset(bad_dataset, config, logger)
     
-    # make the model, data, and optimization problem
-    # model, train_loader, test_loader, criterion, optimizer = make(config)
-    # print(model)
+    bad_spectra_train_dataloader = make_dataloader(bad_spectra_train, config)
+    bad_spectra_test_dataloader = make_dataloader(bad_spectra_test, config)
+    bad_spectra_validation_dataloader = make_dataloader(bad_spectra_validaton, config)
+    good_dataloader = make_dataloader(good_dataset, config)
     
-    # # and use them to train the model
+    vae, optimizer, lr_scheduler = get_model_optimizer_scheduler(config)
+    
     # train(model, train_loader, criterion, optimizer, config)
     
     # # and test its final performance

@@ -13,3 +13,5 @@ support/__pycache__/datasets.cpython-38.pyc
 support/__pycache__/training.cpython-38.pyc
 support/__pycache__/VAE.cpython-38.pyc
 support/__pycache__/visualization.cpython-38.pyc
+
+wandb/

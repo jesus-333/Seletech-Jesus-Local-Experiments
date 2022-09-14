@@ -1,24 +1,27 @@
-14/09/2022 15:53:18.124001	DEBUG
+14/09/2022 16:42:41.832349	DEBUG
 	Wandb login
 
-14/09/2022 15:53:18.124060	DEBUG
+14/09/2022 16:42:41.832412	DEBUG
 	Hyperparameter created
 
-14/09/2022 15:53:30.520137	DEBUG
-	Spectra data loaded with normalization = 
+14/09/2022 16:42:57.555606	DEBUG
+	Spectra data loaded with normalization = 1
 
-14/09/2022 15:53:31.192426	DEBUG
+14/09/2022 16:42:58.280750	DEBUG
 	Water data loaded and extended to spectra timestamp
 
-14/09/2022 15:53:31.193343	DEBUG
+14/09/2022 16:42:58.281244	DEBUG
 	Spectra divided in two class based on water quantity
 
-14/09/2022 15:53:31.574137	DEBUG
+14/09/2022 16:42:58.764173	DEBUG
 	PyTorch dataset created
 		N good spectra = 15607
 		N bad spectra  = 142832
 		Total spectra  = 158439
 
-14/09/2022 15:53:31.581745	ERROR
-	The sum of the percentage of train, test and validation must be 1
+14/09/2022 16:42:58.776642	DEBUG
+	Dataset split done
+		Length Training set   = 85699
+		Length Test set       = 28566
+		Length Validation set = 28567
 

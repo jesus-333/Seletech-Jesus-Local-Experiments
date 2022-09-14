@@ -11,10 +11,13 @@ It is created to have cleaner training file and work better with wandb
 """
 
 #%% Imports
-import logging
+import torch
+from torch.utils.data import DataLoader
 
 from support.datasets import load_spectra_data, load_water_data, create_extended_water_vector, choose_spectra_based_on_water_V1
 from support.datasets import PytorchDatasetPlantSpectra_V1
+from support.VAE import SpectraVAE_Double_Mems, AttentionVAE
+from support.VAE_Conv import SpectraVAE_Double_Mems_Conv
 
 #%% Load data
 
@@ -80,4 +83,46 @@ def split_dataset(dataset, config, logger = None):
         
     return dataset_train, dateset_test, dataset_validation
 
-#%%
+
+def make_dataloader(dataset, config, logger = None):
+    if 'batch_size' not in config:
+        if logger is not None: logger.error("Batch size must be specified and be bigger than 0")
+        raise ValueError("Batch size must be specified and be bigger than 0")
+        
+    if 'dataloader_shuffle' not in config: 
+        config['dataloader_shuffle'] = True
+        if config.print_var: print("Shuffle on dataloader was not specified. It was set to True")
+        if logger is not None: logger.info("Shuffle on dataloader was not specified. It was set to True")
+        
+    if 'dataloader_num_worker' not in config: 
+        config['dataloader_num_worker'] = 0
+        if config.print_var: print("num_worker For dataloader was not specified. It was set to 0")
+        if logger is not None: logger.info("num_worker For dataloader was not specified. It was set to 0")
+    
+    loader = DataLoader(dataset, batch_size = config.batch_size,
+                                         shuffle = config.dataloader_shuffle,
+                                         num_workers = config.dataloader_num_worker)
+    
+    return loader
+
+#%% Load Model
+
+def get_model_optimizer_scheduler(config, logger = None):
+    if config.use_cnn: # Convolutional VAE 
+        model = SpectraVAE_Double_Mems_Conv(config.length_mems_1, config.length_mems_2, 
+                                          config.hidden_space_dimension, 
+                                          print_var = config.print_var, use_as_autoencoder = config.use_as_autoencoder)
+    else:
+        if config.use_attention: # Feed-Forward VAE with attention
+            model = AttentionVAE(config.length_mems_1, config.length_mems_2, 
+                               config.hidden_space_dimension, config.embedding_size,
+                               print_var = config.print_var, use_as_autoencoder = config.use_as_autoencoder )
+        else: # Feed-Forward VAE without attention
+            model = SpectraVAE_Double_Mems(config.length_mems_1, config.length_mems_2, 
+                                         config.hidden_space_dimension, 
+                                         print_var = config.print_var, use_as_autoencoder = config.use_as_autoencoder)
+            
+    optimizer = torch.optim.AdamW(model.parameters(), lr = config.learning_rate)
+    scheduler = torch.optim.lr_scheduler.ExponentialLR(optimizer, gamma = 0.9)
+    
+    return model, optimizer, scheduler
