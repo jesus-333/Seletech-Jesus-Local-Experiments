@@ -1,0 +1,23 @@
+2022-09-14 13:52:31,226 INFO    MainThread:17442 [wandb_setup.py:_flush():76] Configure stats pid to 17442
+2022-09-14 13:52:31,226 INFO    MainThread:17442 [wandb_setup.py:_flush():76] Loading settings from /home/jesus/.config/wandb/settings
+2022-09-14 13:52:31,226 INFO    MainThread:17442 [wandb_setup.py:_flush():76] Loading settings from /home/jesus/Desktop/github repo/Seletech-Jesus-Local-Experiments/wandb/settings
+2022-09-14 13:52:31,226 INFO    MainThread:17442 [wandb_setup.py:_flush():76] Loading settings from environment variables: {'_require_service': 'True'}
+2022-09-14 13:52:31,226 INFO    MainThread:17442 [wandb_setup.py:_flush():76] Inferring run settings from compute environment: {'program_relpath': 'train_0_test_wandb.py', 'program': '/home/jesus/Desktop/github repo/Seletech-Jesus-Local-Experiments/train_0_test_wandb.py'}
+2022-09-14 13:52:31,226 INFO    MainThread:17442 [wandb_setup.py:_flush():76] Applying login settings: {'api_key': '***REDACTED***'}
+2022-09-14 13:52:31,226 INFO    MainThread:17442 [wandb_init.py:_log_setup():461] Logging user logs to /home/jesus/Desktop/github repo/Seletech-Jesus-Local-Experiments/wandb/run-20220914_135231-avbei284/logs/debug.log
+2022-09-14 13:52:31,226 INFO    MainThread:17442 [wandb_init.py:_log_setup():462] Logging internal logs to /home/jesus/Desktop/github repo/Seletech-Jesus-Local-Experiments/wandb/run-20220914_135231-avbei284/logs/debug-internal.log
+2022-09-14 13:52:31,226 INFO    MainThread:17442 [wandb_init.py:init():495] calling init triggers
+2022-09-14 13:52:31,226 INFO    MainThread:17442 [wandb_init.py:init():498] wandb.init called with sweep_config: {}
+config: {'spectra_data_path': 'data/[2021-08-05_to_11-26]All_PlantSpectra.csv', 'water_data_path': 'data/[2021-08-05_to_11-26]PlantTest_Notes.csv', 'labels': ['NO Water (Train)', 'NO Water (Test)', 'Water'], 'normalize_trials': 1, 'time_interval_start': 45, 'time_interval_end': 360, 'length_mems_1': 300, 'length_mems_2': 400, 'percentage_train': 0.6, 'percentage_test': 0.2, 'pecentage_validation': 0.2, 'hidden_space_dimension': 2, 'use_cnn': False, 'use_attention': False, 'embedding_size': 64, 'batch_size': 75, 'epochs': 100, 'learning_rate': 0.001, 'alpha': 1, 'beta': 3, 'print_var': True, 'training_type': 'double mnist water single level'}
+2022-09-14 13:52:31,227 INFO    MainThread:17442 [wandb_init.py:init():548] starting backend
+2022-09-14 13:52:31,227 INFO    MainThread:17442 [wandb_init.py:init():552] setting up manager
+2022-09-14 13:52:31,228 INFO    MainThread:17442 [backend.py:_multiprocessing_setup():97] multiprocessing start_methods=fork,spawn,forkserver, using: spawn
+2022-09-14 13:52:31,229 INFO    MainThread:17442 [wandb_init.py:init():558] backend started and connected
+2022-09-14 13:52:31,231 INFO    MainThread:17442 [wandb_run.py:_label_probe_notebook():1105] probe notebook
+2022-09-14 13:52:31,231 INFO    MainThread:17442 [wandb_run.py:_label_probe_notebook():1115] Unable to probe notebook: 'NoneType' object has no attribute 'get'
+2022-09-14 13:52:31,231 INFO    MainThread:17442 [wandb_init.py:init():636] updated telemetry
+2022-09-14 13:52:31,303 INFO    MainThread:17442 [wandb_init.py:init():667] communicating run to backend with 30 second timeout
+2022-09-14 13:53:01,304 INFO    MainThread:17442 [interface_shared.py:_communicate_run():331] couldn't get run from backend
+2022-09-14 13:53:01,305 ERROR   MainThread:17442 [wandb_init.py:init():676] backend process timed out
+2022-09-14 13:53:01,305 ERROR   MainThread:17442 [wandb_init.py:init():685] encountered error: Error communicating with wandb process
+For more info see: https://docs.wandb.ai/library/init#init-start-error

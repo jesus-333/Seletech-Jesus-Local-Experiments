@@ -10,12 +10,21 @@ import sys
 sys.path.insert(1, 'support')
 
 import numpy as np
+
+import os
 import wandb
 
-from support.training_wandb import *
+from logger import AnotherLogger
+from support.initialization import load_data_and_create_dataset, split_dataset
+# from support.training_wandb import * 
 
-#%% Wandb login
+#%% Wandb login and log file inizialization
+
 wandb.login()
+os.environ["WANDB_SILENT"] = "true"
+
+logger = AnotherLogger("log.txt")
+logger.debug("Wandb login")
 
 #%% Define settings
 
@@ -31,7 +40,7 @@ settings = dict(
     length_mems_2 = 400,
     percentage_train = 0.6,
     percentage_test = 0.2,
-    pecentage_validation = 0.2,
+    percentage_validation = 0.9,
     # Model parameters
     hidden_space_dimension = 2,
     use_cnn = False,
@@ -48,20 +57,27 @@ settings = dict(
     training_type = "double mnist water single level"
     )
 
+logger.debug("Hyperparameter created")
 
 #%% 
 
 # Tell wandb to get started
 with wandb.init(project="test_spectra_wandb", config = settings):
-  # Access all HPs through wandb.config, so logging matches execution!
-  config = wandb.config
-
-  # make the model, data, and optimization problem
-  model, train_loader, test_loader, criterion, optimizer = make(config)
-  print(model)
-
-  # and use them to train the model
-  train(model, train_loader, criterion, optimizer, config)
-
-  # and test its final performance
-  test(model, test_loader)
+    # Access all HPs through wandb.config, so logging matches execution!
+    config = wandb.config
+    
+    # Load dataset
+    good_dataset, bad_dataset = load_data_and_create_dataset(config, logger)
+    
+    # Split in training, test and validation
+    bad_spectra_train, bad_spectra_test, bad_spectra_validaton = split_dataset(bad_dataset, config, logger)
+    
+    # make the model, data, and optimization problem
+    # model, train_loader, test_loader, criterion, optimizer = make(config)
+    # print(model)
+    
+    # # and use them to train the model
+    # train(model, train_loader, criterion, optimizer, config)
+    
+    # # and test its final performance
+    # test(model, test_loader)
