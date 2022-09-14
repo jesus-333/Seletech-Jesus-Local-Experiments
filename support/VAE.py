@@ -247,9 +247,10 @@ class SpectraVAE_Decoder_Double_Mems(nn.Module):
         self.output_layer_mean_mems_2 = torch.nn.Linear(64, N_mems_2)
         
         if not use_as_autoencoder:
-            self.output_layer_log_var_mems_1 = torch.nn.Linear(64, 1)
-            self.output_layer_log_var_mems_2 = torch.nn.Linear(64, 1)
-        
+            self.output_layer_log_var_mems_1 = torch.nn.Linear(64, N_mems_1)
+            self.output_layer_log_var_mems_2 = torch.nn.Linear(64, N_mems_2)
+            
+            
         self.N_mems_1 = N_mems_1
         self.N_mems_2 = N_mems_2
         self.hidden_space_dimension = hidden_space_dimension
@@ -273,7 +274,7 @@ class SpectraVAE_Decoder_Double_Mems(nn.Module):
             return x_mean_1, x_mean_2
         else:
             x_log_var_1 = self.output_layer_log_var_mems_1(x1)
-            x_log_var_2 = self.output_layer_log_var_mems_1(x2)
+            x_log_var_2 = self.output_layer_log_var_mems_2(x2)
             
             return x_mean_1, x_log_var_1, x_mean_2, x_log_var_2
 

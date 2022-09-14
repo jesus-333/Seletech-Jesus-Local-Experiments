@@ -2,8 +2,11 @@
 @author: Alberto Zancanaro (Jesus)
 @organization: University of Padua (Italy)
 
-Support functions related to the datasets
-
+This file contains:
+    - Function to load the raw data
+    - Function to divide the raw data based on various criteria
+    - Definition of the PyTorch dataset class for the plant spectra
+        
 """
 
 import numpy as np

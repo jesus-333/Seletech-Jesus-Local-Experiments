@@ -235,7 +235,7 @@ def double_mems_step(x1, x2, model, only_autoencoder = False, use_clf = False, a
     x_r_1, x_r_2 = model_output[0], model_output[1]
     x_r = torch.cat((x_r_1, x_r_2), -1)
     
-    if only_autoencoder: 
+    if only_autoencoder: # Use the model as an AUTOENCODER
         # Latent space embedding
         z = model_output[2]
         
@@ -250,7 +250,7 @@ def double_mems_step(x1, x2, model, only_autoencoder = False, use_clf = False, a
                 return x_r_1, x_r_2, z
             else: 
                 return x_r, z
-    else: # I.e. IF it is a VAE
+    else: # I.e. Use the model as a VAE 
     
         # Variance of the reconstructed output
         log_var_r_1, log_var_r_2 = model_output[2], model_output[3]
@@ -312,7 +312,7 @@ def advance_recon_loss(x, x_r, std_r):
     Input parameters:
       x = Original data
       x_r = mean of the reconstructed output
-      std_r = standard deviation of the reconstructed output. This is a scalar value.
+      std_r = standard deviation of the reconstructed output. 
     
     More info: 
     https://www.statlect.com/fundamentals-of-statistics/normal-distribution-maximum-likelihood
@@ -321,10 +321,14 @@ def advance_recon_loss(x, x_r, std_r):
     
     total_loss = 0
     
-    # MSE part
-    mse_core = torch.pow((x - x_r), 2).sum(1)/ x.shape[1]
-    mse_scale = (x[0].shape[0]/(2 * torch.pow(std_r, 2)))
-    total_loss += (mse_core * mse_scale)
+    # MSE part ORIGINAL
+    # mse_core = torch.pow((x - x_r), 2).sum(1)/ x.shape[1]
+    # mse_scale = (x.shape[1]/(2 * torch.pow(std_r, 2)))
+    # total_loss += (mse_core * mse_scale)
+    
+    # MSE Part (a variance per wavelength)
+    mse_core = (torch.pow((x - x_r), 2)/(2 * torch.pow(std_r, 2))).sum(1) / x.shape[1]
+    total_loss += mse_core 
     
     # Variance part
     # total_loss += x[0].shape[0] * torch.log(std_r).mean()

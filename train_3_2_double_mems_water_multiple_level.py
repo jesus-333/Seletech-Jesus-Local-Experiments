@@ -33,11 +33,11 @@ time_interval_end = 360
 print_var = True
 step_show = 2
 
-use_as_autoencoder = True
+use_as_autoencoder = False
 
 use_cnn = False
 
-use_attention = True
+use_attention = False
 embedding_size = 64
 
 #%% Load data

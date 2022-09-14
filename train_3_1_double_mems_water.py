@@ -23,10 +23,10 @@ normalize_trials = 1
 
 hidden_space_dimension = 2
 batch_size = 75
-epochs = 200
-learning_rate = 1e-4
+epochs = 100
+learning_rate = 1e-3
 alpha = 1 # Hyperparemeter to fine tuning the value of the reconstruction error
-beta = 7 # Hyperparemeter to fine tuning the value of the KL Loss
+beta = 3 # Hyperparemeter to fine tuning the value of the KL Loss
 
 time_interval_start = 45
 time_interval_end = 360
@@ -34,11 +34,13 @@ time_interval_end = 360
 print_var = True
 step_show = 2
 
-use_as_autoencoder = True
+plot_latent_space_during_training = False
+
+use_as_autoencoder = False
 
 use_cnn = False
 
-use_attention = True
+use_attention = False
 embedding_size = 64
 
 #%% Load data
@@ -143,9 +145,9 @@ for epoch in range(epochs):
         kl_loss_bad.append(float(tmp_loss_bad_kl))
     
     if(print_var and epoch % step_show == 0):
-        print("Epoch: {} ({:.2f}%)".format(epoch, epoch/epochs * 100), optimizer.param_groups[0]['lr'])
+        print("Epoch: {} ({:.2f}%)".format(epoch, epoch/epochs * 100))
       
-        print("\tLoss (GOOD)(TRAIN)\t\t: ", float(total_loss_good_train[-1]))
+        print("\tLoss (GOOD)(TRAIN)\t: ", float(total_loss_good_train[-1]))
         if not use_as_autoencoder:
             print("\t\tReconstr (GOOD)(TRAIN)\t: ", float(recon_loss_good_train[-1]))
             print("\t\tKullback (GOOD)(TRAIN)\t: ", float(kl_loss_good_train[-1]), "\n")
@@ -155,7 +157,7 @@ for epoch in range(epochs):
             print("\t\tReconstr (GOOD)(TEST)\t: ", float(tmp_loss_good_recon))
             print("\t\tKullback (GOOD)(TEST)\t: ", float(tmp_loss_good_kl), "\n")
         
-        print("\tLoss (BAD)\t\t: ", float(total_loss_bad[-1]))
+        print("\tLoss (BAD)\t\t\t: ", float(total_loss_bad[-1]))
         if not use_as_autoencoder:
             print("\t\tReconstr (BAD)\t: ", float(tmp_loss_bad_recon))
             print("\t\tKullback (BAD)\t: ", float(tmp_loss_bad_kl), "\n")
@@ -164,7 +166,7 @@ for epoch in range(epochs):
         
     scheduler.step()
     
-    if not use_as_autoencoder:
+    if not use_as_autoencoder and plot_latent_space_during_training:
     
         n_samples = -1
         s = 1
@@ -187,9 +189,9 @@ if not use_as_autoencoder:
 
 else:
     plt.figure(figsize = figsize)
-    plt.plot(np.asarray(total_loss_good_train)/len(good_spectra_dataset_train))
-    plt.plot(np.asarray(total_loss_good_test)/len(good_spectra_dataset_test))
-    plt.plot(np.asarray(total_loss_bad)/len(bad_spectra_dataset))
+    plt.plot(np.asarray(total_loss_good_train))
+    plt.plot(np.asarray(total_loss_good_test))
+    plt.plot(np.asarray(total_loss_bad))
     plt.yscale('log')
     plt.legend(labels)
     
