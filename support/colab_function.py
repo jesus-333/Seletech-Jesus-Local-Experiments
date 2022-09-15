@@ -15,7 +15,7 @@ from oauth2client.client import GoogleCredentials# Authenticate and create the P
 import pandas as pd
 import numpy as np
 
-from support.dataset import spectra_normalization, create_extended_water_vector, choose_spectra_based_on_water_V1
+from support.datasets import spectra_normalization, create_extended_water_vector, choose_spectra_based_on_water_V1
 from support.datasets import PytorchDatasetPlantSpectra_V1
 
 #%% Google related function
