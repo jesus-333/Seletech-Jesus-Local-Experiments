@@ -15,7 +15,7 @@ from torch import nn
 
 class SpectraVAE_Double_Mems_Conv(nn.Module):
     
-    def __init__(self, N_mems_1, N_mems_2, hidden_space_dimension, print_var = False, use_as_autoencoder = False):
+    def __init__(self, N_mems_1, N_mems_2, hidden_space_dimension, use_as_autoencoder = False, use_bias = True, print_var = False):
         """
         N = Input length
         hidden_space_dimension = Dimension of the hidden (latent) space. Default is 2 
@@ -23,9 +23,13 @@ class SpectraVAE_Double_Mems_Conv(nn.Module):
         
         super().__init__()
 
-        self.encoder = SpectraVAE_Encoder_Double_Mems_Conv(N_mems_1, N_mems_2, hidden_space_dimension, print_var, use_as_autoencoder)
+        self.encoder = SpectraVAE_Encoder_Double_Mems_Conv(N_mems_1, N_mems_2, 
+                                                           hidden_space_dimension, use_as_autoencoder, use_bias = True, 
+                                                           print_var = False)
         
-        self.decoder = SpectraVAE_Decoder_Double_Mems_Conv(self.encoder.mems_1_output_shape, self.encoder.mems_2_output_shape, hidden_space_dimension, print_var, use_as_autoencoder)
+        self.decoder = SpectraVAE_Decoder_Double_Mems_Conv(self.encoder.mems_1_output_shape, self.encoder.mems_2_output_shape, 
+                                                           hidden_space_dimension, use_as_autoencoder, use_bias = True, 
+                                                           print_var = False)
         
         self.hidden_space_dimension = hidden_space_dimension
         self.use_as_autoencoder = use_as_autoencoder
@@ -63,7 +67,7 @@ class SpectraVAE_Double_Mems_Conv(nn.Module):
 
 class SpectraVAE_Encoder_Double_Mems_Conv(nn.Module):
     
-    def __init__(self, N_mems_1, N_mems_2, hidden_space_dimension = 2, print_var = False, use_as_autoencoder = False):
+    def __init__(self, N_mems_1, N_mems_2, hidden_space_dimension = 2, use_as_autoencoder = False, use_bias = True, print_var = False):
         """
         Encoder of the VAE 
         N = Input length
@@ -136,7 +140,7 @@ class SpectraVAE_Encoder_Double_Mems_Conv(nn.Module):
 
 class SpectraVAE_Decoder_Double_Mems_Conv(nn.Module):
     
-    def __init__(self, mems_1_output_shape, mems_2_output_shape, hidden_space_dimension = 2, print_var = False, use_as_autoencoder = False):
+    def __init__(self, mems_1_output_shape, mems_2_output_shape, hidden_space_dimension = 2, use_as_autoencoder = False, use_bias = True, print_var = False):
         """
         Encoder of the VAE. The output distribution is hypothesized gaussian so the decoder will return two value: mean and distributoin.
         (More info: https://arxiv.org/pdf/2006.13202.pdf)

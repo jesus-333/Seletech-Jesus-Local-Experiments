@@ -38,7 +38,7 @@ def load_data_and_create_dataset(config, logger = None):
     extended_water_timestamp = create_extended_water_vector(water_timestamp, water_data, timestamp)
     if logger is not None: logger.debug("Water data loaded and extended to spectra timestamp")
 
-    # Due to the fact that I have much more bad spectra in this way I use them to train the network.
+    # Due to the fact that I have much more bad spectra I use them to train the network.
     good_idx, bad_idx = choose_spectra_based_on_water_V1(extended_water_timestamp, 
                                                          time_interval_start = config.time_interval_start, 
                                                          time_interval_end = config.time_interval_end)
@@ -77,26 +77,26 @@ def split_dataset(dataset, config, logger = None):
         logger.debug(tmp_string)
     
     if config.print_var:
-        print("\t\tLength Training set   = " + str(len(dataset_train)))
-        print("\t\tLength Test set       = " + str(len(dateset_test)))
-        print("\t\tLength Validation set = " + str(len(dataset_validation)))
+        print("Length Training set   = " + str(len(dataset_train)))
+        print("Length Test set       = " + str(len(dateset_test)))
+        print("Length Validation set = " + str(len(dataset_validation)))
         
     return dataset_train, dateset_test, dataset_validation
 
 
 def make_dataloader(dataset, config, logger = None):
     if 'batch_size' not in config:
-        if logger is not None: logger.error("Batch size must be specified and be bigger than 0")
+        if logger is not None: logger.error("Batch size must be specified and be bigger than 0\n")
         raise ValueError("Batch size must be specified and be bigger than 0")
         
     if 'dataloader_shuffle' not in config: 
         config['dataloader_shuffle'] = True
-        if config.print_var: print("Shuffle on dataloader was not specified. It was set to True")
+        if config.print_var: print("Shuffle on dataloader was not specified. It was set to True\n")
         if logger is not None: logger.info("Shuffle on dataloader was not specified. It was set to True")
         
     if 'dataloader_num_worker' not in config: 
         config['dataloader_num_worker'] = 0
-        if config.print_var: print("num_worker For dataloader was not specified. It was set to 0")
+        if config.print_var: print("num_worker For dataloader was not specified. It was set to 0\n")
         if logger is not None: logger.info("num_worker For dataloader was not specified. It was set to 0")
     
     loader = DataLoader(dataset, batch_size = config.batch_size,
@@ -109,20 +109,28 @@ def make_dataloader(dataset, config, logger = None):
 
 def get_model_optimizer_scheduler(config, logger = None):
     if config.use_cnn: # Convolutional VAE 
-        model = SpectraVAE_Double_Mems_Conv(config.length_mems_1, config.length_mems_2, 
-                                          config.hidden_space_dimension, 
-                                          print_var = config.print_var, use_as_autoencoder = config.use_as_autoencoder)
+        model = SpectraVAE_Double_Mems_Conv(config.length_mems_1, config.length_mems_2, config.hidden_space_dimension, 
+                                            use_as_autoencoder = config.use_as_autoencoder, use_bias = config.use_bias,
+                                            print_var = config.print_var)
     else:
         if config.use_attention: # Feed-Forward VAE with attention
             model = AttentionVAE(config.length_mems_1, config.length_mems_2, 
                                config.hidden_space_dimension, config.embedding_size,
                                print_var = config.print_var, use_as_autoencoder = config.use_as_autoencoder )
         else: # Feed-Forward VAE without attention
-            model = SpectraVAE_Double_Mems(config.length_mems_1, config.length_mems_2, 
-                                         config.hidden_space_dimension, 
-                                         print_var = config.print_var, use_as_autoencoder = config.use_as_autoencoder)
-            
-    optimizer = torch.optim.AdamW(model.parameters(), lr = config.learning_rate)
+            model = SpectraVAE_Double_Mems(config.length_mems_1, config.length_mems_2, config.hidden_space_dimension, 
+                                         use_as_autoencoder = config.use_as_autoencoder, use_bias = config.use_bias,
+                                         print_var = config.print_var)
+    
+    if 'optimizer_weight_decay' not in config:
+        config['optimizer_weight_decay'] = 0.01
+        if config.print_var: print("Weight decay for optimizer was not specified. It was set to default value of 0.01\n")
+        
+    if 'use_scheduler' not in config:
+        config['use_scheduler'] = False
+        if config.print_var: print("use_scheduler was not specified. It was set to default value of False. So no learning rate scheduler will be used.\n")
+
+    optimizer = torch.optim.AdamW(model.parameters(), lr = config.learning_rate, weight_decay = config.optimizer_weight_decay)
     scheduler = torch.optim.lr_scheduler.ExponentialLR(optimizer, gamma = 0.9)
     
     return model, optimizer, scheduler

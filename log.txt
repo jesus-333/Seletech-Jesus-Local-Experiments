@@ -1,25 +1,46 @@
-14/09/2022 16:42:41.832349	DEBUG
+15/09/2022 13:48:33.884964	DEBUG
 	Wandb login
 
-14/09/2022 16:42:41.832412	DEBUG
+15/09/2022 13:48:33.885951	DEBUG
 	Hyperparameter created
 
-14/09/2022 16:42:57.555606	DEBUG
+15/09/2022 13:48:50.040478	DEBUG
 	Spectra data loaded with normalization = 1
 
-14/09/2022 16:42:58.280750	DEBUG
+15/09/2022 13:48:50.786015	DEBUG
 	Water data loaded and extended to spectra timestamp
 
-14/09/2022 16:42:58.281244	DEBUG
+15/09/2022 13:48:50.786564	DEBUG
 	Spectra divided in two class based on water quantity
 
-14/09/2022 16:42:58.764173	DEBUG
+15/09/2022 13:48:51.405520	DEBUG
 	PyTorch dataset created
 		N good spectra = 15607
 		N bad spectra  = 142832
 		Total spectra  = 158439
 
-14/09/2022 16:42:58.776642	DEBUG
+15/09/2022 13:48:51.422187	DEBUG
+	Dataset split done
+		Length Training set   = 85699
+		Length Test set       = 28566
+		Length Validation set = 28567
+
+15/09/2022 13:50:51.391098	DEBUG
+	Spectra data loaded with normalization = 1
+
+15/09/2022 13:50:52.121395	DEBUG
+	Water data loaded and extended to spectra timestamp
+
+15/09/2022 13:50:52.121854	DEBUG
+	Spectra divided in two class based on water quantity
+
+15/09/2022 13:50:52.698813	DEBUG
+	PyTorch dataset created
+		N good spectra = 15607
+		N bad spectra  = 142832
+		Total spectra  = 158439
+
+15/09/2022 13:50:52.708422	DEBUG
 	Dataset split done
 		Length Training set   = 85699
 		Length Test set       = 28566

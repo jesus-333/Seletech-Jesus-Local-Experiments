@@ -47,12 +47,16 @@ settings = dict(
     use_cnn = False,
     use_attention = False,
     embedding_size = 64,
+    use_bias = False,
     # Training parameters
     batch_size = 75,
     epochs = 100,
     learning_rate = 1e-3,
     alpha = 1,
     beta = 3,
+    optimizer_weight_decay = 1e-3,
+    use_scheduler = True,
+    gamma = 0.9,
     # Other parameters
     print_var = True,
     training_type = "double mnist water single level",
@@ -81,9 +85,9 @@ with wandb.init(project="test_spectra_wandb", config = settings):
     
     vae, optimizer, lr_scheduler = get_model_optimizer_scheduler(config)
     
-    train_model_wandb(vae, optimizer, 
+    train_model_wandb(vae, optimizer,
                       bad_spectra_train_dataloader, bad_spectra_validation_dataloader, good_dataloader, 
-                      config)
+                      config, lr_scheduler)
     
     # # and test its final performance
     # test(model, test_loader)

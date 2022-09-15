@@ -43,6 +43,8 @@ use_cnn = False
 use_attention = False
 embedding_size = 64
 
+use_bias = True
+
 #%% Load data
 
 if use_attention and use_cnn: raise ValueError("Both use_attention and use_cnn are True. You can't use both together because I don't have implemented attention for CNN (yet)")
@@ -87,14 +89,15 @@ bad_dataloader = DataLoader(bad_spectra_dataset, batch_size = batch_size, shuffl
 length_mems_1 = int(1650 - min(wavelength))
 length_mems_2 = int(max(wavelength) - 1750)
 if use_cnn:
-    vae = SpectraVAE_Double_Mems_Conv(length_mems_1, length_mems_2, hidden_space_dimension, print_var = print_var, use_as_autoencoder = use_as_autoencoder)
+    vae = SpectraVAE_Double_Mems_Conv(length_mems_1, length_mems_2, hidden_space_dimension, 
+                                      use_as_autoencoder = use_as_autoencoder, print_var = print_var)
 else:
     if use_attention:
         vae = AttentionVAE(length_mems_1, length_mems_2, hidden_space_dimension, embedding_size,
-                                     print_var = print_var, use_as_autoencoder = use_as_autoencoder )
+                           use_as_autoencoder = use_as_autoencoder, print_var = print_var)
     else:
         vae = SpectraVAE_Double_Mems(length_mems_1, length_mems_2, hidden_space_dimension, 
-                                     print_var = print_var, use_as_autoencoder = use_as_autoencoder )
+                                     use_as_autoencoder = use_as_autoencoder, use_bias = use_bias, print_var = print_var)
 optimizer = torch.optim.AdamW(vae.parameters(), lr = learning_rate, weight_decay = 1e-3)
 scheduler = torch.optim.lr_scheduler.ExponentialLR(optimizer, gamma = 0.9)
 
