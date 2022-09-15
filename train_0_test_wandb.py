@@ -9,9 +9,6 @@ Created on Wed Sep 14 11:15:01 2022
 import sys
 sys.path.insert(1, 'support')
 
-import numpy as np
-
-import os
 import wandb
 
 from logger import AnotherLogger
@@ -21,7 +18,7 @@ from support.training_wandb import train_model_wandb, save_model_pytorch
 #%% Wandb login and log file inizialization
 
 wandb.login()
-os.environ["WANDB_SILENT"] = "true"
+
 
 logger = AnotherLogger("log.txt")
 logger.debug("Wandb login")
@@ -91,5 +88,3 @@ with wandb.init(project="test_spectra_wandb", config = settings):
     
     save_model_pytorch(vae, "model.h5")
     
-    # # and test its final performance
-    # test(model, test_loader)

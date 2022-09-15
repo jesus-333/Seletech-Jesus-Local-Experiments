@@ -59,9 +59,9 @@ def spectra_normalization(spectra, norm_type):
 
 #%% Water related information
 
-def load_water_data(filename):
+def load_water_data(filename, print_var = True):
     log_file_df =  pd.read_csv(filename, encoding= 'unicode_escape')
-    print("Water File Loaded\n")
+    if print_var: print("Water File Loaded\n")
     
     # Extract timestamp (in the same format of the spectra file)
     tmp_data = log_file_df['Date']
@@ -80,8 +80,8 @@ def load_water_data(filename):
     log_timestamp = np.asarray(log_timestamp)[2:]
     water = water[2:]
     
-    print("Water vector length =\t" , len(water))
-    print("Log timestamp length =\t" , len(log_timestamp), "\n")
+    if print_var: print("Water vector length =\t" , len(water))
+    if print_var: print("Log timestamp length =\t" , len(log_timestamp), "\n")
     
     return water, log_timestamp
 

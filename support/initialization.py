@@ -60,7 +60,6 @@ def load_data_and_create_dataset(config, logger = None):
         
     return good_spectra_dataset, bad_spectra_dataset
 
-
 def split_dataset(dataset, config, logger = None):
     if config.percentage_train + config.percentage_test + config.percentage_validation != 1:
         if logger is not None: logger.error("The sum of the percentage of train, test and validation must be 1")
