@@ -39,7 +39,7 @@ def read_data_from_link(drive, link, header = 0):
 
 #%% Load data function
 
-def load_data_and_create_dataset_colab(config, logger = None):
+def load_data_and_create_dataset_colab(config, drive, logger = None):
     """
     Create and return the spectra plants dataset
     
@@ -48,11 +48,11 @@ def load_data_and_create_dataset_colab(config, logger = None):
     """
     
     # Read the spectra data
-    spectra_plants_numpy, wavelength, timestamp = load_spectra_data_colab(config.spectra_data_path, config.normalize_trials)
+    spectra_plants_numpy, wavelength, timestamp = load_spectra_data_colab(drive, config.normalize_trials)
     if logger is not None: logger.debug("Spectra data loaded with normalization = {}".format(config.normalize_trials))
     
     # Read water data and create extend water vector
-    water_data, water_timestamp = load_water_data_colab(config.water_data_path)
+    water_data, water_timestamp = load_water_data_colab(drive)
     extended_water_timestamp = create_extended_water_vector(water_timestamp, water_data, timestamp)
     if logger is not None: logger.debug("Water data loaded and extended to spectra timestamp")
 
@@ -78,9 +78,9 @@ def load_data_and_create_dataset_colab(config, logger = None):
         
     return good_spectra_dataset, bad_spectra_dataset
 
-def load_spectra_data_colab( normalization_type = -1, print_var = True):
+def load_spectra_data_colab(drive, normalization_type = -1, print_var = True):
     link = 'https://drive.google.com/file/d/13Prn-VuunlwESDlxQZTR8LRIo741qgDc/view?usp=sharing'
-    spectra_plants_df = read_data_from_link(link, header = 2)
+    spectra_plants_df = read_data_from_link(drive, link, header = 2)
     
     # Convert spectra dataframe in a numpy matrix
     spectra_plants_numpy = spectra_plants_df.iloc[:,5:-1].to_numpy(dtype = float)
@@ -99,10 +99,10 @@ def load_spectra_data_colab( normalization_type = -1, print_var = True):
     
     return spectra_plants_numpy, wavelength, timestamp
 
-def load_water_data_colab(print_var = True):
+def load_water_data_colab(drive, print_var = True):
     link = 'https://drive.google.com/file/d/14_G50WEC9NNGaJDP-4X9LS0cE5PQR9JU/view?usp=sharing'
     
-    log_file_df = read_data_from_link(link)
+    log_file_df = read_data_from_link(drive, link)
     if print_var: print("Water File Loaded\n")
     
     # Extract timestamp (in the same format of the spectra file)
