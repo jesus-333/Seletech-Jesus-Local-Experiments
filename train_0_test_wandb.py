@@ -16,7 +16,7 @@ import wandb
 
 from logger import AnotherLogger
 from support.initialization import load_data_and_create_dataset, split_dataset, make_dataloader, get_model_optimizer_scheduler
-from support.training_wandb import train_model_wandb
+from support.training_wandb import train_model_wandb, save_model_pytorch
 
 #%% Wandb login and log file inizialization
 
@@ -50,7 +50,7 @@ settings = dict(
     use_bias = False,
     # Training parameters
     batch_size = 75,
-    epochs = 100,
+    epochs = 5,
     learning_rate = 1e-3,
     alpha = 1,
     beta = 3,
@@ -88,6 +88,8 @@ with wandb.init(project="test_spectra_wandb", config = settings):
     train_model_wandb(vae, optimizer,
                       bad_spectra_train_dataloader, bad_spectra_validation_dataloader, good_dataloader, 
                       config, lr_scheduler)
+    
+    save_model_pytorch(vae, "model.h5")
     
     # # and test its final performance
     # test(model, test_loader)

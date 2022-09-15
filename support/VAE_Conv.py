@@ -78,21 +78,21 @@ class SpectraVAE_Encoder_Double_Mems_Conv(nn.Module):
         
         # Conv layers for mems1
         self.input_mems_1 = torch.nn.Sequential(
-            torch.nn.Conv1d(1, 4, kernel_size = 30, stride = 3),
+            torch.nn.Conv1d(1, 4, kernel_size = 30, stride = 3, bias = use_bias),
             torch.nn.BatchNorm1d(4), torch.nn.SELU(),
-            torch.nn.Conv1d(4, 8, kernel_size = 15, stride = 3),
+            torch.nn.Conv1d(4, 8, kernel_size = 15, stride = 3, bias = use_bias),
             torch.nn.BatchNorm1d(8), torch.nn.SELU(),
-            torch.nn.Conv1d(8, 16, kernel_size = 5, stride = 2),
+            torch.nn.Conv1d(8, 16, kernel_size = 5, stride = 2, bias = use_bias),
             torch.nn.BatchNorm1d(16), torch.nn.SELU()
         )
         
         # Conv layers for mems2
         self.input_mems_2 = torch.nn.Sequential(
-            torch.nn.Conv1d(1, 4, kernel_size = 30, stride = 3),
+            torch.nn.Conv1d(1, 4, kernel_size = 30, stride = 3, bias = use_bias),
             torch.nn.BatchNorm1d(4), torch.nn.SELU(),
-            torch.nn.Conv1d(4, 8, kernel_size = 15, stride = 3),
+            torch.nn.Conv1d(4, 8, kernel_size = 15, stride = 3, bias = use_bias),
             torch.nn.BatchNorm1d(8), torch.nn.SELU(),
-            torch.nn.Conv1d(8, 16, kernel_size = 5, stride = 2),
+            torch.nn.Conv1d(8, 16, kernel_size = 5, stride = 2, bias = use_bias),
             torch.nn.BatchNorm1d(16), torch.nn.SELU()
         )
         
@@ -105,11 +105,11 @@ class SpectraVAE_Encoder_Double_Mems_Conv(nn.Module):
         self.mems_2_output_shape = tmp_mems_2_output.shape
         
         self.inner_layers = torch.nn.Sequential(
-            torch.nn.Linear(flatten_mems_1 + flatten_mems_2, 128),
+            torch.nn.Linear(flatten_mems_1 + flatten_mems_2, 128, bias = use_bias),
             torch.nn.SELU(), nn.Dropout(0.25),
-            torch.nn.Linear(128, 36),
+            torch.nn.Linear(128, 36, bias = use_bias),
             torch.nn.SELU(), nn.Dropout(0.25),
-            torch.nn.Linear(36, hidden_space_dimension * 2),
+            torch.nn.Linear(36, hidden_space_dimension * 2, bias = use_bias),
         )
 
         self.N_mems_1 = N_mems_1
@@ -162,43 +162,43 @@ class SpectraVAE_Decoder_Double_Mems_Conv(nn.Module):
         else: self.hidden_space_dimension = hidden_space_dimension 
         
         self.inner_layers = torch.nn.Sequential(
-            torch.nn.Linear(self.hidden_space_dimension, 36),
+            torch.nn.Linear(self.hidden_space_dimension, 36, bias = use_bias),
             torch.nn.SELU(), nn.Dropout(0.25),
-            torch.nn.Linear(36, 128),
+            torch.nn.Linear(36, 128, bias = use_bias),
             torch.nn.SELU(), nn.Dropout(0.25),
-            torch.nn.Linear(128, flatten_mems_1 + flatten_mems_2),
+            torch.nn.Linear(128, flatten_mems_1 + flatten_mems_2, bias = use_bias),
             torch.nn.SELU(), nn.Dropout(0.25),
         )
         
         # Conv layers for mems1
         self.output_layer_mems_1 = torch.nn.Sequential(
-            torch.nn.ConvTranspose1d(16, 8, kernel_size = 5, stride = 2),
+            torch.nn.ConvTranspose1d(16, 8, kernel_size = 5, stride = 2, bias = use_bias),
             torch.nn.BatchNorm1d(8), torch.nn.SELU(),
-            torch.nn.ConvTranspose1d(8, 4, kernel_size = 15, stride = 3),
+            torch.nn.ConvTranspose1d(8, 4, kernel_size = 15, stride = 3, bias = use_bias),
             torch.nn.BatchNorm1d(4), torch.nn.SELU(),
         )
         self.mean_mems_1 = torch.nn.Sequential(
-            torch.nn.ConvTranspose1d(4, 1, kernel_size = 30, stride = 3), 
+            torch.nn.ConvTranspose1d(4, 1, kernel_size = 30, stride = 3, bias = use_bias), 
             nn.Upsample(size = 300)
         )
         self.variance_mems_1 = torch.nn.Sequential(
-            torch.nn.ConvTranspose1d(4, 1, kernel_size = 30, stride = 3), 
+            torch.nn.ConvTranspose1d(4, 1, kernel_size = 30, stride = 3, bias = use_bias), 
             nn.Upsample(size = 300)
         )
         
         # Conv layers for mems2
         self.output_layer_mems_2 = torch.nn.Sequential(
-            torch.nn.ConvTranspose1d(16, 8, kernel_size = 5, stride = 2),
+            torch.nn.ConvTranspose1d(16, 8, kernel_size = 5, stride = 2, bias = use_bias),
             torch.nn.BatchNorm1d(8), torch.nn.SELU(),
-            torch.nn.ConvTranspose1d(8, 4, kernel_size = 15, stride = 3),
+            torch.nn.ConvTranspose1d(8, 4, kernel_size = 15, stride = 3, bias = use_bias),
             torch.nn.BatchNorm1d(4), torch.nn.SELU(),
         )
         self.mean_mems_2 = torch.nn.Sequential(
-            torch.nn.ConvTranspose1d(4, 1, kernel_size = 30, stride = 3), 
+            torch.nn.ConvTranspose1d(4, 1, kernel_size = 30, stride = 3, bias = use_bias), 
             nn.Upsample(size = 400)
         )
         self.variance_mems_2 = torch.nn.Sequential(
-            torch.nn.ConvTranspose1d(4, 1, kernel_size = 30, stride = 3), 
+            torch.nn.ConvTranspose1d(4, 1, kernel_size = 30, stride = 3, bias = use_bias), 
             nn.Upsample(size = 400)
         )
         
