@@ -50,9 +50,9 @@ def train_model_wandb(model, optimizer, loader_train, loader_validation, loader_
             log_dict["reconstruction_loss_train"] = training_loss
             log_dict["reconstruction_loss_validation"] = validation_loss
             log_dict["reconstruction_loss_excluded"] = excluded_loss
-            loss_string += "\treconstruction_loss_train:\t\t" + str(training_loss.detach().numpy()) + "\n"
-            loss_string += "\treconstruction_loss_validation:\t" + str(validation_loss.detach().numpy()) + "\n"
-            loss_string += "\treconstruction_loss_excluded:\t\t" + str(excluded_loss.detach().numpy())
+            loss_string += "\treconstruction_loss_train:\t\t" + str(training_loss.cpu().detach().numpy()) + "\n"
+            loss_string += "\treconstruction_loss_validation:\t" + str(validation_loss.cpu().detach().numpy()) + "\n"
+            loss_string += "\treconstruction_loss_excluded:\t\t" + str(excluded_loss.cpu().detach().numpy())
         else: # Loss in case I train a VAE
             log_dict, loss_string = divide_VAE_loss(training_loss, "_training", log_dict, loss_string)
             log_dict, loss_string = divide_VAE_loss(validation_loss, "_validation", log_dict, loss_string)
@@ -96,9 +96,9 @@ def divide_VAE_loss(vae_loss_list, label, log_dict, loss_string):
     log_dict = {**log_dict, **tmp_dict}
     
     # Update loss string
-    loss_string += "\ttotal_loss" + label + ":\t" + str(vae_loss_list[0].detach().numpy()) + "\n"
-    loss_string += "\t\treconstruction_loss" + label + ":\t" + str(vae_loss_list[1].detach().numpy()) + "\n"
-    loss_string += "\t\tkl_loss" + label + ":\t" + str(vae_loss_list[2].detach().numpy())
+    loss_string += "\ttotal_loss" + label + ":\t" + str(vae_loss_list[0].cpu().detach().numpy()) + "\n"
+    loss_string += "\t\treconstruction_loss" + label + ":\t" + str(vae_loss_list[1].cpu().detach().numpy()) + "\n"
+    loss_string += "\t\tkl_loss" + label + ":\t" + str(vae_loss_list[2].cpu().detach().numpy())
     
     return log_dict, loss_string
 
