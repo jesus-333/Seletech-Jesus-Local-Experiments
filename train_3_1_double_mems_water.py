@@ -98,6 +98,7 @@ else:
     else:
         vae = SpectraVAE_Double_Mems(length_mems_1, length_mems_2, hidden_space_dimension, 
                                      use_as_autoencoder = use_as_autoencoder, use_bias = use_bias, print_var = print_var)
+        
 optimizer = torch.optim.AdamW(vae.parameters(), lr = learning_rate, weight_decay = 1e-3)
 scheduler = torch.optim.lr_scheduler.ExponentialLR(optimizer, gamma = 0.9)
 

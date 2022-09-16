@@ -104,9 +104,9 @@ def divide_VAE_loss(vae_loss_list, label, log_dict, loss_string):
 
 #%% Other functions
 
-def save_model_onnx(model, model_path = "model.onnx"):
+def save_model_onnx(model, input_data, model_path = "model.onnx"):
     model.eval()
-    torch.onnx.export(model, None, model_path)
+    torch.onnx.export(model, args = input_data, f = model_path)
     wandb.save(model_path)
     
 def save_model_pytorch(model, model_path):
