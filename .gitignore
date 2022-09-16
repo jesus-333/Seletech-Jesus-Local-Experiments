@@ -15,3 +15,5 @@ support/__pycache__/VAE.cpython-38.pyc
 support/__pycache__/visualization.cpython-38.pyc
 
 wandb/
+*.csv
+data/jesus_ht_timestamp.csv
