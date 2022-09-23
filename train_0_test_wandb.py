@@ -12,8 +12,8 @@ sys.path.insert(1, 'support')
 import wandb
 
 from logger import AnotherLogger
-from support.initialization import load_data_and_create_dataset, split_dataset, make_dataloader, get_model_optimizer_scheduler
-from support.training_wandb import train_model_wandb, save_model_pytorch, save_model_onnx
+from support.wandb_init_V1 import load_data_and_create_dataset, split_dataset, make_dataloader, get_model_optimizer_scheduler
+from support.wandb_training_V1 import train_model_wandb, save_model_pytorch, save_model_onnx
 
 #%% Wandb login and log file inizialization
 

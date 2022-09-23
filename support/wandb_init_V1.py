@@ -107,12 +107,12 @@ def make_dataloader(dataset, config, logger = None):
 #%% Load Model
 
 def get_model_optimizer_scheduler(config, logger = None):
-    if config.use_cnn: # Convolutional VAE 
+    if config['use_cnn']: # Convolutional VAE 
         model = SpectraVAE_Double_Mems_Conv(config.length_mems_1, config.length_mems_2, config.hidden_space_dimension, 
                                             use_as_autoencoder = config.use_as_autoencoder, use_bias = config.use_bias,
                                             print_var = config.print_var)
     else:
-        if config.use_attention: # Feed-Forward VAE with attention
+        if config['use_attention']: # Feed-Forward VAE with attention
             model = AttentionVAE(config.length_mems_1, config.length_mems_2, 
                                config.hidden_space_dimension, config.embedding_size,
                                print_var = config.print_var, use_as_autoencoder = config.use_as_autoencoder )
