@@ -6,14 +6,7 @@ data/\[2021-08-05_to_11-26\]All_PlantSpectra.csv
 data/\[2021-08-05_to_11-26\]All_PlantMiFlowerCareSensor.csv.fcs
 data/\[2021-08-05_to_11-26\]All_PlantHTSensor.csv.hnt
 *.pyc
-*.pyc
-*.pyc
-*.pyc
-support/__pycache__/datasets.cpython-38.pyc
-support/__pycache__/training.cpython-38.pyc
-support/__pycache__/VAE.cpython-38.pyc
-support/__pycache__/visualization.cpython-38.pyc
-
+artifacts/
 wandb/
 *.csv
 data/jesus_ht_timestamp.csv

@@ -150,13 +150,12 @@ def compute_average_loss_given_dataloader(dataloader, model, device, n_spectra, 
         tot_elements += x.shape[0]
         if(n_spectra > 0 and tot_elements >= n_spectra):
             tmp_n_elements = x.shape[0] - (tot_elements - n_spectra)
-            total_loss += torch.sum(x_loss[0:tmp_n_elements])
+            total_loss += torch.sum(x_loss[0:tmp_n_elements]) * tmp_n_elements
             break
         else:
-            total_loss += torch.sum(x_loss)
+            total_loss += torch.sum(x_loss) * sample_data_batch.shape[0]
             
 
-    print(tot_elements)
     return total_loss/tot_elements
 
 

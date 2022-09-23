@@ -11,6 +11,7 @@ import wandb
 import torch
 
 from support.training import advanceEpochV2, advanceEpochV3
+from support.visualization import compute_average_loss_given_dataloader
 
 #%% Training cycle 
 
@@ -101,6 +102,13 @@ def divide_VAE_loss(vae_loss_list, label, log_dict, loss_string):
     loss_string += "\t\tkl_loss" + label + ":\t" + str(vae_loss_list[2].cpu().detach().numpy())
     
     return log_dict, loss_string
+
+#%% Plot functions
+
+def plot_and_log_hist_wandb(model, dataloader_list, config):
+    for dataloader in dataloader_list:
+        tmp_loss = compute_average_loss_given_dataloader(dataloader, model, config['device'], -1, config['use_as_autoencoder'])
+        
 
 #%% Other functions
 
