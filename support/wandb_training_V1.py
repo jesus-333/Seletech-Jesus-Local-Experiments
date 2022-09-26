@@ -15,7 +15,7 @@ from support.visualization import compute_average_loss_given_dataloader
 
 #%% Training cycle 
 
-def train_model_wandb(model, optimizer, loader_train, loader_validation, loader_excluded_class, config, lr_scheduler = None):
+def train_model_wandb(model, optimizer, loader_train, loader_validation, loader_anomaly, config, lr_scheduler = None):
     if 'log_freq' not in config: config['log_freq'] = 5
     if 'device' not in config: config['device'] = 'cpu'
     
@@ -38,8 +38,8 @@ def train_model_wandb(model, optimizer, loader_train, loader_validation, loader_
                                epoch = epoch, is_train = False)
 
         # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
-        # Excluded class (i.e. the type of spectra not used for the training)
-        excluded_loss = advance_epoch_envelope(model, optimizer, loader_excluded_class, config, 
+        # anomaly class (i.e. the type of spectra not used for the training)
+        anomaly_loss = advance_epoch_envelope(model, optimizer, loader_anomaly, config, 
                                epoch = epoch,  is_train = False)
         
         # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
@@ -48,16 +48,11 @@ def train_model_wandb(model, optimizer, loader_train, loader_validation, loader_
         loss_string = ""
         log_dict = {'learning_rate': optimizer.param_groups[0]['lr']}
         if config.use_as_autoencoder: # Loss in case I train an autoencoder
-            log_dict["reconstruction_loss_train"] = training_loss
-            log_dict["reconstruction_loss_validation"] = validation_loss
-            log_dict["reconstruction_loss_excluded"] = excluded_loss
-            loss_string += "\treconstruction_loss_train:\t\t" + str(training_loss.cpu().detach().numpy()) + "\n"
-            loss_string += "\treconstruction_loss_validation:\t" + str(validation_loss.cpu().detach().numpy()) + "\n"
-            loss_string += "\treconstruction_loss_excluded:\t\t" + str(excluded_loss.cpu().detach().numpy())
+            log_dict, loss_string = divide_AE_loss([training_loss, validation_loss, anomaly_loss], log_dict)
         else: # Loss in case I train a VAE
             log_dict, loss_string = divide_VAE_loss(training_loss, "_training", log_dict, loss_string)
             log_dict, loss_string = divide_VAE_loss(validation_loss, "_validation", log_dict, loss_string)
-            log_dict, loss_string = divide_VAE_loss(excluded_loss, "_excluded", log_dict, loss_string)
+            log_dict, loss_string = divide_VAE_loss(anomaly_loss, "_anomaly", log_dict, loss_string)
         
         # Log data on wandb
         wandb.log(log_dict)
@@ -73,13 +68,25 @@ def train_model_wandb(model, optimizer, loader_train, loader_validation, loader_
 def advance_epoch_envelope(model, optimizer, loader, config, epoch, is_train):
     if config.use_as_autoencoder: # Train/tested as autoencoder
         tmp_loss = advanceEpochV3(model, config.device, loader, optimizer, 
-                                  is_train = is_train, double_mems = True)
-        
+                                  is_train = is_train, double_mems = True)     
     else: # Train/tested as VAE
         tmp_loss = advanceEpochV2(model, config.device, loader, optimizer, 
                                   is_train = is_train, alpha = config.alpha, beta = config.beta)
         
     return tmp_loss
+
+
+def divide_AE_loss(ae_loss_list, log_dict):
+    tmp_dict = {}
+    tmp_dict["reconstruction_loss_train"] = ae_loss_list[0]
+    tmp_dict["reconstruction_loss_validation"] = ae_loss_list[1]
+    tmp_dict["reconstruction_loss_anomaly"] = ae_loss_list[2]
+    log_dict = {**log_dict, **tmp_dict}
+    loss_string = "\treconstruction_loss_train:\t\t" + str(ae_loss_list[0].cpu().detach().numpy()) + "\n"
+    loss_string += "\treconstruction_loss_validation:\t" + str(ae_loss_list[1].cpu().detach().numpy()) + "\n"
+    loss_string += "\treconstruction_loss_anomaly:\t\t" + str( ae_loss_list[2].cpu().detach().numpy())
+    
+    return log_dict, loss_string
         
 
 def divide_VAE_loss(vae_loss_list, label, log_dict, loss_string):

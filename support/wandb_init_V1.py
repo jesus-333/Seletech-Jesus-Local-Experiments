@@ -1,5 +1,3 @@
-#!/usr/bin/env python3
-# -*- coding: utf-8 -*-
 """
 Created on Wed Sep 14 11:39:27 2022
 
@@ -90,17 +88,16 @@ def make_dataloader(dataset, config, logger = None):
         
     if 'dataloader_shuffle' not in config: 
         config['dataloader_shuffle'] = True
-        if config.print_var: print("Shuffle on dataloader was not specified. It was set to True\n")
+        if config['print_var']: print("Shuffle on dataloader was not specified. It was set to True\n")
         if logger is not None: logger.info("Shuffle on dataloader was not specified. It was set to True")
         
     if 'dataloader_num_worker' not in config: 
         config['dataloader_num_worker'] = 0
-        if config.print_var: print("num_worker For dataloader was not specified. It was set to 0\n")
+        if config['print_var']: print("num_worker For dataloader was not specified. It was set to 0\n")
         if logger is not None: logger.info("num_worker For dataloader was not specified. It was set to 0")
     
-    loader = DataLoader(dataset, batch_size = config.batch_size,
-                                         shuffle = config.dataloader_shuffle,
-                                         num_workers = config.dataloader_num_worker)
+    loader = DataLoader(dataset, batch_size = config['batch_size'], shuffle = config['dataloader_shuffle'],
+                                         num_workers = config['dataloader_num_worker'])
     
     return loader
 
