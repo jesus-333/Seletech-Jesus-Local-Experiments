@@ -20,7 +20,7 @@ from support.datasets import PytorchDatasetPlantSpectra_V1
 #%% Build model
 
 def build_and_log_model(project_name, config):
-    if config['neurons_per_layer'][1] / config['neurons_per_layer'][0] != 2:
+    if config['neurons_per_layer'][1] / config['neurons_per_layer'][0] != 2 and config['use_cnn'] == False:
         raise ValueError("FOR NOW, the number of neurons of the second hidden layer must be 2 times the number of neurons in the first inner layer")
         
     with wandb.init(project = project_name, job_type = "model_creation", config = config) as run:

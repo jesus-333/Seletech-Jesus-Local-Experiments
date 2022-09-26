@@ -4,7 +4,7 @@ save_data_on_exit = True
 save_history = True
 save_non_project_files = False
 project_type = 'empty-project-type'
-recent_files = ['support\\wandb_init_V2.py', 'support\\wandb_training_V2.py', 'support\\wandb_training_V1.py', 'train_6.py', 'support\\wandb_init_V1.py', 'train_0_test_wandb.py']
+recent_files = ['support\\wandb_init_V2.py', 'support\\wandb_training_V2.py', 'support\\wandb_training_V1.py', 'train_6.py', 'support\\wandb_init_V1.py', 'support\\VAE_Conv.py', 'support\\training.py']
 
 [main]
 version = 0.2.0

@@ -29,11 +29,11 @@ project_name = "Seletech VAE Spectra"
 model_config = dict(
     length_mems_1 = 300,
     length_mems_2 = 400,
-    neurons_per_layer = [64, 128, 36],
-    hidden_space_dimension = 2,
+    neurons_per_layer = [32, 64, 36],
+    hidden_space_dimension = 4,
     use_as_autoencoder = True,
     use_bias = False,
-    use_cnn = False,
+    use_cnn = True,
     use_attention = False,
     print_var = True
 )
@@ -59,17 +59,20 @@ bad_dataset_train, bad_dataset_test, bad_dataset_validation = split_dataset(bad_
 #%% Train model
 
 training_config = dict(
-    model_artifact_name = 'SpectraVAE_FC',
-    batch_size = 128,
+    model_artifact_name = 'SpectraVAE_CNN',
+    version = 'latest',
+    batch_size = 32,
     lr = 1e-3,
-    epochs = 100,
+    epochs = 50,
     use_scheduler = True,
     gamma = 0.75, # Parameter of the lr exponential scheduler
     optimizer_weight_decay = 1e-3,
     alpha = 1, # Hyperparameter recon loss
     beta = 1, # Hyperparmeter KL loss
     device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu"),
-    print_var = True
+    log_freq = 1,
+    print_var = True,
+    dataset_config = dataset_config
 )
 
 # Create dataloader 

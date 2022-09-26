@@ -78,21 +78,21 @@ class SpectraVAE_Encoder_Double_Mems_Conv(nn.Module):
         
         # Conv layers for mems1
         self.input_mems_1 = torch.nn.Sequential(
-            torch.nn.Conv1d(1, 4, kernel_size = 30, stride = 3, bias = use_bias),
+            torch.nn.Conv1d(1, 4, kernel_size = 5, stride = 3, bias = use_bias),
             torch.nn.BatchNorm1d(4), torch.nn.SELU(),
             torch.nn.Conv1d(4, 8, kernel_size = 15, stride = 3, bias = use_bias),
             torch.nn.BatchNorm1d(8), torch.nn.SELU(),
-            torch.nn.Conv1d(8, 16, kernel_size = 5, stride = 2, bias = use_bias),
+            torch.nn.Conv1d(8, 16, kernel_size = 20, stride = 2, bias = use_bias),
             torch.nn.BatchNorm1d(16), torch.nn.SELU()
         )
         
         # Conv layers for mems2
         self.input_mems_2 = torch.nn.Sequential(
-            torch.nn.Conv1d(1, 4, kernel_size = 30, stride = 3, bias = use_bias),
+            torch.nn.Conv1d(1, 4, kernel_size = 5, stride = 3, bias = use_bias),
             torch.nn.BatchNorm1d(4), torch.nn.SELU(),
             torch.nn.Conv1d(4, 8, kernel_size = 15, stride = 3, bias = use_bias),
             torch.nn.BatchNorm1d(8), torch.nn.SELU(),
-            torch.nn.Conv1d(8, 16, kernel_size = 5, stride = 2, bias = use_bias),
+            torch.nn.Conv1d(8, 16, kernel_size = 20, stride = 2, bias = use_bias),
             torch.nn.BatchNorm1d(16), torch.nn.SELU()
         )
         
@@ -172,17 +172,17 @@ class SpectraVAE_Decoder_Double_Mems_Conv(nn.Module):
         
         # Conv layers for mems1
         self.output_layer_mems_1 = torch.nn.Sequential(
-            torch.nn.ConvTranspose1d(16, 8, kernel_size = 5, stride = 2, bias = use_bias),
+            torch.nn.ConvTranspose1d(16, 8, kernel_size = 20, stride = 2, bias = use_bias),
             torch.nn.BatchNorm1d(8), torch.nn.SELU(),
             torch.nn.ConvTranspose1d(8, 4, kernel_size = 15, stride = 3, bias = use_bias),
             torch.nn.BatchNorm1d(4), torch.nn.SELU(),
         )
         self.mean_mems_1 = torch.nn.Sequential(
-            torch.nn.ConvTranspose1d(4, 1, kernel_size = 30, stride = 3, bias = use_bias), 
+            torch.nn.ConvTranspose1d(4, 1, kernel_size = 5, stride = 3, bias = use_bias), 
             nn.Upsample(size = 300)
         )
         self.variance_mems_1 = torch.nn.Sequential(
-            torch.nn.ConvTranspose1d(4, 1, kernel_size = 30, stride = 3, bias = use_bias), 
+            torch.nn.ConvTranspose1d(4, 1, kernel_size = 5, stride = 3, bias = use_bias), 
             nn.Upsample(size = 300)
         )
         
