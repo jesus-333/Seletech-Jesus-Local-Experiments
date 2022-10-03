@@ -30,19 +30,27 @@ def bar_loss_wandb_V1(project_name, dataloader_list, config):
         # Compute loss
         loss_list = []
         for dataloader in dataloader_list:
-            tmp_loss = compute_loss(dataloader, config)
+            tmp_loss = compute_loss(dataloader, model, config)
             loss_list.append(tmp_loss)
         
         # Plot the loss in the bar chart
         fig, ax = plot_bar_loss(loss_list, config)
         
-        # Log th plot
+        # Log the plot
         wandb.log({"Bar Error Chart": fig})
+                 
+        # Save the plot in the artifact
+        plot_description = "Error bar chart of a trained model"
+        path = 'TMP_File/error_bar_chart'
+        plot_artifact = wandb.Artifact("Error_bar_plot", type = "plot", description = plot_description, metadata = dict(config))
+        save_plot_and_add_to_artifact(fig, path, 'png')
+        save_plot_and_add_to_artifact(fig, path, 'eps')
+        save_plot_and_add_to_artifact(fig, path, 'tex')
+        wandb.save()
         
         # Show the plot
         plt.show()
 
-            
 def compute_loss(dataloader, model, config):
     """
     Compute the loss of the data inside a given dataloader
@@ -65,20 +73,34 @@ def compute_loss(dataloader, model, config):
         
     tot_loss = tot_loss / len(dataloader.dataset)
     
-    return tot_loss
+    return tot_loss.cpu().detach()
 
 
 def plot_bar_loss(loss_list, config):
-    if len(loss_list) != len(config['labels']): raise ValueError("The number of label must be equals to the number of class (dataloader)")
+    if len(loss_list) != len(config['dataset_labels']): raise ValueError("The number of label must be equals to the number of class (dataloader)")
     
     fig, ax = plt.subplots(1,1, figsize = config['figsize'])
     
-    ax.bar(config['labels'], loss_list, color = config['color'])
+    ax.bar(config['dataset_labels'], loss_list, color = config['colors'])
     
-    ax.set_xlabel(config['xlabel'])
     ax.set_ylabel(config['ylabel'])
     
     plt.rcParams.update({'font.size': config['fontsize']})
     plt.tight_layout()
     
     return fig, ax
+
+
+def save_plot_and_add_to_artifact(fig, path, file_type, artifact):
+    if file_type == 'tex':
+        try:
+            import tikzplotlib
+            text_file = open("{}.{}".format(path, file_type), "w")
+            n = text_file.write(tikzplotlib.get_tikz_code(fig))
+            text_file.close()
+        except:
+            raise ImportError("tikzplotlib not installed. To export plot in tikz install the package.")
+    else:
+        fig.savefig("{}.{}".format(path, file_type), format = file_type)
+        
+    artifact.add_file("{}.{}".format(path, file_type))

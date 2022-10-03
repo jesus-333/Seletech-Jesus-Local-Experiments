@@ -85,7 +85,7 @@ def load_model_from_artifact_inside_run(run, artifact_name, version = 'latest', 
     model_config = model_artifact.metadata
     
     model, model_name, model_description = build_model(model_config)
-    model.load_state_dict(torch.load(model_path))
+    model.load_state_dict(torch.load(model_path, map_location=torch.device('cpu')))
     
     return model, model_config
     

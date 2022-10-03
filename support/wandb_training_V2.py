@@ -10,14 +10,9 @@ Created on Fri Sep 23 14:43:02 2022
 #%% Imports
 
 import wandb
-
-import numpy as np
-import matplotlib.pyplot as plt
 import torch
 
-from support.VAE import SpectraVAE_Double_Mems
 from support.wandb_init_V2 import load_model_from_artifact_inside_run, add_model_to_artifact
-from support.wandb_training_V1 import train_model_wandb
 
 #%% Principal function
 

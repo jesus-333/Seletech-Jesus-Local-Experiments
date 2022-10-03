@@ -17,6 +17,7 @@ from support.wandb_init_V1 import make_dataloader
 from support.wandb_init_V2 import build_and_log_model
 from support.wandb_init_V2 import build_model, load_dataset, split_dataset
 from support.wandb_training_V2 import train_and_log_model
+from support.wandb_visualization import bar_loss_wandb_V1
 
 #%% wandb login
 
@@ -33,7 +34,7 @@ model_config = dict(
     hidden_space_dimension = 4,
     use_as_autoencoder = True,
     use_bias = False,
-    use_cnn = True,
+    use_cnn = False,
     use_attention = False,
     print_var = True
 )
@@ -47,7 +48,7 @@ dataset_config = dict(
     normalize_trials = 1,
     time_interval_start = 45,
     time_interval_end = 360,
-    split_percentage_list = [0.75, 0.15, 0.1],
+    split_percentage_list = [0.9, 0.05, 0.05],
     use_cnn = model_config['use_cnn'],
     print_var = True,
 )
@@ -87,7 +88,16 @@ model = train_and_log_model(project_name, loader_list, training_config)
 #%% Error bar plot trained model
 
 plot_config = dict(
-    model_artifact_name = 'SpectraVAE_FC_trained',
+    artifact_name = 'SpectraVAE_FC_trained',
     version = 'latest',
+    model_name = 'model.pth',
     device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu"),
+    figsize = (15, 10),
+    dataset_labels = ['Dry (Train)', 'Dry (Validation)', 'Water'],
+    ylabel = 'Error',
+    colors = ['green', 'orange', 'red'],
+    fontsize = 16
 )
+
+dataloader_list = [train_loader, validation_loader, anomaly_loader]
+bar_loss_wandb_V1(project_name, dataloader_list, plot_config)
