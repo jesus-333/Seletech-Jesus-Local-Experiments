@@ -83,3 +83,11 @@ loader_list =[train_loader, validation_loader, anomaly_loader]
 
 # Train model
 model = train_and_log_model(project_name, loader_list, training_config)
+
+#%% Error bar plot trained model
+
+plot_config = dict(
+    model_artifact_name = 'SpectraVAE_FC_trained',
+    version = 'latest',
+    device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu"),
+)

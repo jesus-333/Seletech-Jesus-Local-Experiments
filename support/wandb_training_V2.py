@@ -152,3 +152,7 @@ def train_model_VAE(model, optimizer, loader_list, config, lr_scheduler = None):
     
     for epoch in range(config['epochs']):
         pass
+    
+    
+def loss_vae(x, model):
+    pass
