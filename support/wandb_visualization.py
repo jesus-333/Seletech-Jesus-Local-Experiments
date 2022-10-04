@@ -43,13 +43,12 @@ def bar_loss_wandb_V1(project_name, dataloader_list, config):
         plot_description = "Error bar chart of a trained model"
         path = 'TMP_File/error_bar_chart'
         plot_artifact = wandb.Artifact("Error_bar_plot", type = "plot", description = plot_description, metadata = dict(config))
-        save_plot_and_add_to_artifact(fig, path, 'png')
-        save_plot_and_add_to_artifact(fig, path, 'eps')
-        save_plot_and_add_to_artifact(fig, path, 'tex')
-        wandb.save()
+        save_plot_and_add_to_artifact(fig, path, 'png', plot_artifact)
+        save_plot_and_add_to_artifact(fig, path, 'eps', plot_artifact)
+        save_plot_and_add_to_artifact(fig, path, 'tex', plot_artifact)
+        run.log_artifact(plot_artifact)
         
-        # Show the plot
-        plt.show()
+        return fig, ax
 
 def compute_loss(dataloader, model, config):
     """
@@ -104,3 +103,4 @@ def save_plot_and_add_to_artifact(fig, path, file_type, artifact):
         fig.savefig("{}.{}".format(path, file_type), format = file_type)
         
     artifact.add_file("{}.{}".format(path, file_type))
+    wandb.save()

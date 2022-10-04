@@ -41,6 +41,7 @@ def train_and_log_model(project_name, loader_list, config):
         model.to(config['device'])
         wandb.watch(model, log = "all", log_freq = config['log_freq'])
         if config['use_as_autoencoder']: train_model_ae(model, optimizer, loader_list, config, lr_scheduler)
+        else: train_model_VAE(model, optimizer, loader_list, config, lr_scheduler)
         
         # Save model after training
         model_artifact_name = config['model_artifact_name'] + '_trained'
@@ -130,7 +131,7 @@ def divide_ae_loss(ae_loss_list, log_dict):
     tmp_dict["reconstruction_loss_validation"] = ae_loss_list[1]
     tmp_dict["reconstruction_loss_anomaly"] = ae_loss_list[2]
     log_dict = {**log_dict, **tmp_dict}
-    loss_string = "\treconstruction_loss_train:       " + str(ae_loss_list[0].cpu().detach().numpy()) + "\n"
+    loss_string  = "\treconstruction_loss_train:      " + str(ae_loss_list[0].cpu().detach().numpy()) + "\n"
     loss_string += "\treconstruction_loss_validation: " + str(ae_loss_list[1].cpu().detach().numpy()) + "\n"
     loss_string += "\treconstruction_loss_anomaly:    " + str( ae_loss_list[2].cpu().detach().numpy())
     
@@ -146,8 +147,98 @@ def train_model_VAE(model, optimizer, loader_list, config, lr_scheduler = None):
     log_dict = {}
     
     for epoch in range(config['epochs']):
-        pass
+        train_loss      = epoch_VAE(train_loader)
+        validation_loss = epoch_VAE(validation_loader)
+        anomaly_loss    = epoch_VAE(anomaly_loader)
+        
+        # Save metric to load on wandb
+        log_dict['learning_rate'] = optimizer.param_groups[0]['lr']
+        log_dict, loss_string = divide_ae_loss([train_loss, validation_loss, anomaly_loss], log_dict)
+
+        # Log data on wandb
+        wandb.log(log_dict)
+        
+        # Update learning rate (if a scheduler is provided)
+        if lr_scheduler is not None: lr_scheduler.step()
+        
+        if config['print_var']: 
+            print("Epoch: {}".format(epoch))
+            print(loss_string)
+            
+
+
+def epoch_VAE(model, loader, config, is_train, loss_function, optimizer = None):
+    recon_loss_total = 0
+    KL_loss_total = 0
+    for batch in loader:
+        x = batch.to(config['device'])
+        
+        if is_train:
+            optimizer.zero_grad()
+            
+            # Forward pass and compute VAE loss. 
+            # The alpha and beta hyperparameters are used inside the loss function
+            recon_loss, KL_loss = loss_VAE(x, model)
+            total_loss = recon_loss + KL_loss
+            
+            # Backward pass
+            total_loss.backward()
+            optimizer.step()
+        else:
+            with torch.no_grad():
+                recon_loss, KL_loss = loss_VAE(x, model)
+          
+        recon_loss_total = recon_loss * x.shape[0]
+        KL_loss_total = KL_loss * x.shape[0]
+        
+    recon_loss_total /= len(loader.sampler)
+    KL_loss_total /= len(loader.sampler)
     
+    return [recon_loss_total, KL_loss_total]
     
-def loss_vae(x, model):
+
+def loss_VAE(x, model):
     pass
+
+
+def divide_VAE_loss(vae_loss_list, log_dict):
+    tmp_dict = {}
+    tmp_train_loss = vae_loss_list[0]
+    tmp_validation_loss = vae_loss_list[1]
+    tmp_anomaly_loss = vae_loss_list[2]
+    
+    # Add reconstruction loss
+    tmp_dict["reconstruction_loss_train"] = tmp_train_loss[0]
+    tmp_dict["reconstruction_loss_validation"] = tmp_validation_loss[0]
+    tmp_dict["reconstruction_loss_anomaly"] = tmp_anomaly_loss[0]
+    
+    # Add KL loss
+    tmp_dict["KL_loss_train"] = tmp_train_loss[1]
+    tmp_dict["KL_loss_validation"] = tmp_validation_loss[1]
+    tmp_dict["KL_loss_anomaly"] = tmp_anomaly_loss[1]
+    
+    # Add loss to log dict
+    log_dict = {**log_dict, **tmp_dict}
+    
+    # String to display
+    loss_string =  "\treconstruction_loss_train:      " + str(tmp_train_loss[0].cpu().detach().numpy()) + "\n"
+    loss_string += "\treconstruction_loss_validation: " + str(tmp_validation_loss[0].cpu().detach().numpy()) + "\n"
+    loss_string += "\treconstruction_loss_anomaly:    " + str(tmp_anomaly_loss[0].cpu().detach().numpy()) + "\n\n"
+    loss_string += "\tKL_loss_train:      " + str(tmp_train_loss[1].cpu().detach().numpy()) + "\n"
+    loss_string += "\tKL_loss_validation: " + str(tmp_validation_loss[1].cpu().detach().numpy()) + "\n"
+    loss_string += "\tKL_loss_anomaly:    " + str(tmp_anomaly_loss[1].cpu().detach().numpy())
+    
+    return log_dict, loss_string
+
+#%% Other functions
+
+def divide_spectra(x):
+    length_mems_1 = 300
+    length_mems_2 = 400
+    
+    # Divide data in the two spectra
+    x1 = x[..., 0:length_mems_1]
+    x2 = x[..., (- 1 - length_mems_2):-1]
+    x = torch.cat((x1,x2), -1)
+    
+    return x1, x2, x

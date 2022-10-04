@@ -48,7 +48,7 @@ dataset_config = dict(
     normalize_trials = 1,
     time_interval_start = 45,
     time_interval_end = 360,
-    split_percentage_list = [0.9, 0.05, 0.05],
+    split_percentage_list = [0.7, 0.15, 0.15],
     use_cnn = model_config['use_cnn'],
     print_var = True,
 )
@@ -95,9 +95,14 @@ plot_config = dict(
     figsize = (15, 10),
     dataset_labels = ['Dry (Train)', 'Dry (Validation)', 'Water'],
     ylabel = 'Error',
-    colors = ['green', 'orange', 'red'],
+    colors = ['red', 'orange', 'blue'],
     fontsize = 16
 )
 
+train_loader = make_dataloader(bad_dataset_train, training_config)
+validation_loader = make_dataloader(bad_dataset_validation, training_config)
+anomaly_loader = make_dataloader(good_dataset, training_config)
+loader_list =[train_loader, validation_loader, anomaly_loader]
+
 dataloader_list = [train_loader, validation_loader, anomaly_loader]
-bar_loss_wandb_V1(project_name, dataloader_list, plot_config)
+fig, ax = bar_loss_wandb_V1(project_name, dataloader_list, plot_config)
