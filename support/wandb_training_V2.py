@@ -46,7 +46,7 @@ def train_and_log_model(project_name, loader_list, config):
         # Save model after training
         model_artifact_name = config['model_artifact_name'] + '_trained'
         model_artifact = wandb.Artifact(model_artifact_name, type = "model",
-                                        description = "Trained {} model".format(config['model_artifact_name']),
+                                        description = "Trained {}:{} model".format(config['model_artifact_name'], config['version']),
                                         metadata = dict(model_config))
         add_model_to_artifact(model, model_artifact)
         run.log_artifact(model_artifact)

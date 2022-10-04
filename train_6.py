@@ -60,8 +60,8 @@ bad_dataset_train, bad_dataset_test, bad_dataset_validation = split_dataset(bad_
 #%% Train model
 
 training_config = dict(
-    model_artifact_name = 'SpectraVAE_CNN',
-    version = 'latest',
+    model_artifact_name = 'SpectraVAE_FC',
+    version = 'v1',
     batch_size = 32,
     lr = 1e-3,
     epochs = 50,
@@ -69,7 +69,7 @@ training_config = dict(
     gamma = 0.75, # Parameter of the lr exponential scheduler
     optimizer_weight_decay = 1e-3,
     alpha = 1, # Hyperparameter recon loss
-    beta = 1, # Hyperparmeter KL loss
+    beta = 3, # Hyperparmeter KL loss
     device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu"),
     log_freq = 1,
     print_var = True,
