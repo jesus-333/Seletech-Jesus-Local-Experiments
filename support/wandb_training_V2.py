@@ -110,15 +110,14 @@ def epoch_ae(model, loader, config, is_train, loss_function, optimizer = None):
           
       
 def loss_ae(x, model, loss_function):
-    length_mems_1 = 300
-    length_mems_2 = 400
-    
     # Divide data in the two spectra
-    x1 = x[..., 0:length_mems_1]
-    x2 = x[..., (- 1 - length_mems_2):-1]
-    x = torch.cat((x1,x2), -1)
+    x1, x2, x = divide_spectra(x)
+    # N.b. the new x contain x1 and x2 concatenated without the wavelength not used. So it is shorter than the original x
     
+    # Forward pass
     x_r_1, x_r_2, z = model(x1, x2)
+    
+    # Loss computation
     x_r = torch.cat((x_r_1, x_r_2), -1)
     recon_loss = loss_function(x, x_r)
     
@@ -153,7 +152,7 @@ def train_model_VAE(model, optimizer, loader_list, config, lr_scheduler = None):
         
         # Save metric to load on wandb
         log_dict['learning_rate'] = optimizer.param_groups[0]['lr']
-        log_dict, loss_string = divide_ae_loss([train_loss, validation_loss, anomaly_loss], log_dict)
+        log_dict, loss_string = divide_VAE_loss([train_loss, validation_loss, anomaly_loss], log_dict)
 
         # Log data on wandb
         wandb.log(log_dict)
@@ -178,18 +177,17 @@ def epoch_VAE(model, loader, config, is_train, loss_function, optimizer = None):
             
             # Forward pass and compute VAE loss. 
             # The alpha and beta hyperparameters are used inside the loss function
-            recon_loss, KL_loss = loss_VAE(x, model)
-            total_loss = recon_loss + KL_loss
+            vae_loss, recon_loss, kl_loss = loss_VAE(x, model, config)
             
-            # Backward pass
-            total_loss.backward()
+            # Backward pass (VAE loss contain the sum of recon and loss)
+            vae_loss.backward()
             optimizer.step()
         else:
             with torch.no_grad():
-                recon_loss, KL_loss = loss_VAE(x, model)
+                vae_loss, recon_loss, kl_loss = loss_VAE(x, model)
           
         recon_loss_total = recon_loss * x.shape[0]
-        KL_loss_total = KL_loss * x.shape[0]
+        KL_loss_total = kl_loss * x.shape[0]
         
     recon_loss_total /= len(loader.sampler)
     KL_loss_total /= len(loader.sampler)
@@ -197,8 +195,100 @@ def epoch_VAE(model, loader, config, is_train, loss_function, optimizer = None):
     return [recon_loss_total, KL_loss_total]
     
 
-def loss_VAE(x, model):
-    pass
+def loss_VAE(x, model, config):
+    # Divide the spectra
+    x1, x2, x = divide_spectra(x)
+    
+    # Forward pass
+    vae_output = model(x1, x2)
+    
+    # Average of the distribution of the reconstructed output
+    x_r_1, x_r_2 = vae_output[0], vae_output[1]
+    x_r = torch.cat((x_r_1, x_r_2), -1)
+    
+    # Variance of the distribution of the reconstructed output
+    log_var_r_1, log_var_r_2 = vae_output[2], vae_output[3]
+    log_var_r = torch.cat((log_var_r_1, log_var_r_2), -1)
+    
+    # Latent space mean and variance
+    mu_z, log_var_z = vae_output[4], vae_output[5]
+    
+    # Compute loss
+    vae_loss, recon_loss, kl_loss = VAE_loss(x, x_r, log_var_r, mu_z, log_var_z, config['alpha'], config['beta'])
+    
+    return vae_loss, recon_loss, kl_loss
+    
+    
+def VAE_loss(x, x_r, log_var_r, mu_q, log_var_q, alpha = 1, beta = 1):
+    """
+    Loss of the VAE. 
+    It return the reconstruction loss between x and x_r and the Kullback between a standard normal distribution and the ones defined by sigma and log_var
+    It also return the sum of the two.
+    The hyperparameter alpha multiply the reconstruction loss.
+    The hyperparameter beta multiply the KL loss.
+    """
+    
+    # Kullback-Leibler Divergence
+    # N.b. Due to implementation reasons I pass to the function the STANDARD DEVIATION, i.e. the NON-SQUARED VALUE
+    # When the variance is needed inside the function the sigmas are eventually squared
+    
+    sigma_p = torch.ones(log_var_q.shape).to(log_var_q.device) # Standard deviation of the target standard distribution
+    mu_p = torch.zeros(mu_q.shape).to(mu_q.device) # Mean of the target gaussian distribution
+    sigma_q = torch.sqrt(torch.exp(log_var_q)) # standard deviation obtained from the VAE
+    kl_loss = KL_Loss(sigma_p, mu_p, sigma_q, mu_q).mean()
+
+    # Reconstruction loss 
+    sigma_r = torch.sqrt(torch.exp(log_var_r))
+    recon_loss = VAE_recon_loss(x, x_r, sigma_r).mean()
+    
+    vae_loss = recon_loss * alpha + kl_loss * beta
+
+    return vae_loss, recon_loss * alpha, kl_loss * beta
+
+
+def KL_Loss(sigma_p, mu_p, sigma_q, mu_q):
+    """
+    General function for a KL loss with specified the paramters of two gaussian distributions p and q
+    The parameter must be sigma (standard deviation) and mu (mean).
+    The order of the parameter must be the following: sigma_p, mu_p, sigma_q, mu_q
+    """
+    
+    tmp_el_1 = torch.log(sigma_q/sigma_p)
+    
+    tmp_el_2_num = torch.pow(sigma_q, 2) + torch.pow((mu_q - mu_p), 2)
+    tmp_el_2_den = 2 * torch.pow(sigma_p, 2)
+    tmp_el_2 = tmp_el_2_num / tmp_el_2_den
+    
+    kl_loss = - (tmp_el_1  - tmp_el_2 + 0.5)
+    
+    # P.s. The sigmas and mus have length equals to the hinner space dimension. So the final shape is [n_sample_in_batch, hidden_sapce_dimension]
+    return kl_loss.sum(dim = 1)
+
+
+def VAE_recon_loss(x, x_r, std_r):
+    """
+    Advance versione of the recontruction loss for the VAE when the output distribution is gaussian.
+    Instead of the simple L2 loss we use the log-likelihood formula so we can also encode the variance in the output of the decoder.
+    Input parameters:
+      x = Original data
+      x_r = mean of the reconstructed output
+      std_r = standard deviation of the reconstructed output. 
+    
+    More info: 
+    https://www.statlect.com/fundamentals-of-statistics/normal-distribution-maximum-likelihood
+    https://arxiv.org/pdf/2006.13202.pdf
+    """
+    
+    total_loss = 0
+        
+    # MSE Part (a variance per wavelength)
+    mse_core = (torch.pow((x - x_r), 2)/(2 * torch.pow(std_r, 2))).sum(1) / x.shape[1]
+    total_loss += mse_core 
+    
+    # Variance part
+    # total_loss += x[0].shape[0] * torch.log(std_r).mean()
+    
+    return total_loss
 
 
 def divide_VAE_loss(vae_loss_list, log_dict):
