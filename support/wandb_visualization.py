@@ -16,7 +16,7 @@ import torch
 import wandb
 
 from support.wandb_init_V2 import load_model_from_artifact_inside_run
-from support.wandb_training_V2 import loss_ae, loss_vae
+from support.wandb_training_V2 import loss_ae, loss_VAE
 
 #%%
 
@@ -26,6 +26,7 @@ def bar_loss_wandb_V1(project_name, dataloader_list, config):
         # Load model
         model, model_config = load_model_from_artifact_inside_run(run, config['artifact_name'], config['version'], config['model_name'])
         config['use_as_autoencoder'] = model_config['use_as_autoencoder']
+        model.eval()
         
         # Compute loss
         loss_list = []
@@ -66,7 +67,7 @@ def compute_loss(dataloader, model, config):
         if(config['use_as_autoencoder']):
             recon_loss = loss_ae(x, model, loss_function)
         else:
-            recon_loss = loss_vae(x, model)
+            vae_loss, recon_loss, kl_loss = loss_VAE(x, model)
         
         tot_loss += recon_loss * x.shape[0]
         

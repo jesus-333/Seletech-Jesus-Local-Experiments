@@ -33,8 +33,8 @@ def build_and_log_model(project_name, config):
         model_artifact = wandb.Artifact(model_name, type = "model", description = model_description, metadata = metadata)
 
         # Save the model and log it on wandb
-        tmp_model_name = "TMP/untrained.pth"
-        add_model_to_artifact(model, model_artifact, tmp_model_name)
+        add_model_to_artifact(model, model_artifact, "TMP_File/untrained.pth")
+        add_onnx_to_artifact(model, model_artifact, "TMP_File/untrained.onnx")
         run.log_artifact(model_artifact)
         
         
@@ -44,10 +44,15 @@ def build_model(config):
         model = SpectraVAE_Double_Mems_Conv(config['length_mems_1'], config['length_mems_2'], config['hidden_space_dimension'], 
                                             use_as_autoencoder = config['use_as_autoencoder'], use_bias = config['use_bias'],
                                             print_var = config['print_var'])
-        model_name = "SpectraVAE_CNN"
-        model_description = "Untrained VAE model. Convolutional version. Hidden space = {}".format(config['hidden_space_dimension'])
+        if config['use_as_autoencoder']: 
+            model_name = "SpectraAE_CNN"
+            model_description = "Untrained AE model. Convolutional version. Hidden space = {}".format(config['hidden_space_dimension'])
+        else: 
+            model_name = "SpectraVAE_CNN"
+            model_description = "Untrained VAE model. Convolutional version. Hidden space = {}".format(config['hidden_space_dimension'])
+        
     else:
-        if config['use_attention']: # Feed-Forward VAE with attention
+        if config['use_attention']: # Feed-Forward VAE with attention. ATTENTION NOT WORK FOR NOW
             model = AttentionVAE(config['length_mems_1'], config['length_mems_2'], 
                                config['hidden_space_dimension'], config['embedding_size'],
                                print_var = config['print_var'], use_as_autoencoder = config['use_as_autoencoder'] )
@@ -57,8 +62,13 @@ def build_model(config):
             model = SpectraVAE_Double_Mems(config['length_mems_1'], config['length_mems_2'],  config['neurons_per_layer'], config['hidden_space_dimension'], 
                                          use_as_autoencoder = config['use_as_autoencoder'], use_bias = config['use_bias'],
                                          print_var = config['print_var'])
-            model_name = "SpectraVAE_FC"
-            model_description = "Untrained VAE model. Fully-connected version. Hidden space = {}".format(config['hidden_space_dimension'])
+            if config['use_as_autoencoder']: 
+                model_name = "SpectraAE_FC"
+                model_description = "Untrained AE model. Fully-connected version. Hidden space = {}".format(config['hidden_space_dimension'])
+            else: 
+                model_name = "SpectraVAE_FC"
+                model_description = "Untrained VAE model. Fully-connected version. Hidden space = {}".format(config['hidden_space_dimension'])
+                print(model_description)
             
     return model, model_name, model_description
 
@@ -68,6 +78,14 @@ def add_model_to_artifact(model, artifact, model_name = "model.pth"):
     artifact.add_file(model_name)
     wandb.save(model_name)
     
+
+def add_onnx_to_artifact(model, artifact, model_name = "model.onnx"):
+    tmp_x1 = torch.ones((1, 300))
+    tmp_x2 = torch.ones((1, 400))
+    torch.onnx.export(model, args = (tmp_x1, tmp_x2), f = model_name)
+    
+    artifact.add_file(model_name)
+    wandb.save(model_name)
 
 def load_modeadd_model_to_artifact(artifact_name, version = 'latest', model_name = "model.pth"):
     run = wandb.init()

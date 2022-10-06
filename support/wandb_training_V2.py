@@ -146,9 +146,9 @@ def train_model_VAE(model, optimizer, loader_list, config, lr_scheduler = None):
     log_dict = {}
     
     for epoch in range(config['epochs']):
-        train_loss      = epoch_VAE(train_loader)
-        validation_loss = epoch_VAE(validation_loader)
-        anomaly_loss    = epoch_VAE(anomaly_loader)
+        train_loss      = epoch_VAE(model, train_loader, config, True, optimizer)
+        validation_loss = epoch_VAE(model, validation_loader, config, False)
+        anomaly_loss    = epoch_VAE(model, anomaly_loader, config, False)
         
         # Save metric to load on wandb
         log_dict['learning_rate'] = optimizer.param_groups[0]['lr']
@@ -166,7 +166,7 @@ def train_model_VAE(model, optimizer, loader_list, config, lr_scheduler = None):
             
 
 
-def epoch_VAE(model, loader, config, is_train, loss_function, optimizer = None):
+def epoch_VAE(model, loader, config, is_train, optimizer = None):
     recon_loss_total = 0
     KL_loss_total = 0
     for batch in loader:
@@ -184,7 +184,7 @@ def epoch_VAE(model, loader, config, is_train, loss_function, optimizer = None):
             optimizer.step()
         else:
             with torch.no_grad():
-                vae_loss, recon_loss, kl_loss = loss_VAE(x, model)
+                vae_loss, recon_loss, kl_loss = loss_VAE(x, model, config)
           
         recon_loss_total = recon_loss * x.shape[0]
         KL_loss_total = kl_loss * x.shape[0]
