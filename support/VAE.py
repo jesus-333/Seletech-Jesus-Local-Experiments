@@ -10,7 +10,7 @@ import numpy as np
 import torch
 from torch import nn
 
-from support.embedding import Attention1D
+from support.embedding_spectra import Attention1D
 
 #%%  VAE Single MEMS
 

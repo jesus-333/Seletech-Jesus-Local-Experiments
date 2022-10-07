@@ -12,7 +12,7 @@ from torch import nn
 
 #%% Neural networks
 
-class Embedder(nn.Module):
+class SpectraEmbedder(nn.Module):
     
     def __init__(self, input_size, embedding_size = 2, use_activation = False):
         """
@@ -55,10 +55,10 @@ class Attention1D(nn.Module):
         # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
         # Embedder for qury/key/value
         
-        self.query_embedder = Embedder(input_size, embedding_size, use_activation)
-        if input_size_2 == None: self.key_embedder = Embedder(input_size, embedding_size, use_activation)
-        else: self.key_embedder = Embedder(input_size_2, embedding_size, use_activation)
-        self.value_embedder = Embedder(input_size, embedding_size, use_activation)
+        self.query_embedder = SpectraEmbedder(input_size, embedding_size, use_activation)
+        if input_size_2 == None: self.key_embedder = SpectraEmbedder(input_size, embedding_size, use_activation)
+        else: self.key_embedder = SpectraEmbedder(input_size_2, embedding_size, use_activation)
+        self.value_embedder = SpectraEmbedder(input_size, embedding_size, use_activation)
         
         # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
         
@@ -87,21 +87,5 @@ class Attention1D(nn.Module):
         o = torch.bmm(s, h.unsqueeze(2))
         
         return o
-    
-    
-#%% Training function
 
-def advanceEpochEmbedder(embderr, spectra_dataloader):
-    pass
-    
-#%% Test
-
-if __name__ == "__main__":
-    n_batch = 16
-    spectra_size = 250
-    spectra_1 = torch.rand((16, 250))
-    
-    SA_embedder = Attention1D(spectra_size, 2, False)
-    
-    o = SA_embedder(spectra_1)
     

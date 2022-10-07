@@ -110,7 +110,7 @@ def load_model_from_artifact_inside_run(run, artifact_name, version = 'latest', 
 
 #%% Dataset
 
-def load_dataset(config):
+def load_dataset_local(config):
     # Sepctra
     spectra_plants_numpy, wavelength, timestamp = load_spectra_data("data/[2021-08-05_to_11-26]All_PlantSpectra.csv", config['normalize_trials'])
 
@@ -145,3 +145,22 @@ def split_dataset(dataset, config):
         print("Length Validation set = " + str(len(dataset_validation)))
         
     return dataset_train, dateset_test, dataset_validation
+
+
+def log_data(project_name):
+    """
+    Create the artifact with the data of the first acquisition campaing
+    """
+    with wandb.init(project = project_name, job_type = "Load_dataset") as run:
+        dataset_description = 'Artifact with the raw data of the first campaign. Contain the plants spectra, the water info, the HT sensor data and the MIFlower data'
+        data_artifact = wandb.Artifact("Dataset_Spectra_1", type = "dataset", description = dataset_description)
+        
+        data_artifact.add_file("data/[2021-08-05_to_11-26]All_PlantSpectra.csv")
+        data_artifact.add_file("data/[2021-08-05_to_11-26]PlantTest_Notes.csv")
+        data_artifact.add_file("data/[2021-08-05_to_11-26]All_PlantHTSensor.csv")
+        data_artifact.add_file("data/[2021-08-05_to_11-26]All_PlantMiFlowerCareSensor.csv")
+        data_artifact.add_file("data/jesus_ht_timestamp.csv")
+        data_artifact.add_file("data/jesus_spectra_timestamp.csv")
+        
+        run.log_artifact(data_artifact)
+        

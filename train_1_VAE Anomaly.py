@@ -15,7 +15,7 @@ import wandb
 
 from support.wandb_init_V1 import make_dataloader
 from support.wandb_init_V2 import build_and_log_model
-from support.wandb_init_V2 import build_model, load_dataset, split_dataset
+from support.wandb_init_V2 import build_model, load_dataset_local, split_dataset
 from support.wandb_training_V2 import train_and_log_model
 from support.wandb_visualization import bar_loss_wandb_V1
 
@@ -53,7 +53,7 @@ dataset_config = dict(
     print_var = True,
 )
 
-good_dataset, bad_dataset = load_dataset(dataset_config)
+good_dataset, bad_dataset = load_dataset_local(dataset_config)
 
 bad_dataset_train, bad_dataset_test, bad_dataset_validation = split_dataset(bad_dataset, dataset_config)
 
