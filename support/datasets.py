@@ -105,7 +105,7 @@ def create_extended_water_vector(water_log_timestamp, water_vector, spectra_time
         if(sp_year == w_year and sp_month == w_month and sp_day == w_day):
             if(sp_hour >= w_hour and sp_minutes >= w_minutes):
                 if(water_quantity > 0): 
-                    extended_water_vector[i] = 1
+                    extended_water_vector[i] = round(water_quantity/50)
               
                 j += 1
                 actual_water_timestamp = water_log_timestamp[j]
@@ -136,7 +136,7 @@ def choose_spectra_based_on_water_V1(extended_water_timestamp, time_interval_sta
     
     good_idx_tmp = np.zeros(len(extended_water_timestamp))
 
-    good_timestamp = np.where(extended_water_timestamp == 1)[0]
+    good_timestamp = np.where(extended_water_timestamp != 0)[0]
 
     for idx in good_timestamp: good_idx_tmp[idx + time_interval_start:idx + time_interval_end] = 1
     

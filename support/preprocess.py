@@ -132,4 +132,4 @@ def aggregate_HT_data_V2(ht_timestamp, spectra_timestamp, h_array, t_array):
             else: aggregate_t_array.append(np.mean(t_data_hour))
     
     aggregate_timestamp = np.copy(spectra_timestamp)
-    return aggregate_h_array, aggregate_t_array, aggregate_timestamp
+    return np.asarray(aggregate_h_array), np.asarray(aggregate_t_array), aggregate_timestamp

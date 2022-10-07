@@ -11,11 +11,13 @@ import numpy as np
 import torch
 import wandb
 import os
+import pandas as pd
 
 from support.VAE import SpectraVAE_Double_Mems, AttentionVAE
 from support.VAE_Conv import SpectraVAE_Double_Mems_Conv
 from support.datasets import load_spectra_data, load_water_data, create_extended_water_vector, choose_spectra_based_on_water_V1
 from support.datasets import PytorchDatasetPlantSpectra_V1
+from support.preprocess import aggregate_HT_data_V2
 
 #%% Build model
 
@@ -164,3 +166,32 @@ def log_data(project_name):
         
         run.log_artifact(data_artifact)
         
+        
+def load_dataset_h_local(config):
+    """
+    Load and divide the dataset based on humidity data
+    """
+    # Sepctra
+    spectra_plants_numpy, wavelength, timestamp = load_spectra_data("data/[2021-08-05_to_11-26]All_PlantSpectra.csv", config['normalize_trials'])
+
+    ht_data = pd.read_csv("data/[2021-08-05_to_11-26]All_PlantHTSensor.csv", encoding= 'unicode_escape')
+    h_array = ht_data[' Humidity[%]'].to_numpy()
+    t_array = ht_data[' Temperature[C]'].to_numpy()
+    
+    ht_timestamp = pd.read_csv('data/jesus_ht_timestamp.csv').to_numpy()[:, 1:]
+    spectra_timestamp = pd.read_csv('data/jesus_spectra_timestamp.csv').to_numpy()[:, 1:]
+    
+    a = aggregate_HT_data_V2(ht_timestamp, spectra_timestamp, h_array, t_array)
+    aggregate_h_array, aggregate_t_array, aggregate_timestamp = a[0], a[1], a[2]
+    
+    good_idx = aggregate_h_array < np.mean(aggregate_h_array)
+    bad_idx = aggregate_h_array >= np.mean(aggregate_h_array)
+    
+    good_spectra_dataset = PytorchDatasetPlantSpectra_V1(spectra_plants_numpy[good_idx, :], used_in_cnn = config['use_cnn'])
+    bad_spectra_dataset = PytorchDatasetPlantSpectra_V1(spectra_plants_numpy[bad_idx, :], used_in_cnn = config['use_cnn'])
+    
+    if config['print_var']:
+        print("Length good dataset: ", len(good_spectra_dataset))
+        print("Length bad dataset : ", len(bad_spectra_dataset))
+    
+    return good_spectra_dataset, bad_spectra_dataset
