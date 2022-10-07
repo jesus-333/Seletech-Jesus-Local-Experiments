@@ -1,0 +1,25 @@
+% This file was created with tikzplotlib v0.10.1.
+\begin{tikzpicture}
+
+\definecolor{darkgray176}{RGB}{176,176,176}
+\definecolor{orange}{RGB}{255,165,0}
+
+\begin{axis}[
+tick align=outside,
+tick pos=left,
+x grid style={darkgray176},
+xmin=-0.54, xmax=2.54,
+xtick style={color=black},
+xtick={0,1,2},
+xticklabels={Dry (Train),Dry (Validation),Water},
+y grid style={darkgray176},
+ylabel={Error},
+ymin=0, ymax=0.000228696615522495,
+ytick style={color=black}
+]
+\draw[draw=none,fill=red] (axis cs:-0.4,0) rectangle (axis cs:0.4,0.00018870213534683);
+\draw[draw=none,fill=orange] (axis cs:0.6,0) rectangle (axis cs:1.4,0.000110466957266908);
+\draw[draw=none,fill=blue] (axis cs:1.6,0) rectangle (axis cs:2.4,0.000217806300497614);
+\end{axis}
+
+\end{tikzpicture}

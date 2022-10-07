@@ -33,8 +33,8 @@ def build_and_log_model(project_name, config):
         model_artifact = wandb.Artifact(model_name, type = "model", description = model_description, metadata = metadata)
 
         # Save the model and log it on wandb
-        tmp_model_name = "TMP/untrained.pth"
-        add_model_to_artifact(model, model_artifact, tmp_model_name)
+        add_model_to_artifact(model, model_artifact, "TMP_File/untrained.pth")
+        add_onnx_to_artifact(model, model_artifact, "TMP_File/untrained.onnx")
         run.log_artifact(model_artifact)
         
         
@@ -44,10 +44,15 @@ def build_model(config):
         model = SpectraVAE_Double_Mems_Conv(config['length_mems_1'], config['length_mems_2'], config['hidden_space_dimension'], 
                                             use_as_autoencoder = config['use_as_autoencoder'], use_bias = config['use_bias'],
                                             print_var = config['print_var'])
-        model_name = "SpectraVAE_CNN"
-        model_description = "Untrained VAE model. Convolutional version. Hidden space = {}".format(config['hidden_space_dimension'])
+        if config['use_as_autoencoder']: 
+            model_name = "SpectraAE_CNN"
+            model_description = "Untrained AE model. Convolutional version. Hidden space = {}".format(config['hidden_space_dimension'])
+        else: 
+            model_name = "SpectraVAE_CNN"
+            model_description = "Untrained VAE model. Convolutional version. Hidden space = {}".format(config['hidden_space_dimension'])
+        
     else:
-        if config['use_attention']: # Feed-Forward VAE with attention
+        if config['use_attention']: # Feed-Forward VAE with attention. ATTENTION NOT WORK FOR NOW
             model = AttentionVAE(config['length_mems_1'], config['length_mems_2'], 
                                config['hidden_space_dimension'], config['embedding_size'],
                                print_var = config['print_var'], use_as_autoencoder = config['use_as_autoencoder'] )
@@ -57,8 +62,13 @@ def build_model(config):
             model = SpectraVAE_Double_Mems(config['length_mems_1'], config['length_mems_2'],  config['neurons_per_layer'], config['hidden_space_dimension'], 
                                          use_as_autoencoder = config['use_as_autoencoder'], use_bias = config['use_bias'],
                                          print_var = config['print_var'])
-            model_name = "SpectraVAE_FC"
-            model_description = "Untrained VAE model. Fully-connected version. Hidden space = {}".format(config['hidden_space_dimension'])
+            if config['use_as_autoencoder']: 
+                model_name = "SpectraAE_FC"
+                model_description = "Untrained AE model. Fully-connected version. Hidden space = {}".format(config['hidden_space_dimension'])
+            else: 
+                model_name = "SpectraVAE_FC"
+                model_description = "Untrained VAE model. Fully-connected version. Hidden space = {}".format(config['hidden_space_dimension'])
+                print(model_description)
             
     return model, model_name, model_description
 
@@ -68,6 +78,14 @@ def add_model_to_artifact(model, artifact, model_name = "model.pth"):
     artifact.add_file(model_name)
     wandb.save(model_name)
     
+
+def add_onnx_to_artifact(model, artifact, model_name = "model.onnx"):
+    tmp_x1 = torch.ones((1, 300))
+    tmp_x2 = torch.ones((1, 400))
+    torch.onnx.export(model, args = (tmp_x1, tmp_x2), f = model_name)
+    
+    artifact.add_file(model_name)
+    wandb.save(model_name)
 
 def load_modeadd_model_to_artifact(artifact_name, version = 'latest', model_name = "model.pth"):
     run = wandb.init()
@@ -92,7 +110,7 @@ def load_model_from_artifact_inside_run(run, artifact_name, version = 'latest', 
 
 #%% Dataset
 
-def load_dataset(config):
+def load_dataset_local(config):
     # Sepctra
     spectra_plants_numpy, wavelength, timestamp = load_spectra_data("data/[2021-08-05_to_11-26]All_PlantSpectra.csv", config['normalize_trials'])
 
@@ -127,3 +145,22 @@ def split_dataset(dataset, config):
         print("Length Validation set = " + str(len(dataset_validation)))
         
     return dataset_train, dateset_test, dataset_validation
+
+
+def log_data(project_name):
+    """
+    Create the artifact with the data of the first acquisition campaing
+    """
+    with wandb.init(project = project_name, job_type = "Load_dataset") as run:
+        dataset_description = 'Artifact with the raw data of the first campaign. Contain the plants spectra, the water info, the HT sensor data and the MIFlower data'
+        data_artifact = wandb.Artifact("Dataset_Spectra_1", type = "dataset", description = dataset_description)
+        
+        data_artifact.add_file("data/[2021-08-05_to_11-26]All_PlantSpectra.csv")
+        data_artifact.add_file("data/[2021-08-05_to_11-26]PlantTest_Notes.csv")
+        data_artifact.add_file("data/[2021-08-05_to_11-26]All_PlantHTSensor.csv")
+        data_artifact.add_file("data/[2021-08-05_to_11-26]All_PlantMiFlowerCareSensor.csv")
+        data_artifact.add_file("data/jesus_ht_timestamp.csv")
+        data_artifact.add_file("data/jesus_spectra_timestamp.csv")
+        
+        run.log_artifact(data_artifact)
+        

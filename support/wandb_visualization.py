@@ -16,7 +16,7 @@ import torch
 import wandb
 
 from support.wandb_init_V2 import load_model_from_artifact_inside_run
-from support.wandb_training_V2 import loss_ae, loss_vae
+from support.wandb_training_V2 import loss_ae, loss_VAE
 
 #%%
 
@@ -26,6 +26,7 @@ def bar_loss_wandb_V1(project_name, dataloader_list, config):
         # Load model
         model, model_config = load_model_from_artifact_inside_run(run, config['artifact_name'], config['version'], config['model_name'])
         config['use_as_autoencoder'] = model_config['use_as_autoencoder']
+        model.eval()
         
         # Compute loss
         loss_list = []
@@ -43,13 +44,12 @@ def bar_loss_wandb_V1(project_name, dataloader_list, config):
         plot_description = "Error bar chart of a trained model"
         path = 'TMP_File/error_bar_chart'
         plot_artifact = wandb.Artifact("Error_bar_plot", type = "plot", description = plot_description, metadata = dict(config))
-        save_plot_and_add_to_artifact(fig, path, 'png')
-        save_plot_and_add_to_artifact(fig, path, 'eps')
-        save_plot_and_add_to_artifact(fig, path, 'tex')
-        wandb.save()
+        save_plot_and_add_to_artifact(fig, path, 'png', plot_artifact)
+        save_plot_and_add_to_artifact(fig, path, 'eps', plot_artifact)
+        save_plot_and_add_to_artifact(fig, path, 'tex', plot_artifact)
+        run.log_artifact(plot_artifact)
         
-        # Show the plot
-        plt.show()
+        return fig, ax
 
 def compute_loss(dataloader, model, config):
     """
@@ -67,7 +67,7 @@ def compute_loss(dataloader, model, config):
         if(config['use_as_autoencoder']):
             recon_loss = loss_ae(x, model, loss_function)
         else:
-            recon_loss = loss_vae(x, model)
+            vae_loss, recon_loss, kl_loss = loss_VAE(x, model)
         
         tot_loss += recon_loss * x.shape[0]
         
@@ -104,3 +104,4 @@ def save_plot_and_add_to_artifact(fig, path, file_type, artifact):
         fig.savefig("{}.{}".format(path, file_type), format = file_type)
         
     artifact.add_file("{}.{}".format(path, file_type))
+    wandb.save()
