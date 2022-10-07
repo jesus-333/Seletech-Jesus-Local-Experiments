@@ -40,9 +40,8 @@ def train_and_log_model(project_name, loader_list, config):
         # Train model
         model.to(config['device'])
         wandb.watch(model, log = "all", log_freq = config['log_freq'])
-        if config['use_as_autoencoder']: train_model_ae(model, optimizer, loader_list, config, lr_scheduler)
-        else: train_model_VAE(model, optimizer, loader_list, config, lr_scheduler)
-        
+        train_model(model, optimizer, loader_list, config, lr_scheduler)
+
         # Save model after training
         model_artifact_name = config['model_artifact_name'] + '_trained'
         model_artifact = wandb.Artifact(model_artifact_name, type = "model",
@@ -54,24 +53,31 @@ def train_and_log_model(project_name, loader_list, config):
         return model
             
 
-#%% Training autoencoder
-
-def train_model_ae(model, optimizer, loader_list, config, lr_scheduler = None):
+def train_model(model, optimizer, loader_list, config, lr_scheduler = None):
     train_loader = loader_list[0]
     validation_loader = loader_list[1]
     anomaly_loader = loader_list[2]
     
     log_dict = {}
-    loss_function = torch.nn.MSELoss()
+   
     for epoch in range(config['epochs']):
         # Compute loss (and eventually update weights)
-        train_loss      = epoch_ae(model, train_loader, config, True, loss_function, optimizer)
-        validation_loss = epoch_ae(model, validation_loader, config, False, loss_function)
-        anomaly_loss    = epoch_ae(model, anomaly_loader, config, False, loss_function)
+        if config['use_as_autoencoder']:
+            loss_function = torch.nn.MSELoss()
+            train_loss      = epoch_ae(model, train_loader, config, True, loss_function, optimizer)
+            validation_loss = epoch_ae(model, validation_loader, config, False, loss_function)
+            anomaly_loss    = epoch_ae(model, anomaly_loader, config, False, loss_function)
+        else:
+            train_loss      = epoch_VAE(model, train_loader, config, True, optimizer)
+            validation_loss = epoch_VAE(model, validation_loader, config, False)
+            anomaly_loss    = epoch_VAE(model, anomaly_loader, config, False)
         
         # Save metric to load on wandb
         log_dict['learning_rate'] = optimizer.param_groups[0]['lr']
-        log_dict, loss_string = divide_ae_loss([train_loss, validation_loss, anomaly_loss], log_dict)
+        if config['use_as_autoencoder']:
+            log_dict, loss_string = divide_ae_loss([train_loss, validation_loss, anomaly_loss], log_dict)
+        else:
+            log_dict, loss_string = divide_VAE_loss([train_loss, validation_loss, anomaly_loss], log_dict)
         
         # Log data on wandb
         wandb.log(log_dict)
@@ -82,8 +88,9 @@ def train_model_ae(model, optimizer, loader_list, config, lr_scheduler = None):
         if config['print_var']: 
             print("Epoch: {}".format(epoch))
             print(loss_string)
-    
-    
+
+#%% Training autoencoder
+  
 def epoch_ae(model, loader, config, is_train, loss_function, optimizer = None):    
     tot_loss = 0
     for batch in loader:
@@ -137,34 +144,6 @@ def divide_ae_loss(ae_loss_list, log_dict):
     return log_dict, loss_string
 
 #%% Training VAE
-
-def train_model_VAE(model, optimizer, loader_list, config, lr_scheduler = None):
-    train_loader = loader_list[0]
-    validation_loader = loader_list[1]
-    anomaly_loader = loader_list[2]
-    
-    log_dict = {}
-    
-    for epoch in range(config['epochs']):
-        train_loss      = epoch_VAE(model, train_loader, config, True, optimizer)
-        validation_loss = epoch_VAE(model, validation_loader, config, False)
-        anomaly_loss    = epoch_VAE(model, anomaly_loader, config, False)
-        
-        # Save metric to load on wandb
-        log_dict['learning_rate'] = optimizer.param_groups[0]['lr']
-        log_dict, loss_string = divide_VAE_loss([train_loss, validation_loss, anomaly_loss], log_dict)
-
-        # Log data on wandb
-        wandb.log(log_dict)
-        
-        # Update learning rate (if a scheduler is provided)
-        if lr_scheduler is not None: lr_scheduler.step()
-        
-        if config['print_var']: 
-            print("Epoch: {}".format(epoch))
-            print(loss_string)
-            
-
 
 def epoch_VAE(model, loader, config, is_train, optimizer = None):
     recon_loss_total = 0
