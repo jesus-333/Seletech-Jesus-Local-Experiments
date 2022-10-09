@@ -14,8 +14,8 @@ import torch
 import wandb
 
 from support.wandb_init_V1 import make_dataloader
-from support.wandb_init_V2 import build_and_log_model
-from support.wandb_init_V2 import build_model, load_dataset_local, split_dataset
+from support.wandb_init_V2 import build_and_log_VAE_model
+from support.wandb_init_V2 import build_VAE_model, load_dataset_local, split_dataset
 from support.wandb_training_V2 import train_and_log_model
 from support.wandb_visualization import bar_loss_wandb_V1
 
@@ -40,7 +40,7 @@ model_config = dict(
 )
 
 # model = build_model(model_config)[0]
-build_and_log_model(project_name, model_config)
+build_and_log_VAE_model(project_name, model_config)
 
 #%% Load dataset
 

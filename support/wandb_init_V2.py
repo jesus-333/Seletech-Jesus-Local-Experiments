@@ -15,20 +15,21 @@ import pandas as pd
 
 from support.VAE import SpectraVAE_Double_Mems, AttentionVAE
 from support.VAE_Conv import SpectraVAE_Double_Mems_Conv
+from support.embedding_sequence import SequenceEmbedder_V2
 from support.datasets import load_spectra_data, load_water_data, create_extended_water_vector, choose_spectra_based_on_water_V1
 from support.datasets import PytorchDatasetPlantSpectra_V1
 from support.preprocess import aggregate_HT_data_V2
 
-#%% Build model
+#%% Build model VAE/AE
 
-def build_and_log_model(project_name, config):
+def build_and_log_VAE_model(project_name, config):
     if config['neurons_per_layer'][1] / config['neurons_per_layer'][0] != 2 and config['use_cnn'] == False:
         raise ValueError("FOR NOW, the number of neurons of the second hidden layer must be 2 times the number of neurons in the first inner layer")
         
     with wandb.init(project = project_name, job_type = "model_creation", config = config) as run:
         config = wandb.config
         
-        model, model_name, model_description = build_model(config)
+        model, model_name, model_description = build_VAE_model(config)
         
         # Create the artifacts
         metadata = dict(config)
@@ -36,11 +37,12 @@ def build_and_log_model(project_name, config):
 
         # Save the model and log it on wandb
         add_model_to_artifact(model, model_artifact, "TMP_File/untrained.pth")
-        add_onnx_to_artifact(model, model_artifact, "TMP_File/untrained.onnx")
+        args = (torch.ones((1, 300)), torch.ones((1, 400)))
+        add_onnx_to_artifact(model, model_artifact, args, "TMP_File/untrained.onnx")
         run.log_artifact(model_artifact)
         
         
-def build_model(config):
+def build_VAE_model(config):
     # Create the model
     if config['use_cnn']: # Convolutional VAE 
         model = SpectraVAE_Double_Mems_Conv(config['length_mems_1'], config['length_mems_2'], config['hidden_space_dimension'], 
@@ -74,6 +76,41 @@ def build_model(config):
             
     return model, model_name, model_description
 
+#%% Build model Sequence Embedder
+
+def build_and_log_Sequence_Embedder_model(project_name, config):
+    with wandb.init(project = project_name, job_type = "model_creation", config = config) as run:
+        config = wandb.config
+        
+        model, model_name, model_description = build_Sequence_Embedder_model(config)
+        
+        # Create the artifacts
+        metadata = dict(config)
+        model_artifact = wandb.Artifact(model_name, type = "model", description = model_description, metadata = metadata)
+
+        # Save the model and log it on wandb
+        add_model_to_artifact(model, model_artifact, "TMP_File/untrained.pth")
+        add_sequence_embedder_onnx_to_artifact(config, model, model_artifact, "TMP_File/untrained.onnx")
+        run.log_artifact(model_artifact)
+
+def build_Sequence_Embedder_model(config):
+    model_name = "SequenceEmbedder"
+    model_description = "Untrained sequence Embedder. "
+    if config['use_spectra_embedder']: model_description += " Spectra embedder is used. "
+    if config['use_attention']: model_description += " Multihead attention is used. "
+    
+    model = SequenceEmbedder_V2(config)
+    
+    print(model_description)
+    
+    return model, model_name, model_description
+
+def add_sequence_embedder_onnx_to_artifact(config, model, artifact, model_name = "model.onnx"):
+    if 'sequence_length' not in config: config['sequence_length'] = 5
+    args = torch.rand((1, config['sequence_length'], 700))
+    add_onnx_to_artifact(model, artifact, args, model_name)
+
+#%% Load model from/to artifact
 
 def add_model_to_artifact(model, artifact, model_name = "model.pth"):
     torch.save(model.state_dict(), model_name)
@@ -81,15 +118,13 @@ def add_model_to_artifact(model, artifact, model_name = "model.pth"):
     wandb.save(model_name)
     
 
-def add_onnx_to_artifact(model, artifact, model_name = "model.onnx"):
-    tmp_x1 = torch.ones((1, 300))
-    tmp_x2 = torch.ones((1, 400))
-    torch.onnx.export(model, args = (tmp_x1, tmp_x2), f = model_name)
+def add_onnx_to_artifact(model, artifact, args, model_name = "model.onnx"):
+    torch.onnx.export(model, args = args, f = model_name)
     
     artifact.add_file(model_name)
     wandb.save(model_name)
 
-def load_modeadd_model_to_artifact(artifact_name, version = 'latest', model_name = "model.pth"):
+def load_model_to_artifact(artifact_name, version = 'latest', model_name = "model.pth"):
     run = wandb.init()
     
     return load_model_from_artifact_inside_run(run, artifact_name, version, model_name)
@@ -104,7 +139,7 @@ def load_model_from_artifact_inside_run(run, artifact_name, version = 'latest', 
     model_path = os.path.join(model_dir, model_name)
     model_config = model_artifact.metadata
     
-    model, model_name, model_description = build_model(model_config)
+    model, model_name, model_description = build_VAE_model(model_config)
     model.load_state_dict(torch.load(model_path, map_location=torch.device('cpu')))
     
     return model, model_config
