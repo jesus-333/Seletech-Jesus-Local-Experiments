@@ -12,17 +12,22 @@ Created on Fri Sep 23 14:43:02 2022
 import wandb
 import torch
 
-from support.wandb_init_V2 import load_model_from_artifact_inside_run, add_model_to_artifact
+from support.wandb_init_V1 import make_dataloader
+from support.wandb_init_V2 import load_model_from_artifact_inside_run, load_dataset_from_artifact_inside_run, add_model_to_artifact, split_dataset
+from support.preprocess import choose_spectra_based_on_water_V1
+from support.datasets import PytorchDatasetPlantSpectra_V1
 
 #%% Principal function
 
-def train_and_log_model(project_name, loader_list, config):
+def train_and_log_VAE_model(project_name, config):
     with wandb.init(project = project_name, job_type = "train", config = config) as run:
         config = wandb.config
-        
+          
         # Load model from artifacts
         model, model_config = load_model_from_artifact_inside_run(run, config['model_artifact_name'],
                                                     version = config['version'], model_name = 'untrained.pth')
+        
+        # Check if it is used as autoencoder
         config['use_as_autoencoder'] = model_config['use_as_autoencoder']
         
         # Setup optimizer
@@ -34,25 +39,61 @@ def train_and_log_model(project_name, loader_list, config):
             lr_scheduler = torch.optim.lr_scheduler.ExponentialLR(optimizer, gamma = config['gamma'])
         else:
             lr_scheduler = None
-            
+        
+        # Print the training device
         if config['print_var']: print("Model trained on: {}".format(config['device']))
+        
+        # Setup the dataloader
+        loader_list = load_loader(config)
         
         # Train model
         model.to(config['device'])
         wandb.watch(model, log = "all", log_freq = config['log_freq'])
-        if "VAE" in str(type(model)):
-            train_anomaly_model(model, optimizer, loader_list, config, lr_scheduler)
+        train_anomaly_model(model, optimizer, loader_list, config, lr_scheduler)
 
         # Save model after training
         model_artifact_name = config['model_artifact_name'] + '_trained'
+        metadata = dict(training_config = config, model_config = model_config)
         model_artifact = wandb.Artifact(model_artifact_name, type = "model",
                                         description = "Trained {}:{} model".format(config['model_artifact_name'], config['version']),
-                                        metadata = dict(model_config))
+                                        metadata = metadata)
         add_model_to_artifact(model, model_artifact)
         run.log_artifact(model_artifact)
         
         return model
-            
+
+#%% Load data for training
+
+def load_loader(config, run):
+    # Load data from dataset artifact
+    data = load_dataset_from_artifact_inside_run(config['dataset_config'], run)
+    
+    spectra = data[0]
+    extended_water_timestamp = data[3]
+    
+    # Divide the spectra in good (Water) and Bad (NON water)
+    good_idx, bad_idx = choose_spectra_based_on_water_V1(extended_water_timestamp, time_interval_start = config['time_interval_start'], time_interval_end = config['time_interval_end'])
+    
+    good_spectra_dataset = PytorchDatasetPlantSpectra_V1(spectra[good_idx, :], used_in_cnn = config['use_cnn'])
+    bad_spectra_dataset = PytorchDatasetPlantSpectra_V1(spectra[bad_idx, :], used_in_cnn = config['use_cnn'])
+    
+    # Save the idx used to divide the dataset between normal(dry/bad) and anomaly (good/water)
+    # N.b. The dry spectra are more numerous
+    config['dataset_config']['good_idx'] = good_idx
+    config['dataset_config']['bad_idx'] = bad_idx
+    
+    # Divided bad dataset
+    bad_dataset_train, bad_dataset_test, bad_dataset_validation, split_idx = split_dataset(bad_spectra_dataset, config['dataset_config'])
+    config['dataset_config']['bad_dataset_split_idx'] = split_idx
+
+    # Create dataloader
+    train_loader = make_dataloader(bad_dataset_train, config)
+    validation_loader = make_dataloader(bad_dataset_validation, config)
+    anomaly_loader = make_dataloader(good_spectra_dataset, config)
+    
+    return train_loader, validation_loader, anomaly_loader
+
+#%% Training cycle function
 
 def train_anomaly_model(model, optimizer, loader_list, config, lr_scheduler = None):
     train_loader = loader_list[0]
@@ -89,8 +130,9 @@ def train_anomaly_model(model, optimizer, loader_list, config, lr_scheduler = No
         if config['print_var']: 
             print("Epoch: {}".format(epoch))
             print(loss_string)
-
-#%% Training autoencoder
+            
+            
+#%% Autoencoder
   
 def epoch_ae(model, loader, config, is_train, loss_function, optimizer = None):    
     tot_loss = 0
@@ -140,11 +182,11 @@ def divide_ae_loss(ae_loss_list, log_dict):
     log_dict = {**log_dict, **tmp_dict}
     loss_string  = "\treconstruction_loss_train:      " + str(ae_loss_list[0].cpu().detach().numpy()) + "\n"
     loss_string += "\treconstruction_loss_validation: " + str(ae_loss_list[1].cpu().detach().numpy()) + "\n"
-    loss_string += "\treconstruction_loss_anomaly:    " + str( ae_loss_list[2].cpu().detach().numpy())
+    loss_string += "\treconstruction_loss_anomaly:    " + str(ae_loss_list[2].cpu().detach().numpy())
     
     return log_dict, loss_string
 
-#%% Training VAE
+#%% VAE
 
 def epoch_VAE(model, loader, config, is_train, optimizer = None):
     recon_loss_total = 0
@@ -176,6 +218,9 @@ def epoch_VAE(model, loader, config, is_train, optimizer = None):
     
 
 def loss_VAE(x, model, config):
+    if 'alpha' not in config: config['alpha'] = 1
+    if 'beta' not in config: config['beta'] = 1
+    
     # Divide the spectra
     x1, x2, x = divide_spectra(x)
     
@@ -312,3 +357,25 @@ def divide_spectra(x):
     x = torch.cat((x1,x2), -1)
     
     return x1, x2, x
+
+def compute_accuracy(model, loader, device):
+    """
+    Compute the accuracy (i.e. the percentage of correctly classified exampled) for the sequence embedding classifier
+    """
+    
+    n_example = 0
+    tot_correct = 0
+    
+    for batch in loader:
+        x = batch[0].to(device)
+        y_true = batch[1].to(device)
+        
+        y = model(x)
+        y = torch.argmax(y, 1)
+        
+        tot_correct += torch.sum(y == y_true)
+        n_example += x.shape[0]
+        
+    accuracy = tot_correct / n_example
+    
+    return accuracy

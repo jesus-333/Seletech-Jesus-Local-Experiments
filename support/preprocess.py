@@ -228,7 +228,7 @@ def divide_spectra_in_sequence(spectra, sequence_length, shift = -1, info_array 
         i += shift
     
     if info_array is not None:
-        return sequence_list, info_avg
+        return sequence_list, np.asarray(info_avg)
     else:       
         return sequence_list    
     

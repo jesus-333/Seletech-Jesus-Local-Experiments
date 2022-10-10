@@ -53,16 +53,16 @@ load_config = dict(
     spectra_timstamp_path = 'jesus_spectra_timestamp.csv'
 )
 
-a = load_dataset_from_artifact(load_config)
+data = load_dataset_from_artifact(load_config)
 
 #%%
 from support.preprocess import divide_spectra_in_sequence
 import torch
 
-spectra = a[0]
-h_array = a[4]
+spectra = data[0]
+h_array = data[4]
 
-sequence_length = 10
+sequence_length = 15
 shift = int(sequence_length / 2)
 spectra_sequence, info_avg = divide_spectra_in_sequence(spectra, sequence_length, shift, h_array)
 
@@ -78,3 +78,33 @@ print(spectra.shape[0] % sequence_length)
 plt.figure(figsize = (15, 10))
 plt.plot(np.linspace(0,1, len(h_array)), h_array)
 plt.plot(np.linspace(0,1, len(info_avg)), info_avg)
+
+plt.axhline(np.mean(info_avg))
+plt.axhline(np.mean(info_avg) + np.std(info_avg))
+plt.axhline(np.mean(info_avg) - np.std(info_avg))
+
+wet_idx = info_avg >= np.mean(info_avg) + np.std(info_avg) * 1
+dry_idx = info_avg <= np.mean(info_avg) - np.std(info_avg) * 1
+normal_array = np.logical_and(np.logical_not(wet_idx), np.logical_not(dry_idx))
+
+plt.figure(figsize = (15, 10))
+plt.plot(np.linspace(0,1, len(info_avg[wet_idx])), info_avg[wet_idx])
+plt.plot(np.linspace(0,1, len(info_avg[dry_idx])), info_avg[dry_idx])
+plt.plot(np.linspace(0,1, len(info_avg[normal_array])), info_avg[normal_array])
+
+print("len(info_avg[wet_idx]): ", len(info_avg[wet_idx]))
+print("len(info_avg[dry_idx]): ", len(info_avg[dry_idx]))
+print("len(info_avg[normal_array]): ", len(info_avg[normal_array]))
+
+#%% 
+
+from support.datasets import SpectraSequenceDataset
+
+dataset_config = dict(
+    sequence_length = 15,
+    shift = 7,
+    n_std = 1,
+    binary_label = True
+)
+
+tmp_dataset = SpectraSequenceDataset(spectra, h_array, dataset_config)

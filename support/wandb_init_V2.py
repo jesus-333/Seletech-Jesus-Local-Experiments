@@ -15,9 +15,9 @@ import pandas as pd
 
 from support.VAE import SpectraVAE_Double_Mems, AttentionVAE
 from support.VAE_Conv import SpectraVAE_Double_Mems_Conv
-from support.embedding_sequence import SequenceEmbedder_V2
+from support.embedding_sequence import SequenceEmbedder_V2, Sequence_embedding_clf
 from support.datasets import load_spectra_data, load_water_data, create_extended_water_vector
-from support.datasets import PytorchDatasetPlantSpectra_V1
+from support.datasets import PytorchDatasetPlantSpectra_V1, SpectraSequenceDataset
 from support.preprocess import aggregate_HT_data_V2, choose_spectra_based_on_water_V1
 
 #%% Build model VAE/AE
@@ -40,6 +40,8 @@ def build_and_log_VAE_model(project_name, config):
         args = (torch.ones((1, 300)), torch.ones((1, 400)))
         add_onnx_to_artifact(model, model_artifact, args, "TMP_File/untrained.onnx")
         run.log_artifact(model_artifact)
+        
+        return model
         
         
 def build_VAE_model(config):
@@ -78,11 +80,11 @@ def build_VAE_model(config):
 
 #%% Build model Sequence Embedder
 
-def build_and_log_Sequence_Embedder_model(project_name, config):
+def build_and_log_Sequence_Embedder_clf_model(project_name, config):
     with wandb.init(project = project_name, job_type = "model_creation", config = config) as run:
         config = wandb.config
         
-        model, model_name, model_description = build_Sequence_Embedder_model(config)
+        model, model_name, model_description = build_Sequence_Embedder_clf_model(config)
         
         # Create the artifacts
         metadata = dict(config)
@@ -92,14 +94,16 @@ def build_and_log_Sequence_Embedder_model(project_name, config):
         add_model_to_artifact(model, model_artifact, "TMP_File/untrained.pth")
         add_sequence_embedder_onnx_to_artifact(config, model, model_artifact, "TMP_File/untrained.onnx")
         run.log_artifact(model_artifact)
+        
+        return model
 
-def build_Sequence_Embedder_model(config):
-    model_name = "SequenceEmbedder"
-    model_description = "Untrained sequence Embedder. "
+def build_Sequence_Embedder_clf_model(config):
+    model_name = "SequenceEmbedder_clf"
+    model_description = "Untrained sequence Embedder with classifier. "
     if config['use_spectra_embedder']: model_description += " Spectra embedder is used. "
     if config['use_attention']: model_description += " Multihead attention is used. "
     
-    model = SequenceEmbedder_V2(config)
+    model = Sequence_embedding_clf(config)
     
     print(model_description)
     
@@ -107,7 +111,7 @@ def build_Sequence_Embedder_model(config):
 
 def add_sequence_embedder_onnx_to_artifact(config, model, artifact, model_name = "model.onnx"):
     if 'sequence_length' not in config: config['sequence_length'] = 5
-    args = torch.rand((1, config['sequence_length'], 700))
+    args = torch.rand((3, config['sequence_length'], 702))
     add_onnx_to_artifact(model, artifact, args, model_name)
 
 #%% Load model from/to artifact
@@ -134,12 +138,19 @@ def load_model_from_artifact_inside_run(run, artifact_name, version = 'latest', 
     """
     Function used to load the model of an artifact. Used inside an active run of wandb
     """
+            
     model_artifact = run.use_artifact("{}:{}".format(artifact_name, version))
     model_dir = model_artifact.download()
     model_path = os.path.join(model_dir, model_name)
     model_config = model_artifact.metadata
     
-    model, model_name, model_description = build_VAE_model(model_config)
+    if "VAE" in artifact_name:
+        model, model_name, model_description = build_VAE_model(model_config)
+    elif "SequenceEmbedder_clf" in artifact_name:
+        model, model_name, model_description = build_Sequence_Embedder_clf_model(model_config)
+    else:
+        raise ValueError("Problem with the type of model you want to load")
+
     model.load_state_dict(torch.load(model_path, map_location=torch.device('cpu')))
     
     return model, model_config
@@ -147,7 +158,7 @@ def load_model_from_artifact_inside_run(run, artifact_name, version = 'latest', 
 
 #%% Dataset
 
-def load_dataset_local(config):
+def load_dataset_local_VAE(config):
     # Sepctra
     spectra_plants_numpy, wavelength, timestamp = load_spectra_data("data/[2021-08-05_to_11-26]All_PlantSpectra.csv", config['normalize_trials'])
 
@@ -161,7 +172,17 @@ def load_dataset_local(config):
     good_spectra_dataset = PytorchDatasetPlantSpectra_V1(spectra_plants_numpy[good_idx, :], used_in_cnn = config['use_cnn'])
     bad_spectra_dataset = PytorchDatasetPlantSpectra_V1(spectra_plants_numpy[bad_idx, :], used_in_cnn = config['use_cnn'])
     
-    return good_spectra_dataset, bad_spectra_dataset
+    return good_spectra_dataset, bad_spectra_dataset, good_idx, bad_idx
+
+def load_dataset_Sequence_embedder_clf(load_config, dataset_config):
+    data = load_dataset_from_artifact(load_config)
+    
+    spectra = data[0]
+    h_array = data[4]
+    
+    dataset = SpectraSequenceDataset(spectra, h_array, dataset_config)
+    
+    return dataset
 
 
 def split_dataset(dataset, config):
@@ -171,17 +192,25 @@ def split_dataset(dataset, config):
     if percentage_train + percentage_test + percentage_validation > 1:
         print(percentage_train + percentage_test + percentage_validation)
         raise ValueError("The sum of the percentage of train, test and validation must be lower or equal to 1")
-            
-    dataset_train = dataset[0:int(len(dataset) * percentage_train)]
-    dateset_test = dataset[int(len(dataset) * percentage_train):int(len(dataset) * (percentage_train + percentage_test))]
-    dataset_validation = dataset[int(len(dataset) * (percentage_train + percentage_test)):]
+
+    # Create index to divide the dataset in 3 (train, test and validation)
+    idx = np.arange(len(dataset))
+    tmp_len_list = (np.asarray(config['split_percentage_list']) * len(dataset)).astype(int)
+    tmp_len_list[-1] = abs(len(dataset) - tmp_len_list.sum()) + tmp_len_list[-1]
+    train_idx, test_idx, validation_idx = torch.utils.data.random_split(idx, tmp_len_list)
+    
+    # Divide the dataset
+    dataset_train = dataset[train_idx]
+    dataset_test = dataset[test_idx]  
+    dataset_validation = dataset[validation_idx]
+    idx_list = [train_idx, test_idx, validation_idx]
     
     if config['print_var']:
         print("Length Training set   = " + str(len(dataset_train)))
-        print("Length Test set       = " + str(len(dateset_test)))
+        print("Length Test set       = " + str(len(dataset_test)))
         print("Length Validation set = " + str(len(dataset_validation)))
         
-    return dataset_train, dateset_test, dataset_validation
+    return dataset_train, dataset_test, dataset_validation, idx_list
 
 
 def log_data(project_name):

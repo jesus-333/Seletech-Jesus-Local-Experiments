@@ -11,16 +11,15 @@ Created on Sat Oct  8 18:24:02 2022
 import sys
 sys.path.insert(0, 'support')
 
-import wandb
-
+import numpy as np
 import torch
 import wandb
+import matplotlib.pyplot as plt
 
 from support.wandb_init_V1 import make_dataloader
-from support.wandb_init_V2 import build_and_log_Sequence_Embedder_model
-from support.wandb_init_V2 import build_Sequence_Embedder_model, load_dataset_local, split_dataset
+from support.wandb_init_V2 import build_and_log_Sequence_Embedder_clf_model
+from support.wandb_init_V2 import load_dataset_Sequence_embedder_clf, split_dataset
 from support.wandb_training_V2 import train_and_log_model
-from support.wandb_visualization import bar_loss_wandb_V1
 
 #%% Wandb login and log file inizialization
 
@@ -33,21 +32,110 @@ project_name = "Seletech VAE Spectra"
 model_config = dict(
     # Spectra embedder parameters
     use_spectra_embedder = True,
-    query_embedding_size = 128,
-    key_embedding_size = 128,
-    value_embedding_size = 128,
-    use_activation_in_spectra_embedder = False,
+    query_embedding_size = 256,
+    key_embedding_size = 256,
+    value_embedding_size = 256,
+    use_activation_in_spectra_embedder = True,
     # Multihead attention parameters
     use_attention = True,
-    num_heads = 1,
+    num_heads = 4,
     multihead_attention_dropout = 0,
     multihead_attention_bias = True,
-    kdim = 128,
-    vdim = 128,
-    # LST Parameters
-    sequence_embedding_size = 2,
+    kdim = 256,
+    vdim = 256,
+    # LSTM Parameters
+    sequence_embedding_size = 8,
     LSTM_bias = False,
-    LSTM_dropout = 0
+    LSTM_dropout = 0,
+    # CLf parameters
+    n_class = 2,
 )
 
-build_and_log_Sequence_Embedder_model(project_name, model_config)
+untrained_model = build_and_log_Sequence_Embedder_clf_model(project_name, model_config)
+
+#%% Build dataset
+
+load_config = dict(
+    # Info for spectra
+    artifact_name = 'jesus_333/Seletech VAE Spectra/Dataset_Spectra_1',
+    version = 'latest',
+    spectra_file_name = '[2021-08-05_to_11-26]All_PlantSpectra.csv',
+    normalize_trials = 1,
+    # Info for other sensor data
+    return_other_sensor_data = True,
+    water_file_name = '[2021-08-05_to_11-26]PlantTest_Notes.csv',
+    ht_file_path = '[2021-08-05_to_11-26]All_PlantHTSensor.csv',
+    ht_timestamp_path = 'jesus_ht_timestamp.csv', 
+    spectra_timstamp_path = 'jesus_spectra_timestamp.csv'
+)
+
+dataset_config = dict(
+    sequence_length = 15,
+    shift = 7,
+    n_std = 1,
+    binary_label = True,
+    split_percentage_list = [0.8, 0.05, 0.15]
+)
+
+dataset = load_dataset_Sequence_embedder_clf(load_config, dataset_config)
+
+dataset_train, dataset_test, dataset_validation = split_dataset(dataset, dataset_config)
+
+#%%
+
+training_config = dict(
+    model_artifact_name = 'SequenceEmbedder_clf',
+    version = 'latest', # REMEMBER ALWAYS TO CHECK THE VERSION
+    batch_size = 32,
+    lr = 1e-2,
+    epochs = 5,
+    use_scheduler = True,
+    gamma = 0.75, # Parameter of the lr exponential scheduler
+    optimizer_weight_decay = 1e-3,
+    device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu"),
+    log_freq = 1,
+    print_var = True,
+    dataset_config = dataset_config
+)
+
+# Create dataloader 
+train_loader = make_dataloader(dataset_train, training_config)
+validation_loader = make_dataloader(dataset_validation, training_config)
+test_loader = make_dataloader(dataset_test, training_config)
+loader_list =[train_loader, validation_loader]
+
+# Train model
+model = train_and_log_model(project_name, loader_list, training_config)
+
+#%%
+
+from sklearn.manifold import TSNE
+from sklearn.decomposition import PCA
+embedder = model.embedder.to(training_config['device'])
+tmp_dataset = dataset_train
+point = np.zeros((len(tmp_dataset), model_config['sequence_embedding_size']))
+color = []
+for i in range(len(tmp_dataset)):
+    x, y = tmp_dataset[i]
+    emb = embedder(x.to(training_config['device']).unsqueeze(0))
+    
+    emb = emb.squeeze().detach().cpu()
+    
+    point[i] = emb
+    
+    if y == 0: color.append('red')
+    if y == 1: color.append('blue')
+  
+
+if point.shape[1] > 2:
+    # p = TSNE(n_components = 2, learning_rate='auto', init='random').fit_transform(point)      
+    p = PCA(n_components=2).fit_transform(point)
+else:
+    p = point
+    
+plt.figure(figsize = (15, 10))
+plt.scatter(p[:, 0], p[:, 1], c = color)
+# plt.xlim([0, 4 * 1e-19])
+# plt.ylim([0, - 1.5 * 1e-34])
+
+#%%

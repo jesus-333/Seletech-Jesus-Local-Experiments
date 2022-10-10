@@ -15,8 +15,8 @@ import wandb
 
 from support.wandb_init_V1 import make_dataloader
 from support.wandb_init_V2 import build_and_log_VAE_model
-from support.wandb_init_V2 import build_VAE_model, load_dataset_local, split_dataset
-from support.wandb_training_V2 import train_and_log_model
+from support.wandb_init_V2 import build_VAE_model, load_dataset_local_VAE, split_dataset
+from support.wandb_training_VAE import train_and_log_VAE_model
 from support.wandb_visualization import bar_loss_wandb_V1
 
 #%% wandb login
@@ -30,7 +30,7 @@ project_name = "Seletech VAE Spectra"
 model_config = dict(
     length_mems_1 = 300,
     length_mems_2 = 400,
-    neurons_per_layer = [32, 64, 36],
+    neurons_per_layer = [64, 128, 36],
     hidden_space_dimension = 2,
     use_as_autoencoder = False,
     use_bias = False,
@@ -53,20 +53,27 @@ dataset_config = dict(
     print_var = True,
 )
 
-good_dataset, bad_dataset = load_dataset_local(dataset_config)
+good_dataset, bad_dataset = load_dataset_local_VAE(dataset_config)
 
 bad_dataset_train, bad_dataset_test, bad_dataset_validation = split_dataset(bad_dataset, dataset_config)
 
 #%% Train model
 
+"""
+v1: AE.  neurons_per_layer = [64, 128, 36]. Hidden_space = 2
+v2: AE.  neurons_per_layer = [32, 64, 36].  Hidden_space = 4
+v6: VAE. neurons_per_layer = [32, 64, 36].  Hidden_space = 2
+v7: VAE. neurons_per_layer = [64, 128, 36]. Hidden_space = 2
+"""
+
 training_config = dict(
     model_artifact_name = 'SpectraVAE_FC',
-    version = 'v6', # REMEMBER ALWAYS TO CHECK THE VERSION
+    version = 'v7', # REMEMBER ALWAYS TO CHECK THE VERSION
     batch_size = 32,
     lr = 1e-2,
     epochs = 50,
     use_scheduler = True,
-    gamma = 0.75, # Parameter of the lr exponential scheduler
+    gamma = 0.9, # Parameter of the lr exponential scheduler
     optimizer_weight_decay = 1e-3,
     alpha = 1, # Hyperparameter recon loss
     beta = 3, # Hyperparmeter KL loss
@@ -76,6 +83,17 @@ training_config = dict(
     dataset_config = dataset_config
 )
 
+dataset_config = dict(
+    normalize_trials = 1,
+    time_interval_start = 45,
+    time_interval_end = 360,
+    split_percentage_list = [0.7, 0.15, 0.15],
+    use_cnn = model_config['use_cnn'],
+    print_var = True,
+)
+
+training_config['dataset_config'] = dataset_config
+
 # Create dataloader 
 train_loader = make_dataloader(bad_dataset_train, training_config)
 validation_loader = make_dataloader(bad_dataset_validation, training_config)
@@ -83,13 +101,13 @@ anomaly_loader = make_dataloader(good_dataset, training_config)
 loader_list =[train_loader, validation_loader, anomaly_loader]
 
 # Train model
-model = train_and_log_model(project_name, loader_list, training_config)
+model = train_and_log_VAE_model(project_name, training_config)
 
 #%% Error bar plot trained model
 
 plot_config = dict(
     artifact_name = 'SpectraVAE_FC_trained',
-    version = 'latest', # REMEMBER ALWAYS TO CHECK THE VERSION
+    version = 'v2', # REMEMBER ALWAYS TO CHECK THE VERSION
     model_name = 'model.pth',
     device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu"),
     figsize = (15, 10),

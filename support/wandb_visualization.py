@@ -22,20 +22,24 @@ from support.wandb_training_V2 import loss_ae, loss_VAE
 
 def bar_loss_wandb_V1(project_name, dataloader_list, config):
     with wandb.init(project = project_name, job_type = "plot", config = config) as run:
+        if 'device' not in config: config['device'] = 'cpu'
         
         # Load model
         model, model_config = load_model_from_artifact_inside_run(run, config['artifact_name'], config['version'], config['model_name'])
         config['use_as_autoencoder'] = model_config['use_as_autoencoder']
         model.eval()
+        model.to(config['device'])
         
         # Compute loss
-        loss_list = []
+        avg_loss_list = []
+        std_loss_list = []
         for dataloader in dataloader_list:
-            tmp_loss = compute_loss(dataloader, model, config)
-            loss_list.append(tmp_loss)
+            avg_loss, std_loss = compute_avg_loss(dataloader, model, config)
+            avg_loss_list.append(avg_loss)
+            std_loss_list.append(std_loss)
         
         # Plot the loss in the bar chart
-        fig, ax = plot_bar_loss(loss_list, config)
+        fig, ax = plot_bar_loss(avg_loss_list, std_loss_list, config)
         
         # Log the plot
         wandb.log({"Bar Error Chart": fig})
@@ -51,14 +55,15 @@ def bar_loss_wandb_V1(project_name, dataloader_list, config):
         
         return fig, ax
 
-def compute_loss(dataloader, model, config):
+def compute_avg_loss(dataloader, model, config):
     """
-    Compute the loss of the data inside a given dataloader
+    Compute the average loss of the data inside a given dataloader
     """
     
     loss_function = torch.nn.MSELoss()
     
     tot_loss = 0
+    loss_list = []
     for batch in dataloader:
         # Move data to device
         x = batch.to(config['device'])
@@ -67,16 +72,19 @@ def compute_loss(dataloader, model, config):
         if(config['use_as_autoencoder']):
             recon_loss = loss_ae(x, model, loss_function)
         else:
-            vae_loss, recon_loss, kl_loss = loss_VAE(x, model)
+            vae_loss, recon_loss, kl_loss = loss_VAE(x, model, config)
         
         tot_loss += recon_loss * x.shape[0]
-        
-    tot_loss = tot_loss / len(dataloader.dataset)
+        loss_list.append(recon_loss)
     
-    return tot_loss.cpu().detach()
+    # Compute average and std of the loss
+    avg_loss = tot_loss / len(dataloader.dataset)
+    std_loss = torch.stack(loss_list).view(-1).std()
+    
+    return avg_loss.cpu().detach(), std_loss.cpu().detach()
 
 
-def plot_bar_loss(loss_list, config):
+def plot_bar_loss(loss_list, std_loss_list, config):
     if len(loss_list) != len(config['dataset_labels']): raise ValueError("The number of label must be equals to the number of class (dataloader)")
     
     fig, ax = plt.subplots(1,1, figsize = config['figsize'])

@@ -15,6 +15,7 @@ import torch
 from torch import nn
 
 from support.timestamp_function import extract_data_from_timestamp, compare_timestamp
+from support.preprocess import divide_spectra_in_sequence
 
 #%% Spectra related function
 
@@ -175,6 +176,39 @@ class PytorchDatasetPlantSpectra_V2(torch.utils.data.Dataset):
         return self.spectra.shape[0]
 
 
+class SpectraSequenceDataset(torch.utils.data.Dataset):
+    def __init__(self, spectra, info_array, config):
+        
+        # Create spectra sequence and average over sequence period of the info array
+        spectra_sequence, info_avg = divide_spectra_in_sequence(spectra, config['sequence_length'], config['shift'], info_array)
+        
+        # Convert spectra sequence in Tensor
+        self.spectra_sequence = torch.FloatTensor(spectra_sequence[0:-2])
+        
+        # Compute label
+        info_avg = info_avg[0:-2]
+        wet_idx = info_avg >= np.mean(info_avg) + np.std(info_avg) * config['n_std']
+        dry_idx = info_avg <= np.mean(info_avg) - np.std(info_avg) * config['n_std']
+        normal_idx = np.logical_and(np.logical_not(wet_idx), np.logical_not(dry_idx))
+        self.label = torch.zeros(len(info_avg))
+        if config['binary_label']:
+            self.label[normal_idx] = 0
+            self.label[np.logical_not(normal_idx)] = 1
+        else:
+            self.label[normal_idx] = 0
+            self.label[wet_idx] = 1
+            self.label[dry_idx] = 2
+            
+        print("len(info_avg[wet_idx]):    ", len(info_avg[wet_idx]))
+        print("len(info_avg[dry_idx]):    ", len(info_avg[dry_idx]))
+        print("len(info_avg[normal_idx]): ", len(info_avg[normal_idx]))
+            
+    def __getitem__(self, idx):
+        return self.spectra_sequence[idx, :], self.label[idx].long()
+    
+    def __len__(self):
+        return self.label.shape[0]
+    
 
 def minutes_to_hour(minutes):
   hour = minutes // 60
