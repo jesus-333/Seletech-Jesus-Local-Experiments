@@ -4,6 +4,10 @@ Created on Thu Jul 21 18:11:06 2022
 
 @author: Alberto Zancanaro (Jesus)
 @organization: University of Padua (Italy)
+
+This file contain function related to extra data (e.g. humidity, water).
+It also contains function to divided the spectra in sequence
+
 """
 
 import numpy as np
@@ -133,3 +137,98 @@ def aggregate_HT_data_V2(ht_timestamp, spectra_timestamp, h_array, t_array):
     
     aggregate_timestamp = np.copy(spectra_timestamp)
     return np.asarray(aggregate_h_array), np.asarray(aggregate_t_array), aggregate_timestamp
+
+
+#%% Divide spectra with water
+
+def choose_spectra_based_on_water_V1(extended_water_timestamp, time_interval_start, time_interval_end):
+    """
+    Create an index vector containg all the spectra after the plant was given water.
+    The after is defined with the two variable time_interval_start and time_interval_end and is based on the number of samples.
+    N.b. time_interval_end > time_interval_start
+    
+    # TODO
+    If the water was given to the plant at hour XX:YY then the taken spectra will be between XX:YY + time_interval_start and XX:YY  +time_interval_end 
+    """
+    
+    if(time_interval_start >= time_interval_end): raise Exception("time_interval_start should be greater than time_interval_end")
+    
+    good_idx_tmp = np.zeros(len(extended_water_timestamp))
+
+    good_timestamp = np.where(extended_water_timestamp != 0)[0]
+
+    for idx in good_timestamp: good_idx_tmp[idx + time_interval_start:idx + time_interval_end] = 1
+    
+    good_idx = good_idx_tmp == 1 
+    bad_idx = good_idx_tmp != 1 
+    
+    return good_idx, bad_idx             
+
+
+def choose_spectra_based_on_water_V2(spectra_data, extended_water_timestamp, minute_windows = 8 * 60,  minute_shift = 15):
+    """
+    Take all the spectra in an interval of time (specified in minutes) and average them. It also count the number of time water was given in that period of time.
+    Once done the averaging windows is shifted forward of tot minutes.
+    
+    Input data: the spectra matrix and the extended_water_timestamp (obtained with the function create_extended_water_vector)
+    Parameter: minute_windows (length in minutes of the interval, must be an integer), minute_shift (how many minutes shift the averaging windows forward)
+    Output: avg_spectra_matrix (matrix of dimension n x wavelenght, each row is an average of various spectra), count_water (array of length n, each row contains the number of times water was given to the plant for the corresponding spectra)
+    """
+    avg_spectra_matrix = []
+    count_water = []
+    
+    minute = 0
+    while(True):
+        tmp_full_spectra_batch = spectra_data[minute:minute + minute_windows, :]
+        count_water.append(np.sum(extended_water_timestamp[minute:minute + minute_windows]))
+        
+        avg_spectra = np.mean(tmp_full_spectra_batch, 0)
+        avg_spectra_matrix.append(avg_spectra)
+        
+        minute += minute_shift
+        if(minute + minute_windows >= spectra_data.shape[0]): break
+    
+    
+    avg_spectra_matrix = np.asarray(avg_spectra_matrix)
+    count_water = np.asarray(count_water).astype(int)       
+
+    
+    return avg_spectra_matrix, count_water  
+
+#%% Sequence function
+
+def divide_spectra_in_sequence(spectra, sequence_length, shift = -1, info_array = None):
+    """
+    Divide the matrix of spectra in list of spectra. Each list contain sequence_length spectra.
+    
+    If an info vector is passed it also compute the average of the info vector for each sequence. The info vector must have the same number of element of the spectra matrix
+    (The info array are the array with the data from the other sensor)
+    """
+    
+    if info_array is not None:
+        if len(info_array) != spectra.shape[0]: raise ValueError("The info array length and the number of spectra must be equal")
+        info_avg = []
+        
+    sequence_list = []
+    
+    if shift <= 0: shift = sequence_length
+    
+    i = 0
+    while True:
+        if i + sequence_length >= spectra.shape[0]:
+            tmp_sequence = spectra[i:-1]
+            sequence_list.append(tmp_sequence)
+            if info_array is not None: info_avg.append(np.mean(info_array[i:-1]))
+            break
+        else:
+            tmp_sequence = spectra[i:i+sequence_length]
+            sequence_list.append(tmp_sequence)
+            if info_array is not None: info_avg.append(np.mean(info_array[i:i+sequence_length]))
+            
+        i += shift
+    
+    if info_array is not None:
+        return sequence_list, info_avg
+    else:       
+        return sequence_list    
+    

@@ -12,8 +12,9 @@ It is created to have cleaner training file and work better with wandb
 import torch
 from torch.utils.data import DataLoader
 
-from support.datasets import load_spectra_data, load_water_data, create_extended_water_vector, choose_spectra_based_on_water_V1
+from support.datasets import load_spectra_data, load_water_data, create_extended_water_vector
 from support.datasets import PytorchDatasetPlantSpectra_V1
+from support.preprocess import choose_spectra_based_on_water_V1
 from support.VAE import SpectraVAE_Double_Mems, AttentionVAE
 from support.VAE_Conv import SpectraVAE_Double_Mems_Conv
 

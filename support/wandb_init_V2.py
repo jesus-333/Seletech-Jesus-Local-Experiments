@@ -16,9 +16,9 @@ import pandas as pd
 from support.VAE import SpectraVAE_Double_Mems, AttentionVAE
 from support.VAE_Conv import SpectraVAE_Double_Mems_Conv
 from support.embedding_sequence import SequenceEmbedder_V2
-from support.datasets import load_spectra_data, load_water_data, create_extended_water_vector, choose_spectra_based_on_water_V1
+from support.datasets import load_spectra_data, load_water_data, create_extended_water_vector
 from support.datasets import PytorchDatasetPlantSpectra_V1
-from support.preprocess import aggregate_HT_data_V2
+from support.preprocess import aggregate_HT_data_V2, choose_spectra_based_on_water_V1
 
 #%% Build model VAE/AE
 
@@ -124,7 +124,7 @@ def add_onnx_to_artifact(model, artifact, args, model_name = "model.onnx"):
     artifact.add_file(model_name)
     wandb.save(model_name)
 
-def load_model_to_artifact(artifact_name, version = 'latest', model_name = "model.pth"):
+def load_model_from_artifact(artifact_name, version = 'latest', model_name = "model.pth"):
     run = wandb.init()
     
     return load_model_from_artifact_inside_run(run, artifact_name, version, model_name)
@@ -200,7 +200,61 @@ def log_data(project_name):
         data_artifact.add_file("data/jesus_spectra_timestamp.csv")
         
         run.log_artifact(data_artifact)
+
+
+def load_dataset_from_artifact(config):
+    """
+    Create a wandb run and load the dataset artifact
+    """
+    run = wandb.init()
+    
+    return load_dataset_from_artifact_inside_run(config, run)
         
+def load_dataset_from_artifact_inside_run(config, run):
+    """
+    Load the spectra data (and eventual the other sensor data) from a wandb artifact inside a run
+    """
+    print("{}:{}".format(config['artifact_name'], config['version']))
+    dataset_artifact = run.use_artifact("{}:{}".format(config['artifact_name'], config['version']), type='dataset')
+    dataset_dir = dataset_artifact.download()
+    dataset_path = os.path.join(dataset_dir, config['spectra_file_name'])
+
+    spectra_plants_numpy, wavelength, spectra_timestamp = load_spectra_data(dataset_path, config['normalize_trials'])
+    
+    if config['return_other_sensor_data']:
+        # Water data
+        water_path = os.path.join(dataset_dir, config['water_file_name'])
+        water_data, water_timestamp = load_water_data(water_path)
+        extended_water_timestamp = create_extended_water_vector(water_timestamp, water_data, spectra_timestamp)
+        
+        # HT data
+        a = load_ht_data(os.path.join(dataset_dir, config['ht_file_path']), os.path.join(dataset_dir, config['ht_timestamp_path']), os.path.join(dataset_dir, config['spectra_timstamp_path']))
+        aggregate_h_array, aggregate_t_array, aggregate_timestamp = a[0], a[1], a[2]
+        
+        return spectra_plants_numpy, wavelength, spectra_timestamp, extended_water_timestamp, aggregate_h_array, aggregate_t_array
+    else:
+        return spectra_plants_numpy, wavelength, spectra_timestamp
+            
+        
+def load_ht_data(ht_file_path, ht_timestamp_path, spectra_timstamp_path):
+    """
+    Load the data of the HT sensor. Then the data are aggregate in order to have the same timestamp of the spectra.
+    ht_file_path:           path of the file with the ht data
+    ht_timestamp_path:      path of the file with the timestamp of the ht data
+    spectra_timstamp_path:  path of the file with the spectra timestamp
+    """
+    
+    ht_data = pd.read_csv(ht_file_path, encoding= 'unicode_escape')
+    h_array = ht_data[' Humidity[%]'].to_numpy()
+    t_array = ht_data[' Temperature[C]'].to_numpy()
+    
+    ht_timestamp = pd.read_csv(ht_timestamp_path).to_numpy()[:, 1:]
+    spectra_timestamp = pd.read_csv(spectra_timstamp_path).to_numpy()[:, 1:]
+    
+    a = aggregate_HT_data_V2(ht_timestamp, spectra_timestamp, h_array, t_array)
+    aggregate_h_array, aggregate_t_array, aggregate_timestamp = a[0], a[1], a[2]
+    
+    return aggregate_h_array, aggregate_t_array, aggregate_timestamp
         
 def load_dataset_h_local(config):
     """
@@ -208,15 +262,9 @@ def load_dataset_h_local(config):
     """
     # Sepctra
     spectra_plants_numpy, wavelength, timestamp = load_spectra_data("data/[2021-08-05_to_11-26]All_PlantSpectra.csv", config['normalize_trials'])
-
-    ht_data = pd.read_csv("data/[2021-08-05_to_11-26]All_PlantHTSensor.csv", encoding= 'unicode_escape')
-    h_array = ht_data[' Humidity[%]'].to_numpy()
-    t_array = ht_data[' Temperature[C]'].to_numpy()
     
-    ht_timestamp = pd.read_csv('data/jesus_ht_timestamp.csv').to_numpy()[:, 1:]
-    spectra_timestamp = pd.read_csv('data/jesus_spectra_timestamp.csv').to_numpy()[:, 1:]
-    
-    a = aggregate_HT_data_V2(ht_timestamp, spectra_timestamp, h_array, t_array)
+    # Load the ht data (divided in 2 rows so it is easy to read)
+    a = load_ht_data("data/[2021-08-05_to_11-26]All_PlantHTSensor.csv", 'data/jesus_ht_timestamp.csv', 'data/jesus_spectra_timestamp.csv')
     aggregate_h_array, aggregate_t_array, aggregate_timestamp = a[0], a[1], a[2]
     
     good_idx = aggregate_h_array < np.mean(aggregate_h_array)

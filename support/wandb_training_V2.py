@@ -40,7 +40,8 @@ def train_and_log_model(project_name, loader_list, config):
         # Train model
         model.to(config['device'])
         wandb.watch(model, log = "all", log_freq = config['log_freq'])
-        train_model(model, optimizer, loader_list, config, lr_scheduler)
+        if "VAE" in str(type(model)):
+            train_anomaly_model(model, optimizer, loader_list, config, lr_scheduler)
 
         # Save model after training
         model_artifact_name = config['model_artifact_name'] + '_trained'
@@ -53,7 +54,7 @@ def train_and_log_model(project_name, loader_list, config):
         return model
             
 
-def train_model(model, optimizer, loader_list, config, lr_scheduler = None):
+def train_anomaly_model(model, optimizer, loader_list, config, lr_scheduler = None):
     train_loader = loader_list[0]
     validation_loader = loader_list[1]
     anomaly_loader = loader_list[2]

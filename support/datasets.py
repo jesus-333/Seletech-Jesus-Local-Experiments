@@ -4,7 +4,6 @@
 
 This file contains:
     - Function to load the raw data
-    - Function to divide the raw data based on various criteria
     - Definition of the PyTorch dataset class for the plant spectra
         
 """
@@ -121,61 +120,6 @@ def create_extended_water_vector(water_log_timestamp, water_vector, spectra_time
 
     return extended_water_vector
 
-
-def choose_spectra_based_on_water_V1(extended_water_timestamp, time_interval_start, time_interval_end):
-    """
-    Create an index vector containg all the spectra after the plant was given water.
-    The after is defined with the two variable time_interval_start and time_interval_end and is based on the number of samples.
-    N.b. time_interval_end > time_interval_start
-    
-    # TODO
-    If the water was given to the plant at hour XX:YY then the taken spectra will be between XX:YY + time_interval_start and XX:YY  +time_interval_end 
-    """
-    
-    if(time_interval_start >= time_interval_end): raise Exception("time_interval_start should be greater than time_interval_end")
-    
-    good_idx_tmp = np.zeros(len(extended_water_timestamp))
-
-    good_timestamp = np.where(extended_water_timestamp != 0)[0]
-
-    for idx in good_timestamp: good_idx_tmp[idx + time_interval_start:idx + time_interval_end] = 1
-    
-    good_idx = good_idx_tmp == 1 
-    bad_idx = good_idx_tmp != 1 
-    
-    return good_idx, bad_idx             
-
-
-def choose_spectra_based_on_water_V2(spectra_data, extended_water_timestamp, minute_windows = 8 * 60,  minute_shift = 15):
-    """
-    Take all the spectra in an interval of time (specified in minutes) and average them. It also count the number of time water was given in that period of time.
-    Once done the averaging windows is shifted forward of tot minutes.
-    
-    Input data: the spectra matrix and the extended_water_timestamp (obtained with the function create_extended_water_vector)
-    Parameter: minute_windows (length in minutes of the interval, must be an integer), minute_shift (how many minutes shift the averaging windows forward)
-    Output: avg_spectra_matrix (matrix of dimension n x wavelenght, each row is an average of various spectra), count_water (array of length n, each row contains the number of times water was given to the plant for the corresponding spectra)
-    """
-    avg_spectra_matrix = []
-    count_water = []
-    
-    minute = 0
-    while(True):
-        tmp_full_spectra_batch = spectra_data[minute:minute + minute_windows, :]
-        count_water.append(np.sum(extended_water_timestamp[minute:minute + minute_windows]))
-        
-        avg_spectra = np.mean(tmp_full_spectra_batch, 0)
-        avg_spectra_matrix.append(avg_spectra)
-        
-        minute += minute_shift
-        if(minute + minute_windows >= spectra_data.shape[0]): break
-    
-    
-    avg_spectra_matrix = np.asarray(avg_spectra_matrix)
-    count_water = np.asarray(count_water).astype(int)       
-
-    
-    return avg_spectra_matrix, count_water  
-   
 
 #%% Dataset declaration
 

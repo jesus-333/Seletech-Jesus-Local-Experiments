@@ -102,7 +102,7 @@ class SequenceEmbedder_V2(nn.Module):
         return h_n
     
     
-#%%
+#%% Temporary test
 
 a = torch.rand(1, 5, 30)
 att_1 = nn.MultiheadAttention(30,1, batch_first = True)
