@@ -11,6 +11,7 @@ Created on Fri Sep 23 14:43:02 2022
 
 import wandb
 import torch
+import pickle
 
 from support.wandb_init_V1 import make_dataloader
 from support.wandb_init_V2 import load_model_from_artifact_inside_run, load_dataset_from_artifact_inside_run, add_model_to_artifact, split_dataset
@@ -27,8 +28,10 @@ def train_and_log_VAE_model(project_name, config):
         model, model_config = load_model_from_artifact_inside_run(run, config['model_artifact_name'],
                                                     version = config['version'], model_name = 'untrained.pth')
         
-        # Check if it is used as autoencoder
+        # Check if it is used as autoencoder and if the model is the CNN version
         config['use_as_autoencoder'] = model_config['use_as_autoencoder']
+        config['dataset_config']['use_cnn'] = model_config['use_cnn']
+        if config['print_var']: print("Model loaded from artifact")
         
         # Setup optimizer
         optimizer = torch.optim.AdamW(model.parameters(), lr = config['lr'], 
@@ -39,29 +42,32 @@ def train_and_log_VAE_model(project_name, config):
             lr_scheduler = torch.optim.lr_scheduler.ExponentialLR(optimizer, gamma = config['gamma'])
         else:
             lr_scheduler = None
+            
+        # Setup artifact to save the model during/after training
+        model_artifact_name = config['model_artifact_name'] + '_trained'
+        metadata = {'training_config':dict(config), 'model_config':model_config}
+        description = description_trained_model(metadata)
+        model_artifact = wandb.Artifact(model_artifact_name, type = "model", description = description, metadata = metadata)
         
-        # Print the training device
+        # Setup the dataloader and add the index of the dataset to artifact
+        loader_list, idx_dict = load_loader(config, run)
+        save_idx_to_artifact(idx_dict, model_artifact, run)
+        if config['print_var']: print("Dataset loaded")
+        
+        # Move model to device
+        model.to(config['device'])
         if config['print_var']: print("Model trained on: {}".format(config['device']))
         
-        # Setup the dataloader
-        loader_list = load_loader(config)
-        
         # Train model
-        model.to(config['device'])
         wandb.watch(model, log = "all", log_freq = config['log_freq'])
-        train_anomaly_model(model, optimizer, loader_list, config, lr_scheduler)
+        train_anomaly_model(model, optimizer, loader_list, model_artifact, config, lr_scheduler)
 
         # Save model after training
-        model_artifact_name = config['model_artifact_name'] + '_trained'
-        metadata = dict(training_config = config, model_config = model_config)
-        model_artifact = wandb.Artifact(model_artifact_name, type = "model",
-                                        description = "Trained {}:{} model".format(config['model_artifact_name'], config['version']),
-                                        metadata = metadata)
-        add_model_to_artifact(model, model_artifact)
+        add_model_to_artifact(model, model_artifact, "model_END.pth")
         run.log_artifact(model_artifact)
         
         return model
-
+    
 #%% Load data for training
 
 def load_loader(config, run):
@@ -72,40 +78,44 @@ def load_loader(config, run):
     extended_water_timestamp = data[3]
     
     # Divide the spectra in good (Water) and Bad (NON water)
-    good_idx, bad_idx = choose_spectra_based_on_water_V1(extended_water_timestamp, time_interval_start = config['time_interval_start'], time_interval_end = config['time_interval_end'])
+    good_idx, bad_idx = choose_spectra_based_on_water_V1(extended_water_timestamp, 
+                     time_interval_start = config['dataset_config']['time_interval_start'], 
+                     time_interval_end = config['dataset_config']['time_interval_end'])
     
-    good_spectra_dataset = PytorchDatasetPlantSpectra_V1(spectra[good_idx, :], used_in_cnn = config['use_cnn'])
-    bad_spectra_dataset = PytorchDatasetPlantSpectra_V1(spectra[bad_idx, :], used_in_cnn = config['use_cnn'])
-    
-    # Save the idx used to divide the dataset between normal(dry/bad) and anomaly (good/water)
-    # N.b. The dry spectra are more numerous
-    config['dataset_config']['good_idx'] = good_idx
-    config['dataset_config']['bad_idx'] = bad_idx
-    
+    good_spectra_dataset = PytorchDatasetPlantSpectra_V1(spectra[good_idx, :], used_in_cnn = config['dataset_config']['use_cnn'])
+    bad_spectra_dataset = PytorchDatasetPlantSpectra_V1(spectra[bad_idx, :], used_in_cnn = config['dataset_config']['use_cnn'])
+        
     # Divided bad dataset
     bad_dataset_train, bad_dataset_test, bad_dataset_validation, split_idx = split_dataset(bad_spectra_dataset, config['dataset_config'])
-    config['dataset_config']['bad_dataset_split_idx'] = split_idx
+    # config['dataset_config']['bad_dataset_split_idx'] = split_idx
 
     # Create dataloader
     train_loader = make_dataloader(bad_dataset_train, config)
     validation_loader = make_dataloader(bad_dataset_validation, config)
     anomaly_loader = make_dataloader(good_spectra_dataset, config)
     
-    return train_loader, validation_loader, anomaly_loader
+    # Save the idx used to divide the dataset between normal(dry/bad) and anomaly (good/water) (The dry spectra are more numerous)
+    # Save how bad dataset is split between train/test/validation
+    idx_dict = {}
+    idx_dict['good_idx'] = good_idx
+    idx_dict['bad_idx'] = bad_idx
+    idx_dict['bad_dataset_split_idx'] = split_idx
+    
+    return train_loader, validation_loader, anomaly_loader, idx_dict
 
 #%% Training cycle function
 
-def train_anomaly_model(model, optimizer, loader_list, config, lr_scheduler = None):
+def train_anomaly_model(model, optimizer, loader_list, model_artifact, config, lr_scheduler = None):
     train_loader = loader_list[0]
     validation_loader = loader_list[1]
     anomaly_loader = loader_list[2]
     
     log_dict = {}
+    loss_function = torch.nn.MSELoss() # Used only for AE
    
     for epoch in range(config['epochs']):
         # Compute loss (and eventually update weights)
         if config['use_as_autoencoder']:
-            loss_function = torch.nn.MSELoss()
             train_loss      = epoch_ae(model, train_loader, config, True, loss_function, optimizer)
             validation_loss = epoch_ae(model, validation_loader, config, False, loss_function)
             anomaly_loss    = epoch_ae(model, anomaly_loader, config, False, loss_function)
@@ -123,6 +133,9 @@ def train_anomaly_model(model, optimizer, loader_list, config, lr_scheduler = No
         
         # Log data on wandb
         wandb.log(log_dict)
+        
+        # Save the model
+        add_model_to_artifact(model, model_artifact, "model_{}.pth".format(epoch))
         
         # Update learning rate (if a scheduler is provided)
         if lr_scheduler is not None: lr_scheduler.step()
@@ -379,3 +392,26 @@ def compute_accuracy(model, loader, device):
     accuracy = tot_correct / n_example
     
     return accuracy
+
+
+def description_trained_model(metadata):
+    # Name of the model/artifacts
+    description = "Trained {}:{} model.\n".format(metadata['training_config']['model_artifact_name'], metadata['training_config']['version'])
+    
+    # Specify if it is a VAE or AE
+    description += "Model type: {}.\n".format("AE" if metadata['training_config']['use_as_autoencoder'] else "VAE")
+    
+    # If it is the fully connect version add the number of neurons to description
+    if not metadata['training_config']['dataset_config']['use_cnn']:
+        description += "Neurons per layer: {}.\n".format(metadata['model_config']['neurons_per_layer'])
+    
+    return description
+
+
+def save_idx_to_artifact(idx_dict, artifact, run):
+    idx_file_path = "TMP_File/idx_dict.pkl"
+    a_file = open(idx_file_path, "wb")
+    pickle.dump(idx_dict, a_file)
+    a_file.close()
+    
+    artifact.add_file(idx_file_path)

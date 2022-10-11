@@ -16,7 +16,7 @@ import torch
 import wandb
 
 from support.wandb_init_V2 import load_model_from_artifact_inside_run
-from support.wandb_training_V2 import loss_ae, loss_VAE
+from support.wandb_training_VAE import loss_ae, loss_VAE
 
 #%%
 
