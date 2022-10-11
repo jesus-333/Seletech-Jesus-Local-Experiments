@@ -14,7 +14,7 @@ import torch
 import pickle
 
 from support.wandb_init_V1 import make_dataloader
-from support.wandb_init_V2 import load_model_from_artifact_inside_run, load_dataset_from_artifact_inside_run, add_model_to_artifact, split_dataset
+from support.wandb_init_V2 import load_untrained_model_from_artifact_inside_run, load_dataset_from_artifact_inside_run, add_model_to_artifact, split_dataset
 from support.preprocess import choose_spectra_based_on_water_V1
 from support.datasets import PytorchDatasetPlantSpectra_V1
 
@@ -25,7 +25,7 @@ def train_and_log_VAE_model(project_name, config):
         config = wandb.config
           
         # Load model from artifacts
-        model, model_config = load_model_from_artifact_inside_run(run, config['model_artifact_name'],
+        model, model_config = load_untrained_model_from_artifact_inside_run(run, config['model_artifact_name'],
                                                     version = config['version'], model_name = 'untrained.pth')
         
         # Check if it is used as autoencoder and if the model is the CNN version
@@ -101,7 +101,10 @@ def load_loader(config, run):
     idx_dict['bad_idx'] = bad_idx
     idx_dict['bad_dataset_split_idx'] = split_idx
     
-    return train_loader, validation_loader, anomaly_loader, idx_dict
+    loader_list = [train_loader, validation_loader, anomaly_loader]
+    
+    return loader_list, idx_dict
+
 
 #%% Training cycle function
 
@@ -135,7 +138,7 @@ def train_anomaly_model(model, optimizer, loader_list, model_artifact, config, l
         wandb.log(log_dict)
         
         # Save the model
-        add_model_to_artifact(model, model_artifact, "model_{}.pth".format(epoch))
+        add_model_to_artifact(model, model_artifact, "TMP_File/model_{}.pth".format(epoch))
         
         # Update learning rate (if a scheduler is provided)
         if lr_scheduler is not None: lr_scheduler.step()

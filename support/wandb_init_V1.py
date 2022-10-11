@@ -83,6 +83,8 @@ def split_dataset(dataset, config, logger = None):
 
 
 def make_dataloader(dataset, config, logger = None):
+    if 'print_var' not in config: config['print_var'] = False
+    
     if 'batch_size' not in config:
         if logger is not None: logger.error("Batch size must be specified and be bigger than 0\n")
         raise ValueError("Batch size must be specified and be bigger than 0")

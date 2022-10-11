@@ -12,6 +12,7 @@ import torch
 import wandb
 import os
 import pandas as pd
+import pickle
 
 from support.VAE import SpectraVAE_Double_Mems, AttentionVAE
 from support.VAE_Conv import SpectraVAE_Double_Mems_Conv
@@ -128,13 +129,12 @@ def add_onnx_to_artifact(model, artifact, args, model_name = "model.onnx"):
     artifact.add_file(model_name)
     wandb.save(model_name)
 
-def load_model_from_artifact(artifact_name, version = 'latest', model_name = "model.pth"):
+def load_untrained_model_from_artifact(artifact_name, version = 'latest', model_name = "model.pth"):
     run = wandb.init()
     
-    return load_model_from_artifact_inside_run(run, artifact_name, version, model_name)
+    return load_untrained_model_from_artifact_inside_run(run, artifact_name, version, model_name)
 
-    
-def load_model_from_artifact_inside_run(run, artifact_name, version = 'latest', model_name = "model.pth"):
+def load_untrained_model_from_artifact_inside_run(run, artifact_name, version = 'latest', model_name = "model.pth"):
     """
     Function used to load the model of an artifact. Used inside an active run of wandb
     """
@@ -151,10 +151,31 @@ def load_model_from_artifact_inside_run(run, artifact_name, version = 'latest', 
     else:
         raise ValueError("Problem with the type of model you want to load")
 
-    model.load_state_dict(torch.load(model_path, map_location=torch.device('cpu')))
+    model.load_state_dict(torch.load(model_path, map_location = torch.device('cpu')))
     
     return model, model_config
     
+
+def load_VAE_trained_model_from_artifact_inside_run(config, run):
+    if config['epoch_of_model'] < 0: config['epoch_of_model'] = 'END'
+    model_name = config['model_file_name'] + '_' + config['epoch_of_model'] + '.pth'
+    
+    # Retrieve trained model weights
+    model_artifact = run.use_artifact("{}:{}".format(config['artifact_name'], config['version']))
+    model_dir = model_artifact.download()
+    model_path = os.path.join(model_dir, model_name)
+    model_config = model_artifact.metadata['model_config']
+    
+    # Create model and load the weights
+    model, model_name, model_description = build_VAE_model(model_config)
+    model.load_state_dict(torch.load(model_path, map_location = torch.device('cpu')))
+    
+    # Retrieve index
+    a_file = open(os.path.join(model_dir, "idx_dict.pkl"), "rb")
+    idx_dict = pickle.load(a_file)
+    a_file.close()
+    
+    return model, model_config, idx_dict
 
 #%% Dataset
 

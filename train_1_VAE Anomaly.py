@@ -68,7 +68,7 @@ v7: VAE. neurons_per_layer = [64, 128, 36]. Hidden_space = 2
 
 training_config = dict(
     model_artifact_name = 'SpectraVAE_FC',
-    version = 'v1', # REMEMBER ALWAYS TO CHECK THE VERSION
+    version = 'v2', # REMEMBER ALWAYS TO CHECK THE VERSION
     batch_size = 32,
     lr = 1e-2,
     epochs = 50,
@@ -108,21 +108,33 @@ model = train_and_log_VAE_model(project_name, training_config)
 #%% Error bar plot trained model
 
 plot_config = dict(
+    # Model settings
     artifact_name = 'SpectraVAE_FC_trained',
-    version = 'v1', # REMEMBER ALWAYS TO CHECK THE VERSION
-    model_name = 'model.pth',
+    version = 'latest', # REMEMBER ALWAYS TO CHECK THE VERSION
+    model_file_name = 'model',
+    epoch_of_model = -1, # Retrieve the model saved at this epoch during training
     device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu"),
+    batch_size = 32,
     figsize = (15, 10),
     dataset_labels = ['Dry (Train)', 'Dry (Validation)', 'Water'],
     ylabel = 'Error',
-    colors = ['red', 'orange', 'blue'],
-    fontsize = 16
+    colors = ['red', 'orange', 'skyblue'],
+    fontsize = 16,
+    add_std_bar = True,
+    error_kw = dict(ecolor = 'black', lw = 5, capsize = 15, capthick = 5)
+    
 )
 
-train_loader = make_dataloader(bad_dataset_train, training_config)
-validation_loader = make_dataloader(bad_dataset_validation, training_config)
-anomaly_loader = make_dataloader(good_dataset, training_config)
-loader_list =[train_loader, validation_loader, anomaly_loader]
+dataset_config = dict(
+    # Artifacts info
+    artifact_name = 'Dataset_Spectra_1',
+    version = 'latest',
+    return_other_sensor_data = False,
+    spectra_file_name = '[2021-08-05_to_11-26]All_PlantSpectra.csv',
+    # Dataset settings
+    normalize_trials = 1,
+)
 
-dataloader_list = [train_loader, validation_loader, anomaly_loader]
-fig, ax = bar_loss_wandb_V1(project_name, dataloader_list, plot_config)
+plot_config['dataset_config'] = dataset_config
+
+fig, ax = bar_loss_wandb_V1(project_name, plot_config)

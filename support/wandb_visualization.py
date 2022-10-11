@@ -15,21 +15,43 @@ import matplotlib.pyplot as plt
 import torch
 import wandb
 
-from support.wandb_init_V2 import load_model_from_artifact_inside_run
+from support.wandb_init_V1 import make_dataloader
+from support.datasets import PytorchDatasetPlantSpectra_V1
+from support.wandb_init_V2 import load_VAE_trained_model_from_artifact_inside_run, load_dataset_from_artifact_inside_run
 from support.wandb_training_VAE import loss_ae, loss_VAE
 
 #%%
 
-def bar_loss_wandb_V1(project_name, dataloader_list, config):
+def bar_loss_wandb_V1(project_name, config):
     with wandb.init(project = project_name, job_type = "plot", config = config) as run:
         if 'device' not in config: config['device'] = 'cpu'
         
         # Load model
-        model, model_config = load_model_from_artifact_inside_run(run, config['artifact_name'], config['version'], config['model_name'])
+        model, model_config, idx_dict = load_VAE_trained_model_from_artifact_inside_run(config, run)
         config['use_as_autoencoder'] = model_config['use_as_autoencoder']
+        config['dataset_config']['use_cnn'] = model_config['use_cnn']
         model.eval()
         model.to(config['device'])
         
+        # Load data from dataset artifact
+        data = load_dataset_from_artifact_inside_run(config['dataset_config'], run)
+        spectra = data[0]
+        
+        # Create dataset
+        good_spectra_dataset = PytorchDatasetPlantSpectra_V1(spectra[idx_dict['good_idx'], :], used_in_cnn = config['dataset_config']['use_cnn'])
+        bad_spectra_dataset = PytorchDatasetPlantSpectra_V1(spectra[idx_dict['bad_idx'], :], used_in_cnn = config['dataset_config']['use_cnn'])
+        
+        # Divide bad(dry) dataset in train/test/validation
+        bad_dataset_train = bad_spectra_dataset[idx_dict['bad_dataset_split_idx'][0]]
+        bad_dataset_test = bad_spectra_dataset[idx_dict['bad_dataset_split_idx'][1]]
+        bad_dataset_validation = bad_spectra_dataset[idx_dict['bad_dataset_split_idx'][2]]
+        
+        # Create dataloader
+        train_loader = make_dataloader(bad_dataset_train, config)
+        validation_loader = make_dataloader(bad_dataset_validation, config)
+        anomaly_loader = make_dataloader(good_spectra_dataset, config)
+        dataloader_list = [train_loader, validation_loader, anomaly_loader]
+    
         # Compute loss
         avg_loss_list = []
         std_loss_list = []
@@ -41,9 +63,6 @@ def bar_loss_wandb_V1(project_name, dataloader_list, config):
         # Plot the loss in the bar chart
         fig, ax = plot_bar_loss(avg_loss_list, std_loss_list, config)
         
-        # Log the plot
-        wandb.log({"Bar Error Chart": fig})
-                 
         # Save the plot in the artifact
         plot_description = "Error bar chart of a trained model"
         path = 'TMP_File/error_bar_chart'
@@ -52,6 +71,9 @@ def bar_loss_wandb_V1(project_name, dataloader_list, config):
         save_plot_and_add_to_artifact(fig, path, 'eps', plot_artifact)
         save_plot_and_add_to_artifact(fig, path, 'tex', plot_artifact)
         run.log_artifact(plot_artifact)
+        
+        # Log the plot
+        # wandb.log({"Bar Error Chart": fig})
         
         return fig, ax
 
@@ -89,7 +111,10 @@ def plot_bar_loss(loss_list, std_loss_list, config):
     
     fig, ax = plt.subplots(1,1, figsize = config['figsize'])
     
-    ax.bar(config['dataset_labels'], loss_list, color = config['colors'])
+    if config['add_std_bar']:
+        ax.bar(config['dataset_labels'], loss_list, yerr = std_loss_list, color = config['colors'], error_kw = config['error_kw'])
+    else:
+        ax.bar(config['dataset_labels'], loss_list, color = config['colors'])
     
     ax.set_ylabel(config['ylabel'])
     
