@@ -12,3 +12,4 @@ data/jesus_ht_timestamp.csv
 *.pyc
 support/__pycache__/
 TMP/
+TMP_File/
