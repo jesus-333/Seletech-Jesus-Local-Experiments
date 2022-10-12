@@ -54,7 +54,7 @@ def train_and_log_SE_model(project_name, config):
         
         # Train model
         model.to(config['device'])
-        train_sequence_embeddeding_clf_model(model, optimizer, loader_list, config, lr_scheduler)
+        train_sequence_embeddeding_model(model, optimizer, loader_list, config, lr_scheduler)
 
         add_model_to_artifact(model, model_artifact)
         run.log_artifact(model_artifact)
@@ -68,12 +68,14 @@ def load_loader(config, run):
 
 #%% Training cycle function
 
-def train_sequence_embeddeding_clf_model(model, optimizer, loader_list, config, lr_scheduler = None):
+def train_sequence_embeddeding_model(model, optimizer, loader_list, config, lr_scheduler = None):
     train_loader = loader_list[0]
     validation_loader = loader_list[1]
     
     log_dict = {}
-    loss_function = torch.nn.NLLLoss()
+    if 'clf' in str(type(model)): loss_function = torch.nn.NLLLoss()
+    elif 'autoencoder' in str(type(model)): loss_function = torch.nn.MSELoss()
+    else: raise ValueError("Error with sequence embedder model type. Must be classifier or autoencoder")
    
     for epoch in range(config['epochs']):
         # Save lr 
@@ -154,6 +156,58 @@ def update_clf_log_dict(clf_loss_list, log_dict):
     return log_dict, loss_string
 
 #%% Sequence embedding autoencoder
+
+def epoch_sequence_embeddeding_autoencoder(model, loader, config, is_train, loss_function, optimizer = None):
+    tot_loss = 0
+    for batch in loader:
+        x = batch.to(config['device'])
+                
+        if(is_train): # Executed during training
+            # Zeros past gradients and forward step
+            optimizer.zero_grad()
+            
+            # Forward pass
+            x_r, sequence_embedding = model(x)
+            
+            # Loss computation. 
+            # N.B.The sequence embedding are always passed but not always used. Their used depends by regularize_sequence_embedding parameter in config
+            autoencoder_loss = sequence_autoencoder_loss_function(x, x_r, sequence_embedding, loss_function, config)
+            
+            # Backward and optimization pass
+            autoencoder_loss.backward()
+            optimizer.step()
+        else: # Executed during testing
+            with torch.no_grad(): # Deactivate the tracking of the gradient
+                x_r, sequence_embedding = model(x)
+                autoencoder_loss = sequence_autoencoder_loss_function(x, x_r, sequence_embedding, loss_function, config)
+        
+        # The multiplication serve to compute the average loss over the dataloader
+        tot_loss += autoencoder_loss * x.shape[0]
+    
+    # The division serve to compute the average loss over the dataloader
+    tot_loss = tot_loss / len(loader.sampler)
+    
+    # Compute accuracy at the end of the epoch
+    accuracy = compute_accuracy(model, loader, config['device'])
+    
+    return tot_loss, accuracy
+
+def sequence_autoencoder_loss_function(original_sequence, reconstructed_sequence, sequence_embedding, loss_function, config):
+    if config['compute_loss_spectra_by_spectra']:
+        # The MSE is computed spectra by spectra
+        # i.e. the first spectra of the original sequence is computed with the first spectra of the reconstructed sequence
+        tmp_loss = 0
+        for i in range(original_sequence.shape[1]):
+            tmp_loss += loss_function(original_sequence[:, i, :], reconstructed_sequence[:, i, :])
+    else:
+        # MSE between the two entire sequence
+        tmp_loss = loss_function(original_sequence, reconstructed_sequence)
+    
+    # (OPTIONAL) L2 regularization on sequence embedding value
+    if config['regularize_sequence_embedding']:
+        tmp_loss += torch.pow(torch.sum(sequence_embedding), 2)
+    
+    return tmp_loss
 
 #%% Other functions
 

@@ -54,7 +54,7 @@ class SequenceEmbedder(nn.Module):
         self.sequence_embedding = nn.LSTM(input_size, config['sequence_embedding_size'], 
                                           batch_first = True, bias = config['LSTM_bias'], dropout = config['LSTM_dropout'])
         
-        print("Number of trainable parameters (VAE) = ", sum(p.numel() for p in self.parameters() if p.requires_grad), "\n")
+        print("Number of trainable parameters (Sequence embedder) = ", sum(p.numel() for p in self.parameters() if p.requires_grad), "\n")
         
     
     def forward(self, x, info_tensor = None):
@@ -99,42 +99,56 @@ class Sequence_Decoder(nn.Module):
         
         self.decoder = nn.LSTM(config['sequence_embedding_size'], config['decoder_LSTM_output_size'], 
                                           batch_first = True, bias = config['LSTM_bias'], dropout = config['LSTM_dropout'])
+        self.decoder_LSTM_output_size = config['decoder_LSTM_output_size']
         
         self.reconstruction_layer = nn.Linear(config['decoder_LSTM_output_size'], 702)
         
+        print("Number of trainable parameters (Sequence decoder) = ", sum(p.numel() for p in self.parameters() if p.requires_grad), "\n")
+        
     def forward(self, h, c, sequence_length):
         out = 0
-        sequence_decoded = torch.zeros((out.shape[0], sequence_length, 702))
-        sequence_output = torch.zeros((out.shape[0], sequence_length, 702))
+        sequence_decoded = torch.zeros((out.shape[0], sequence_length, self.decoder_LSTM_output_size))
+        sequence_reconstructed = torch.zeros((out.shape[0], sequence_length, 702))
         
         for i in range(sequence_length):
             out, (h, c) = self.decoder(out, (h, c))
             sequence_decoded[:, i, :] = out
             
-            sequence_output[:, i, :] = self.reconstruction_layer(out)
+            sequence_reconstructed[:, i, :] = self.reconstruction_layer(out)
             
-        return sequence_output, sequence_decoded
+        return sequence_reconstructed, sequence_decoded
     
 #%% Sequence autoencoder
 
-class Sequence_embedding_clf(nn.Module):
+class Sequence_embedding_autoencoder(nn.Module):
     
     def __init__(self, config):
         super().__init__()
         
-        self.embedder = SequenceEmbedder(config)
+        self.embedder = SequenceEmbedder(config['embedder_config'])
         
-        self.clf = nn.Linear(config['sequence_embedding_size'], config['n_class'])
-        self.log_softmax = nn.LogSoftmax(dim = 1)
+        self.decoder = Sequence_Decoder(config['decoder_config'])
         
-        print("Number of trainable parameters (VAE) = ", sum(p.numel() for p in self.parameters() if p.requires_grad), "\n")
+        print("Number of trainable parameters (sequence autoencoder) = ", sum(p.numel() for p in self.parameters() if p.requires_grad), "\n")
     
-    def forward(self, x):
-        out, h, c = self.embedder(x)
+    def forward(self, original_sequence):
+        """
+        original_sequence: Input sequence with dimension "B X L X H" where
+            B = Batch size
+            L = Sequence length
+            H = Input size
+        """
         
-        x = self.log_softmax(self.clf(h.squeeze()))
+        # Get the length of the original sequence
+        sequence_length = original_sequence.shape[1]
         
-        return x
+        # Compute the embedding (h) of the original sequence
+        out, h, c = self.embedder(original_sequence)
+        
+        # Reconstruct the original sequence from the encoding
+        sequence_reconstructed, sequence_decoded = self.decoder(h, c, sequence_length)
+        
+        return sequence_reconstructed, h
     
 #%% Sequence Clf for training
 
