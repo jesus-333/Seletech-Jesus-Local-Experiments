@@ -120,7 +120,7 @@ class Sequence_Decoder(nn.Module):
     
 #%% Sequence autoencoder
 
-class Sequence_embedding_autoencoder(nn.Module):
+class SequenceEmbedderAutoencoder(nn.Module):
     
     def __init__(self, config):
         super().__init__()

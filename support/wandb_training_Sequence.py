@@ -11,10 +11,12 @@ Created on Fri Sep 23 14:43:02 2022
 
 import wandb
 import torch
+import pickle
 
-from support.wandb_init_V2 import load_model_from_artifact_inside_run, load_dataset_from_artifact_inside_run, add_model_to_artifact
-from support.preprocess import choose_spectra_based_on_water_V1
-from support.dataset import PytorchDatasetPlantSpectra_V1
+from support.wandb_init_V1 import make_dataloader
+from support.wandb_init_V2 import load_dataset_from_artifact_inside_run, split_dataset
+from support.wandb_init_V2 import load_untrained_model_from_artifact_inside_run, add_model_to_artifact
+from support.datasets import SpectraSequenceDataset
 
 #%% Principal function
 
@@ -23,7 +25,7 @@ def train_and_log_SE_model(project_name, config):
         config = wandb.config
           
         # Load model from artifacts
-        model, model_config = load_model_from_artifact_inside_run(run, config['model_artifact_name'],
+        model, model_config = load_untrained_model_from_artifact_inside_run(run, config['model_artifact_name'],
                                                     version = config['version'], model_name = 'untrained.pth')
         
         # IF load the VAE/AE model check if it is used as autoencoder
@@ -50,25 +52,50 @@ def train_and_log_SE_model(project_name, config):
         if config['print_var']: print("Model trained on: {}".format(config['device']))
         
         # Setup the dataloader
-        loader_list = load_loader(config)
+        loader_list, idx_dict = load_loader(config)
+        save_idx_to_artifact(idx_dict, model_artifact, run)
+        if config['print_var']: print("Dataset loaded")
         
         # Train model
         model.to(config['device'])
-        train_sequence_embeddeding_model(model, optimizer, loader_list, config, lr_scheduler)
+        train_sequence_embeddeding_model(model, optimizer, loader_list, model_artifact, config, lr_scheduler)
 
         add_model_to_artifact(model, model_artifact)
         run.log_artifact(model_artifact)
         
-        return model
+    return model
+
 
 #%% Load data for training
 
 def load_loader(config, run):
-    pass
+    # Load data from dataset artifact and get the spectra
+    data = load_dataset_from_artifact_inside_run(config, run)
+    spectra = data[0]
+    
+    # Create train, test and validation dataset
+    full_dataset = SpectraSequenceDataset(spectra, config)
+    dataset_train, dataset_test, dataset_validation, split_idx = split_dataset(full_dataset, config)
+    
+    # Create dataloader
+    train_loader = make_dataloader(dataset_train, config)
+    validation_loader = make_dataloader(dataset_validation, config)
+    test_loader = make_dataloader(dataset_test, config)
+    
+    # Save the idx used to divide the dataset between normal(dry/bad) and anomaly (good/water) (The dry spectra are more numerous)
+    # Save how bad dataset is split between train/test/validation
+    idx_dict = {}
+    idx_dict['dataset_split_idx'] = split_idx
+    
+    loader_list = [train_loader, validation_loader, test_loader]
+    
+    return loader_list, idx_dict
+    
+    
 
 #%% Training cycle function
 
-def train_sequence_embeddeding_model(model, optimizer, loader_list, config, lr_scheduler = None):
+def train_sequence_embeddeding_model(model, optimizer, loader_list, model_artifact, config, lr_scheduler = None):
     train_loader = loader_list[0]
     validation_loader = loader_list[1]
     
@@ -90,10 +117,16 @@ def train_sequence_embeddeding_model(model, optimizer, loader_list, config, lr_s
             # Update log dict
             log_dict, loss_string = update_clf_log_dict([train_loss, validation_loss, train_acc, validation_acc], log_dict)
         elif 'autoencoder' in str(type(model)):
-            pass
+            # Advance epoch
+            train_loss = epoch_sequence_embeddeding_autoencoder(model, train_loader, config, True, loss_function, optimizer)
+            validation_loss = epoch_sequence_embeddeding_autoencoder(model, validation_loader, config, False, loss_function)
+            
+            log_dict, loss_string = update_autoencoder_log_dict([train_loss, validation_loss], log_dict)
         else:
             raise ValueError("Error with sequence embedder model type. Must be classifier or autoencoder")
         
+        # Save the model
+        add_model_to_artifact(model, model_artifact, "TMP_File/model_{}.pth".format(epoch))
         
         # Log data on wandb
         wandb.log(log_dict)
@@ -186,11 +219,9 @@ def epoch_sequence_embeddeding_autoencoder(model, loader, config, is_train, loss
     
     # The division serve to compute the average loss over the dataloader
     tot_loss = tot_loss / len(loader.sampler)
-    
-    # Compute accuracy at the end of the epoch
-    accuracy = compute_accuracy(model, loader, config['device'])
-    
-    return tot_loss, accuracy
+     
+    return tot_loss
+
 
 def sequence_autoencoder_loss_function(original_sequence, reconstructed_sequence, sequence_embedding, loss_function, config):
     if config['compute_loss_spectra_by_spectra']:
@@ -209,6 +240,17 @@ def sequence_autoencoder_loss_function(original_sequence, reconstructed_sequence
     
     return tmp_loss
 
+
+def update_autoencoder_log_dict(ae_loss_list, log_dict):
+    log_dict["clf_loss_train"] = ae_loss_list[0]
+    log_dict["clf_loss_validation"] = ae_loss_list[1]
+    
+    loss_string =  "\tTrain loss     : {}".format(ae_loss_list[0])
+    loss_string += "\tValidation loss: {}".format(ae_loss_list[1])
+    
+    return log_dict, loss_string
+    
+    
 #%% Other functions
 
 def divide_spectra(x):
@@ -243,3 +285,12 @@ def compute_accuracy(model, loader, device):
     accuracy = tot_correct / n_example
     
     return accuracy
+
+
+def save_idx_to_artifact(idx_dict, artifact, run):
+    idx_file_path = "TMP_File/idx_dict.pkl"
+    a_file = open(idx_file_path, "wb")
+    pickle.dump(idx_dict, a_file)
+    a_file.close()
+    
+    artifact.add_file(idx_file_path)

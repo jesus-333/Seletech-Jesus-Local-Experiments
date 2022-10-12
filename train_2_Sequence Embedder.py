@@ -17,9 +17,8 @@ import wandb
 import matplotlib.pyplot as plt
 
 from support.wandb_init_V1 import make_dataloader
-from support.wandb_init_V2 import build_and_log_Sequence_Embedder_clf_model
-from support.wandb_init_V2 import load_dataset_Sequence_embedder_clf, split_dataset
-from support.wandb_training_V2 import train_and_log_model
+from support.wandb_init_V2 import build_and_log_Sequence_Embedder_clf_model, build_and_log_Sequence_Embedder_autoencoder_model
+from support.wandb_training_Sequence import train_and_log_SE_model
 
 #%% Wandb login and log file inizialization
 
@@ -27,7 +26,7 @@ wandb.login()
 
 project_name = "Seletech VAE Spectra"
 
-#%% Build model
+#%% Build clf model
 
 model_config = dict(
     # Spectra embedder parameters
@@ -53,33 +52,38 @@ model_config = dict(
 
 untrained_model = build_and_log_Sequence_Embedder_clf_model(project_name, model_config)
 
-#%% Build dataset
+#%% Build auteoncoder model
 
-load_config = dict(
-    # Info for spectra
-    artifact_name = 'jesus_333/Seletech VAE Spectra/Dataset_Spectra_1',
-    version = 'latest',
-    spectra_file_name = '[2021-08-05_to_11-26]All_PlantSpectra.csv',
-    normalize_trials = 1,
-    # Info for other sensor data
-    return_other_sensor_data = True,
-    water_file_name = '[2021-08-05_to_11-26]PlantTest_Notes.csv',
-    ht_file_path = '[2021-08-05_to_11-26]All_PlantHTSensor.csv',
-    ht_timestamp_path = 'jesus_ht_timestamp.csv', 
-    spectra_timstamp_path = 'jesus_spectra_timestamp.csv'
+embedder_config = dict(
+    # Spectra embedder parameters
+    use_spectra_embedder = True,
+    query_embedding_size = 256,
+    key_embedding_size = 256,
+    value_embedding_size = 256,
+    use_activation_in_spectra_embedder = True,
+    # Multihead attention parameters
+    use_attention = True,
+    num_heads = 4,
+    multihead_attention_dropout = 0,
+    multihead_attention_bias = True,
+    kdim = 256,
+    vdim = 256,
+    # LSTM Parameters
+    sequence_embedding_size = 8,
+    LSTM_bias = False,
+    LSTM_dropout = 0,
 )
 
-dataset_config = dict(
-    sequence_length = 15,
-    shift = 7,
-    n_std = 1,
-    binary_label = True,
-    split_percentage_list = [0.8, 0.05, 0.15]
+decoder_config = dict(
+    sequence_embedding_size = embedder_config['sequence_embedding_size'],
+    LSTM_bias = False,
+    LSTM_dropout = 0,
+    decoder_LSTM_output_size = 256
 )
 
-dataset = load_dataset_Sequence_embedder_clf(load_config, dataset_config)
+model_config = {'embedder_config':embedder_config, 'decoder_config':decoder_config}
 
-dataset_train, dataset_test, dataset_validation = split_dataset(dataset, dataset_config)
+untrained_model = build_and_log_Sequence_Embedder_autoencoder_model(project_name, model_config)
 
 #%%
 
@@ -105,7 +109,7 @@ test_loader = make_dataloader(dataset_test, training_config)
 loader_list =[train_loader, validation_loader]
 
 # Train model
-model = train_and_log_model(project_name, loader_list, training_config)
+model = train_and_log_SE_model(project_name, loader_list, training_config)
 
 #%%
 

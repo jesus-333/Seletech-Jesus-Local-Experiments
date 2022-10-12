@@ -16,7 +16,7 @@ import pickle
 
 from support.VAE import SpectraVAE_Double_Mems, AttentionVAE
 from support.VAE_Conv import SpectraVAE_Double_Mems_Conv
-from support.embedding_sequence import SequenceEmbedder_V2, Sequence_embedding_clf
+from support.embedding_sequence import Sequence_embedding_clf, SequenceEmbedderAutoencoder
 from support.datasets import load_spectra_data, load_water_data, create_extended_water_vector
 from support.datasets import PytorchDatasetPlantSpectra_V1, SpectraSequenceDataset
 from support.preprocess import aggregate_HT_data_V2, choose_spectra_based_on_water_V1
@@ -98,9 +98,10 @@ def build_and_log_Sequence_Embedder_clf_model(project_name, config):
         
         return model
 
+
 def build_Sequence_Embedder_clf_model(config):
     model_name = "SequenceEmbedder_clf"
-    model_description = "Untrained sequence Embedder with classifier. "
+    model_description = "Untrained sequence Embedder with CLASSIFIER. "
     if config['use_spectra_embedder']: model_description += " Spectra embedder is used. "
     if config['use_attention']: model_description += " Multihead attention is used. "
     
@@ -109,6 +110,38 @@ def build_Sequence_Embedder_clf_model(config):
     print(model_description)
     
     return model, model_name, model_description
+
+
+def build_and_log_Sequence_Embedder_autoencoder_model(project_name, config):
+    with wandb.init(project = project_name, job_type = "model_creation", config = config) as run:
+        config = wandb.config
+        
+        model, model_name, model_description = build_Sequence_Embedder_autoencoder_model(config)
+        
+        # Create the artifacts
+        metadata = dict(config)
+        model_artifact = wandb.Artifact(model_name, type = "model", description = model_description, metadata = metadata)
+
+        # Save the model and log it on wandb
+        add_model_to_artifact(model, model_artifact, "TMP_File/untrained.pth")
+        add_sequence_embedder_onnx_to_artifact(config, model, model_artifact, "TMP_File/untrained.onnx")
+        run.log_artifact(model_artifact)
+        
+        return model
+
+
+def build_Sequence_Embedder_autoencoder_model(config):
+    model_name = "SequenceEmbedder_AE"
+    model_description = "Untrained sequence Embedder with AUTOENCODER. "
+    if config['embedder_config']['use_spectra_embedder']: model_description += " Spectra embedder is used. "
+    if config['embedder_config']['use_attention']: model_description += " Multihead attention is used. "
+    
+    model = SequenceEmbedderAutoencoder(config)
+    
+    print(model_description)
+    
+    return model, model_name, model_description
+
 
 def add_sequence_embedder_onnx_to_artifact(config, model, artifact, model_name = "model.onnx"):
     if 'sequence_length' not in config: config['sequence_length'] = 5
@@ -148,6 +181,8 @@ def load_untrained_model_from_artifact_inside_run(run, artifact_name, version = 
         model, model_name, model_description = build_VAE_model(model_config)
     elif "SequenceEmbedder_clf" in artifact_name:
         model, model_name, model_description = build_Sequence_Embedder_clf_model(model_config)
+    elif "SequenceEmbedderAutoencoder" in artifact_name:
+        model, model_name, model_description = build_Sequence_Embedder_autoencoder_model(model_config)
     else:
         raise ValueError("Problem with the type of model you want to load")
 
@@ -195,7 +230,7 @@ def load_dataset_local_VAE(config):
     
     return good_spectra_dataset, bad_spectra_dataset, good_idx, bad_idx
 
-def load_dataset_Sequence_embedder_clf(load_config, dataset_config):
+def load_dataset_local_Sequence_embedder_clf(load_config, dataset_config):
     data = load_dataset_from_artifact(load_config)
     
     spectra = data[0]
