@@ -122,7 +122,6 @@ plot_config = dict(
     fontsize = 16,
     add_std_bar = True,
     error_kw = dict(ecolor = 'black', lw = 5, capsize = 15, capthick = 5)
-    
 )
 
 dataset_config = dict(

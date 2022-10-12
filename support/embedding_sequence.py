@@ -12,30 +12,9 @@ from torch import nn
 
 from support.embedding_spectra import SpectraEmbedder
 
-#%%
-
+#%% Sequence Embedder (ENCODER)
+    
 class SequenceEmbedder(nn.Module):
-    """
-    Project sequence of spectra inside a smaller space
-    """
-    def __init__(self, config):
-        super().__init__()
-        
-        if config['use_spectra_embedder']: 
-            self.spectra_embedder = SpectraEmbedder(700, config['spectra_embedding_size'], config['use_activation_in_spectra_embedder'])
-            input_size = config['spectra_embedding_size']
-        else: 
-            self.spectra_embedder = None
-            input_size = 700
-        
-        self.sequence_embedding = nn.LSTM(input_size, config['sequence_embedding_size'], batch_first = True)
-
-        
-    def forward(self, x):
-        return x
-    
-    
-class SequenceEmbedder_V2(nn.Module):
     """
     Embedder of sequence through the multi head attention presented in the paper "Attention is all you need"
     """
@@ -109,16 +88,41 @@ class SequenceEmbedder_V2(nn.Module):
         
         out, (h_n, c_n) = self.sequence_embedding(att_output)
         
-        return h_n
+        return out, h_n, c_n
     
-#%% Clf for training
+#%% Sequence DisEmbedder (Decoder)
+
+class Sequence_Decoder(nn.Module):
+    
+    def __init__(self, config):
+        super().__init__()
+        
+        self.decoder = nn.LSTM(config['sequence_embedding_size'], config['decoder_LSTM_output_size'], 
+                                          batch_first = True, bias = config['LSTM_bias'], dropout = config['LSTM_dropout'])
+        
+        self.reconstruction_layer = nn.Linear(config['decoder_LSTM_output_size'], 702)
+        
+    def forward(self, h, c, sequence_length):
+        out = 0
+        sequence_decoded = torch.zeros((out.shape[0], sequence_length, 702))
+        sequence_output = torch.zeros((out.shape[0], sequence_length, 702))
+        
+        for i in range(sequence_length):
+            out, (h, c) = self.decoder(out, (h, c))
+            sequence_decoded[:, i, :] = out
+            
+            sequence_output[:, i, :] = self.reconstruction_layer(out)
+            
+        return sequence_output, sequence_decoded
+    
+#%% Sequence autoencoder
 
 class Sequence_embedding_clf(nn.Module):
     
     def __init__(self, config):
         super().__init__()
         
-        self.embedder = SequenceEmbedder_V2(config)
+        self.embedder = SequenceEmbedder(config)
         
         self.clf = nn.Linear(config['sequence_embedding_size'], config['n_class'])
         self.log_softmax = nn.LogSoftmax(dim = 1)
@@ -126,9 +130,30 @@ class Sequence_embedding_clf(nn.Module):
         print("Number of trainable parameters (VAE) = ", sum(p.numel() for p in self.parameters() if p.requires_grad), "\n")
     
     def forward(self, x):
-        x = self.embedder(x).squeeze()
+        out, h, c = self.embedder(x)
         
-        x = self.log_softmax(self.clf(x))
+        x = self.log_softmax(self.clf(h.squeeze()))
+        
+        return x
+    
+#%% Sequence Clf for training
+
+class Sequence_embedding_clf(nn.Module):
+    
+    def __init__(self, config):
+        super().__init__()
+        
+        self.embedder = SequenceEmbedder(config)
+        
+        self.clf = nn.Linear(config['sequence_embedding_size'], config['n_class'])
+        self.log_softmax = nn.LogSoftmax(dim = 1)
+        
+        print("Number of trainable parameters (VAE) = ", sum(p.numel() for p in self.parameters() if p.requires_grad), "\n")
+    
+    def forward(self, x):
+        out, h, c = self.embedder(x)
+        
+        x = self.log_softmax(self.clf(h.squeeze()))
         
         return x
     
@@ -177,12 +202,16 @@ if __name__ == "__main__":
         LSTM_dropout = 0
     )
     
-    embedder = SequenceEmbedder_V2(tmp_config)
-    x = torch.rand((4, 5, 700))
+    embedder = SequenceEmbedder(tmp_config)
+    x = torch.rand((4, 5, 702))
     sequence_embed = embedder(x)
-    print("sequence_embed.shape: ", sequence_embed.shape)
+    out, h, c = sequence_embed
+    
+    print("x.shape  : ", x.shape)
+    print("out.shape: ", out.shape)
+    print("h.shape  : ", h.shape)
+    print("c.shape  : ", c.shape, "\n")
     
     tmp_config['n_class'] = 2
     emb_clf = Sequence_embedding_clf(tmp_config)
-    
     y = emb_clf(x)
