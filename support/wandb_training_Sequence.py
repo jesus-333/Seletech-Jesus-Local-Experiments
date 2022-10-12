@@ -27,10 +27,7 @@ def train_and_log_SE_model(project_name, config):
         # Load model from artifacts
         model, model_config = load_untrained_model_from_artifact_inside_run(run, config['model_artifact_name'],
                                                     version = config['version'], model_name = 'untrained.pth')
-        
-        # IF load the VAE/AE model check if it is used as autoencoder
-        if "VAE" in str(type(model)): config['use_as_autoencoder'] = model_config['use_as_autoencoder']
-        
+            
         # Setup optimizer
         optimizer = torch.optim.AdamW(model.parameters(), lr = config['lr'], 
                                       weight_decay = config['optimizer_weight_decay'])
@@ -200,7 +197,7 @@ def epoch_sequence_embeddeding_autoencoder(model, loader, config, is_train, loss
             optimizer.zero_grad()
             
             # Forward pass
-            x_r, sequence_embedding = model(x)
+            x_r, sequence_embedding, cell_state = model(x)
             
             # Loss computation. 
             # N.B.The sequence embedding are always passed but not always used. Their used depends by regularize_sequence_embedding parameter in config
@@ -211,7 +208,7 @@ def epoch_sequence_embeddeding_autoencoder(model, loader, config, is_train, loss
             optimizer.step()
         else: # Executed during testing
             with torch.no_grad(): # Deactivate the tracking of the gradient
-                x_r, sequence_embedding = model(x)
+                x_r, sequence_embedding, cell_state = model(x)
                 autoencoder_loss = sequence_autoencoder_loss_function(x, x_r, sequence_embedding, loss_function, config)
         
         # The multiplication serve to compute the average loss over the dataloader

@@ -88,6 +88,9 @@ class SequenceEmbedder(nn.Module):
         
         out, (h_n, c_n) = self.sequence_embedding(att_output)
         
+        # Reorder dimension so the batch is the first dimension
+        h_n = h_n.permute(1, 0, 2)
+        
         return out, h_n, c_n
     
 #%% Sequence DisEmbedder (Decoder)
@@ -105,15 +108,25 @@ class Sequence_Decoder(nn.Module):
         
         print("Number of trainable parameters (Sequence decoder) = ", sum(p.numel() for p in self.parameters() if p.requires_grad), "\n")
         
-    def forward(self, h, c, sequence_length):
-        out = 0
-        sequence_decoded = torch.zeros((out.shape[0], sequence_length, self.decoder_LSTM_output_size))
-        sequence_reconstructed = torch.zeros((out.shape[0], sequence_length, 702))
+    def forward(self, embed, sequence_length):
+        
+        # Define the input for the first time LSTM cell is used
+        # N.b. Even if  batch_first = True the hidden and cell state must be define with the first dimension as sequence length and the second dimension as batch size (for batched input)
+        out = embed
+        h = torch.zeros((1, embed.shape[0], self.decoder_LSTM_output_size))
+        c = torch.zeros((1, embed.shape[0], self.decoder_LSTM_output_size))
+        
+        sequence_decoded = torch.zeros((embed.shape[0], sequence_length, self.decoder_LSTM_output_size))
+        sequence_reconstructed = torch.zeros((embed.shape[0], sequence_length, 702))
         
         for i in range(sequence_length):
             out, (h, c) = self.decoder(out, (h, c))
-            sequence_decoded[:, i, :] = out
             
+            print(embed.shape)
+            print(sequence_decoded.shape)
+            print(out.shape)
+            
+            sequence_decoded[:, i, :] = out
             sequence_reconstructed[:, i, :] = self.reconstruction_layer(out)
             
         return sequence_reconstructed, sequence_decoded
@@ -146,9 +159,9 @@ class SequenceEmbedderAutoencoder(nn.Module):
         out, h, c = self.embedder(original_sequence)
         
         # Reconstruct the original sequence from the encoding
-        sequence_reconstructed, sequence_decoded = self.decoder(h, c, sequence_length)
+        sequence_reconstructed, sequence_decoded = self.decoder(h, sequence_length)
         
-        return sequence_reconstructed, h
+        return sequence_reconstructed, h, c
     
 #%% Sequence Clf for training
 
@@ -229,3 +242,15 @@ if __name__ == "__main__":
     tmp_config['n_class'] = 2
     emb_clf = Sequence_embedding_clf(tmp_config)
     y = emb_clf(x)
+    
+    decoder_config = dict(
+        sequence_embedding_size = tmp_config['sequence_embedding_size'],
+        LSTM_bias = False,
+        LSTM_dropout = 0,
+        decoder_LSTM_output_size = 256
+    )
+
+    model_config = {'embedder_config':tmp_config, 'decoder_config':decoder_config}
+    
+    emb_ae = SequenceEmbedderAutoencoder(model_config)
+    out = emb_ae(x)
