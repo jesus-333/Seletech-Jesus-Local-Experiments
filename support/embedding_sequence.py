@@ -95,7 +95,11 @@ class SequenceEmbedder(nn.Module):
     
 #%% Sequence DisEmbedder (Decoder)
 
-class Sequence_Decoder(nn.Module):
+class Sequence_Decoder_V1(nn.Module):
+    """
+    Decoder where the input is always the same for each step of the reconstructed sequence (i.e. I use always the input sequence embedding as output of the LSTM decoder).
+    Image scheme: https://www.mdpi.com/energies/energies-15-01061/article_deploy/html/images/energies-15-01061-g002.png
+    """
     
     def __init__(self, config):
         super().__init__()
@@ -112,7 +116,6 @@ class Sequence_Decoder(nn.Module):
         
         # Define the input for the first time LSTM cell is used
         # N.b. Even if  batch_first = True the hidden and cell state must be define with the first dimension as sequence length and the second dimension as batch size (for batched input)
-        out = embed
         h = torch.zeros((1, embed.shape[0], self.decoder_LSTM_output_size))
         c = torch.zeros((1, embed.shape[0], self.decoder_LSTM_output_size))
         
@@ -120,14 +123,10 @@ class Sequence_Decoder(nn.Module):
         sequence_reconstructed = torch.zeros((embed.shape[0], sequence_length, 702))
         
         for i in range(sequence_length):
-            out, (h, c) = self.decoder(out, (h, c))
-            
-            print(embed.shape)
-            print(sequence_decoded.shape)
-            print(out.shape)
-            
-            sequence_decoded[:, i, :] = out
-            sequence_reconstructed[:, i, :] = self.reconstruction_layer(out)
+            out, (h, c) = self.decoder(embed, (h, c))
+             
+            sequence_decoded[:, i, :] = out.squeeze()
+            sequence_reconstructed[:, i, :] = self.reconstruction_layer(out).squeeze()
             
         return sequence_reconstructed, sequence_decoded
     
@@ -140,7 +139,10 @@ class SequenceEmbedderAutoencoder(nn.Module):
         
         self.embedder = SequenceEmbedder(config['embedder_config'])
         
-        self.decoder = Sequence_Decoder(config['decoder_config'])
+        if config['decoder_type'] == 1:
+            self.decoder = Sequence_Decoder_V1(config['decoder_config'])
+        else:
+            raise ValueError("The decoder type must be 1")
         
         print("Number of trainable parameters (sequence autoencoder) = ", sum(p.numel() for p in self.parameters() if p.requires_grad), "\n")
     
@@ -244,6 +246,7 @@ if __name__ == "__main__":
     y = emb_clf(x)
     
     decoder_config = dict(
+        decoder_type = 1,
         sequence_embedding_size = tmp_config['sequence_embedding_size'],
         LSTM_bias = False,
         LSTM_dropout = 0,
@@ -251,6 +254,8 @@ if __name__ == "__main__":
     )
 
     model_config = {'embedder_config':tmp_config, 'decoder_config':decoder_config}
-    
     emb_ae = SequenceEmbedderAutoencoder(model_config)
+    
+    print("x (INPUT):\t\t", x.shape)
+    
     out = emb_ae(x)
