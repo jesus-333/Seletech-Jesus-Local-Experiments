@@ -99,6 +99,8 @@ class Sequence_Decoder_V1(nn.Module):
     """
     Decoder where the input is always the same for each step of the reconstructed sequence (i.e. I use always the input sequence embedding as output of the LSTM decoder).
     Image scheme: https://www.mdpi.com/energies/energies-15-01061/article_deploy/html/images/energies-15-01061-g002.png
+    
+    N.b. This allow the decoder LSTM to have different size for input and hidden state but force to use the same embedding in each reconstruction step.
     """
     
     def __init__(self, config):
@@ -139,7 +141,7 @@ class SequenceEmbedderAutoencoder(nn.Module):
         
         self.embedder = SequenceEmbedder(config['embedder_config'])
         
-        if config['decoder_type'] == 1:
+        if config['decoder_config']['decoder_type'] == 1:
             self.decoder = Sequence_Decoder_V1(config['decoder_config'])
         else:
             raise ValueError("The decoder type must be 1")
@@ -228,7 +230,7 @@ if __name__ == "__main__":
         # LST Parameters
         sequence_embedding_size = 2,
         LSTM_bias = False,
-        LSTM_dropout = 0
+        LSTM_dropout = 0,
     )
     
     embedder = SequenceEmbedder(tmp_config)

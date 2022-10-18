@@ -75,6 +75,7 @@ embedder_config = dict(
 )
 
 decoder_config = dict(
+    decoder_type = 1,
     sequence_embedding_size = embedder_config['sequence_embedding_size'],
     LSTM_bias = False,
     LSTM_dropout = 0,
