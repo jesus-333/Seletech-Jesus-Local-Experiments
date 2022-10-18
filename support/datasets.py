@@ -180,6 +180,7 @@ class SpectraSequenceDataset(torch.utils.data.Dataset):
     def __init__(self, spectra, config, info_array = None):
         
         # Create spectra sequence and average over sequence period of the info array
+        print("OADIOJASIODJO")
         tmp_out = divide_spectra_in_sequence(spectra, config['sequence_length'], config['shift'], info_array)
         
         if info_array is not None:
@@ -207,9 +208,9 @@ class SpectraSequenceDataset(torch.utils.data.Dataset):
                 self.label[wet_idx] = 1
                 self.label[dry_idx] = 2
             
-        print("len(info_avg[wet_idx]):    ", len(info_avg[wet_idx]))
-        print("len(info_avg[dry_idx]):    ", len(info_avg[dry_idx]))
-        print("len(info_avg[normal_idx]): ", len(info_avg[normal_idx]))
+            print("len(info_avg[wet_idx]):    ", len(info_avg[wet_idx]))
+            print("len(info_avg[dry_idx]):    ", len(info_avg[dry_idx]))
+            print("len(info_avg[normal_idx]): ", len(info_avg[normal_idx]))
             
     def __getitem__(self, idx):
         if self.info_avg is None:
@@ -218,7 +219,7 @@ class SpectraSequenceDataset(torch.utils.data.Dataset):
             return self.spectra_sequence[idx, :], self.label[idx].long(), self.info_avg[idx]
     
     def __len__(self):
-        return self.label.shape[0]
+        return self.spectra_sequence.shape[0]
     
 
 def minutes_to_hour(minutes):

@@ -133,6 +133,7 @@ def build_and_log_Sequence_Embedder_autoencoder_model(project_name, config):
 def build_Sequence_Embedder_autoencoder_model(config):
     model_name = "SequenceEmbedder_AE"
     model_description = "Untrained sequence Embedder with AUTOENCODER. "
+    model_description += "Embedding size = {}. ".format(config['embedder_config']['sequence_embedding_size'])
     if config['embedder_config']['use_spectra_embedder']: model_description += " Spectra embedder is used. "
     if config['embedder_config']['use_attention']: model_description += " Multihead attention is used. "
     
@@ -177,11 +178,13 @@ def load_untrained_model_from_artifact_inside_run(run, artifact_name, version = 
     model_path = os.path.join(model_dir, model_name)
     model_config = model_artifact.metadata
     
+    # Check which model is loaded
+    # N.b. The model is selected thorugh the ARTIFACT NAME
     if "VAE" in artifact_name:
         model, model_name, model_description = build_VAE_model(model_config)
     elif "SequenceEmbedder_clf" in artifact_name:
         model, model_name, model_description = build_Sequence_Embedder_clf_model(model_config)
-    elif "SequenceEmbedderAutoencoder" in artifact_name:
+    elif "SequenceEmbedder_AE" in artifact_name:
         model, model_name, model_description = build_Sequence_Embedder_autoencoder_model(model_config)
     else:
         raise ValueError("Problem with the type of model you want to load")
@@ -211,6 +214,10 @@ def load_VAE_trained_model_from_artifact_inside_run(config, run):
     a_file.close()
     
     return model, model_config, idx_dict
+
+# TODO
+def load_SE_AE_model_from_artifact():
+    pass
 
 #%% Dataset
 
@@ -364,3 +371,34 @@ def load_dataset_h_local(config):
     
     return good_spectra_dataset, bad_spectra_dataset
 
+#%% Other functions
+
+def get_run_name(run_name):
+    counter_run = open('counter_run.txt', 'r')
+    lines = counter_run.readlines()
+      
+    run_find = False
+    new_run_name = ""
+    tmp_string = "" # To save the file content 
+    for line in lines:
+        tmp_run_name = line.split(' ')[0]
+        run_count = int(line.split(' ')[1])
+        
+        if tmp_run_name == run_name:
+            run_find = True
+            new_run_name = tmp_run_name + " " + str(run_count + 1)
+            tmp_string += new_run_name + "\n"
+        else:
+            tmp_string += line
+        
+    if not run_find:
+        raise ValueError("{} not find in the list inside counter_run file".format(run_name))
+    else:
+        counter_run.close() # Close the file
+        
+        # Reopen the file and write the new content
+        text_file = open("counter_run.txt", "wt")
+        n = text_file.write(tmp_string.strip())
+        text_file.close()
+        
+        return new_run_name

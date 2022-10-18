@@ -204,7 +204,7 @@ def divide_spectra_in_sequence(spectra, sequence_length, shift = -1, info_array 
     If an info vector is passed it also compute the average of the info vector for each sequence. The info vector must have the same number of element of the spectra matrix
     (The info array are the array with the data from the other sensor)
     """
-    
+
     if info_array is not None:
         if len(info_array) != spectra.shape[0]: raise ValueError("The info array length and the number of spectra must be equal")
         info_avg = []

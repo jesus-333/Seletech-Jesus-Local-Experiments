@@ -89,24 +89,35 @@ untrained_model = build_and_log_Sequence_Embedder_autoencoder_model(project_name
 #%%
 
 dataset_config = dict(
+    # Artifacts info
+    artifact_name = 'jesus_333/Seletech VAE Spectra/Dataset_Spectra_1',
+    version = 'latest',
+    return_other_sensor_data = False,
+    spectra_file_name = '[2021-08-05_to_11-26]All_PlantSpectra.csv',
+    # Normalization settings
+    normalize_trials = 1,
+    # Sequence construction parameters
     sequence_length = 15,
     shift = 7,
 )
 
 training_config = dict(
-    model_artifact_name = 'SequenceEmbedder_clf',
+    model_artifact_name = 'SequenceEmbedder_AE',
     version = 'latest', # REMEMBER ALWAYS TO CHECK THE VERSION
     split_percentage_list = [0.8, 0.05, 0.15], # Percentage of train/test/validation
     batch_size = 32,
     lr = 1e-2,
-    epochs = 2,
+    epochs = 5,
     use_scheduler = True,
     gamma = 0.75, # Parameter of the lr exponential scheduler
     optimizer_weight_decay = 1e-3,
+    compute_loss_spectra_by_spectra = False,
+    regularize_sequence_embedding = False,
     device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu"),
     log_freq = 1,
     print_var = True,
-    dataset_config = dataset_config
+    dataset_config = dataset_config,
+    debug = False,
 )
 
 # Train model
@@ -116,20 +127,40 @@ model = train_and_log_SE_model(project_name, training_config)
 
 from sklearn.manifold import TSNE
 from sklearn.decomposition import PCA
+from support.datasets import SpectraSequenceDataset
+from support.wandb_init_V2 import load_dataset_from_artifact
+
+dataset_config = dict(
+    # Artifacts info
+    artifact_name = 'jesus_333/Seletech VAE Spectra/Dataset_Spectra_1',
+    version = 'latest',
+    return_other_sensor_data = True,
+    spectra_file_name = '[2021-08-05_to_11-26]All_PlantSpectra.csv',
+    water_file_name = '[2021-08-05_to_11-26]PlantTest_Notes.csv',
+    ht_file_path = '[2021-08-05_to_11-26]All_PlantHTSensor.csv',
+    ht_timestamp_path = 'jesus_ht_timestamp.csv', 
+    spectra_timstamp_path = 'jesus_spectra_timestamp.csv',
+    # Normalization settings
+    normalize_trials = 1,
+    # Sequence construction parameters
+    sequence_length = 15,
+    shift = 7,
+)
+
+data = load_dataset_from_artifact(dataset_config)
+dataset = SpectraSequenceDataset(data[0], dataset_config)
+
 embedder = model.embedder.to(training_config['device'])
-tmp_dataset = dataset_train
-point = np.zeros((len(tmp_dataset), model_config['sequence_embedding_size']))
+point = np.zeros((len(dataset), model_config['sequence_embedding_size']))
 color = []
 for i in range(len(tmp_dataset)):
-    x, y = tmp_dataset[i]
+    x = tmp_dataset[i]
     emb = embedder(x.to(training_config['device']).unsqueeze(0))
     
     emb = emb.squeeze().detach().cpu()
     
     point[i] = emb
     
-    if y == 0: color.append('red')
-    if y == 1: color.append('blue')
   
 
 if point.shape[1] > 2:

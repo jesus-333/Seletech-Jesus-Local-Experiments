@@ -16,12 +16,19 @@ import pickle
 from support.wandb_init_V1 import make_dataloader
 from support.wandb_init_V2 import load_dataset_from_artifact_inside_run, split_dataset
 from support.wandb_init_V2 import load_untrained_model_from_artifact_inside_run, add_model_to_artifact
+from support.wandb_init_V2 import get_run_name
 from support.datasets import SpectraSequenceDataset
 
 #%% Principal function
 
 def train_and_log_SE_model(project_name, config):
-    with wandb.init(project = project_name, job_type = "train", config = config) as run:
+    # Get the name for the actual run
+    if "SequenceEmbedder_clf" in config['model_artifact_name']:  run_name = get_run_name('train-SE-clf-embedding')
+    elif "SequenceEmbedder_AE" in config['model_artifact_name']: run_name = get_run_name('train-SE-AE-embedding')
+    else: raise ValueError("Problem with the type of model you want to load")
+    
+    
+    with wandb.init(project = project_name, job_type = "train", config = config, name = run_name) as run:
         config = wandb.config
           
         # Load model from artifacts
@@ -49,7 +56,7 @@ def train_and_log_SE_model(project_name, config):
         if config['print_var']: print("Model trained on: {}".format(config['device']))
         
         # Setup the dataloader
-        loader_list, idx_dict = load_loader(config)
+        loader_list, idx_dict = load_loader(config, run)
         save_idx_to_artifact(idx_dict, model_artifact, run)
         if config['print_var']: print("Dataset loaded")
         
@@ -67,7 +74,7 @@ def train_and_log_SE_model(project_name, config):
 
 def load_loader(config, run):
     # Load data from dataset artifact and get the spectra
-    data = load_dataset_from_artifact_inside_run(config, run)
+    data = load_dataset_from_artifact_inside_run(config['dataset_config'], run)
     spectra = data[0]
     
     # Create train, test and validation dataset
@@ -97,8 +104,9 @@ def train_sequence_embeddeding_model(model, optimizer, loader_list, model_artifa
     validation_loader = loader_list[1]
     
     log_dict = {}
-    if 'clf' in str(type(model)): loss_function = torch.nn.NLLLoss()
-    elif 'autoencoder' in str(type(model)): loss_function = torch.nn.MSELoss()
+    # Check the type of model
+    if 'clf' in str(type(model)).lower(): loss_function = torch.nn.NLLLoss()
+    elif 'autoencoder' in str(type(model)).lower(): loss_function = torch.nn.MSELoss()
     else: raise ValueError("Error with sequence embedder model type. Must be classifier or autoencoder")
    
     for epoch in range(config['epochs']):
@@ -106,14 +114,14 @@ def train_sequence_embeddeding_model(model, optimizer, loader_list, model_artifa
         log_dict['learning_rate'] = optimizer.param_groups[0]['lr']
         
         # Compute loss (and eventually update weights)
-        if 'clf' in str(type(model)):
+        if 'clf' in str(type(model)).lower():
             # Advance epoch
             train_loss, train_acc = epoch_sequence_embeddeding_clf(model, train_loader, config, True, loss_function, optimizer)
             validation_loss, validation_acc = epoch_sequence_embeddeding_clf(model, validation_loader, config, False, loss_function)
             
             # Update log dict
             log_dict, loss_string = update_clf_log_dict([train_loss, validation_loss, train_acc, validation_acc], log_dict)
-        elif 'autoencoder' in str(type(model)):
+        elif 'autoencoder' in str(type(model)).lower():
             # Advance epoch
             train_loss = epoch_sequence_embeddeding_autoencoder(model, train_loader, config, True, loss_function, optimizer)
             validation_loss = epoch_sequence_embeddeding_autoencoder(model, validation_loader, config, False, loss_function)
@@ -239,10 +247,10 @@ def sequence_autoencoder_loss_function(original_sequence, reconstructed_sequence
 
 
 def update_autoencoder_log_dict(ae_loss_list, log_dict):
-    log_dict["clf_loss_train"] = ae_loss_list[0]
-    log_dict["clf_loss_validation"] = ae_loss_list[1]
+    log_dict["SE_AE_loss_train"] = ae_loss_list[0]
+    log_dict["SE_AE_loss_validation"] = ae_loss_list[1]
     
-    loss_string =  "\tTrain loss     : {}".format(ae_loss_list[0])
+    loss_string =  "\tTrain loss     : {}".format(ae_loss_list[0]) + "\n"
     loss_string += "\tValidation loss: {}".format(ae_loss_list[1])
     
     return log_dict, loss_string

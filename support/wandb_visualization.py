@@ -20,7 +20,7 @@ from support.datasets import PytorchDatasetPlantSpectra_V1
 from support.wandb_init_V2 import load_VAE_trained_model_from_artifact_inside_run, load_dataset_from_artifact_inside_run
 from support.wandb_training_VAE import loss_ae, loss_VAE
 
-#%%
+#%% Error bar for VAE
 
 def bar_loss_wandb_V1(project_name, config):
     with wandb.init(project = project_name, job_type = "plot", config = config) as run:
@@ -138,3 +138,6 @@ def save_plot_and_add_to_artifact(fig, path, file_type, artifact):
         
     artifact.add_file("{}.{}".format(path, file_type))
     wandb.save()
+    
+    
+#%% Sequence embedding
