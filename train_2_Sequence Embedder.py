@@ -88,12 +88,18 @@ untrained_model = build_and_log_Sequence_Embedder_autoencoder_model(project_name
 
 #%%
 
+dataset_config = dict(
+    sequence_length = 15,
+    shift = 7,
+)
+
 training_config = dict(
     model_artifact_name = 'SequenceEmbedder_clf',
     version = 'latest', # REMEMBER ALWAYS TO CHECK THE VERSION
+    split_percentage_list = [0.8, 0.05, 0.15], # Percentage of train/test/validation
     batch_size = 32,
     lr = 1e-2,
-    epochs = 5,
+    epochs = 2,
     use_scheduler = True,
     gamma = 0.75, # Parameter of the lr exponential scheduler
     optimizer_weight_decay = 1e-3,
@@ -103,14 +109,8 @@ training_config = dict(
     dataset_config = dataset_config
 )
 
-# Create dataloader 
-train_loader = make_dataloader(dataset_train, training_config)
-validation_loader = make_dataloader(dataset_validation, training_config)
-test_loader = make_dataloader(dataset_test, training_config)
-loader_list =[train_loader, validation_loader]
-
 # Train model
-model = train_and_log_SE_model(project_name, loader_list, training_config)
+model = train_and_log_SE_model(project_name, training_config)
 
 #%%
 

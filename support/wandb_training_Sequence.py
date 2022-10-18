@@ -71,7 +71,7 @@ def load_loader(config, run):
     spectra = data[0]
     
     # Create train, test and validation dataset
-    full_dataset = SpectraSequenceDataset(spectra, config)
+    full_dataset = SpectraSequenceDataset(spectra, config['dataset_config'])
     dataset_train, dataset_test, dataset_validation, split_idx = split_dataset(full_dataset, config)
     
     # Create dataloader
