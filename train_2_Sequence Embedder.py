@@ -92,32 +92,44 @@ dataset_config = dict(
     # Artifacts info
     artifact_name = 'jesus_333/Seletech VAE Spectra/Dataset_Spectra_1',
     version = 'latest',
-    return_other_sensor_data = False,
+    return_other_sensor_data = True,
     spectra_file_name = '[2021-08-05_to_11-26]All_PlantSpectra.csv',
+    water_file_name = '[2021-08-05_to_11-26]PlantTest_Notes.csv',
+    ht_file_path = '[2021-08-05_to_11-26]All_PlantHTSensor.csv',
+    ht_timestamp_path = 'jesus_ht_timestamp.csv', 
+    spectra_timstamp_path = 'jesus_spectra_timestamp.csv',
+    n_std = 1,
+    binary_label = False,
     # Normalization settings
     normalize_trials = 1,
+    normalize_info_avg = True,
     # Sequence construction parameters
     sequence_length = 15,
-    shift = 7,
+    shift = 10,
 )
 
 training_config = dict(
     model_artifact_name = 'SequenceEmbedder_AE',
     version = 'latest', # REMEMBER ALWAYS TO CHECK THE VERSION
     split_percentage_list = [0.8, 0.05, 0.15], # Percentage of train/test/validation
+    # Numerical Hyperparameter
     batch_size = 32,
     lr = 1e-2,
-    epochs = 5,
+    epochs = 2,
     use_scheduler = True,
     gamma = 0.75, # Parameter of the lr exponential scheduler
-    optimizer_weight_decay = 1e-3,
+    optimizer_weight_decay = 1e-2,
+    # Additional option for the training
+    train_with_info_data = True,
     compute_loss_spectra_by_spectra = False,
     regularize_sequence_embedding = False,
+    # Support stuff (device, log frequency etc)
     device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu"),
     log_freq = 1,
+    epoch_to_save_model = 1,
     print_var = True,
     dataset_config = dataset_config,
-    debug = False,
+    debug = True,
 )
 
 # Train model
@@ -128,7 +140,8 @@ model = train_and_log_SE_model(project_name, training_config)
 from sklearn.manifold import TSNE
 from sklearn.decomposition import PCA
 from support.datasets import SpectraSequenceDataset
-from support.wandb_init_V2 import load_dataset_from_artifact
+from support.wandb_init_V2 import load_dataset_from_artifact, load_trained_model_from_artifact
+from support.wandb_visualization import compute_embedding
 
 dataset_config = dict(
     # Artifacts info
@@ -140,37 +153,59 @@ dataset_config = dict(
     ht_file_path = '[2021-08-05_to_11-26]All_PlantHTSensor.csv',
     ht_timestamp_path = 'jesus_ht_timestamp.csv', 
     spectra_timstamp_path = 'jesus_spectra_timestamp.csv',
+    n_std = 1,
+    binary_label = False,
     # Normalization settings
     normalize_trials = 1,
+    normalize_info_avg = True,
     # Sequence construction parameters
     sequence_length = 15,
-    shift = 7,
+    shift = 10,
+    # Other parameters
+    batch_size = 32
 )
 
 data = load_dataset_from_artifact(dataset_config)
-dataset = SpectraSequenceDataset(data[0], dataset_config)
+dataset = SpectraSequenceDataset(data[0], dataset_config, data[4])
+loader = make_dataloader(dataset, dataset_config)
 
+model_config = dict(
+    artifact_name = 'jesus_333/Seletech VAE Spectra/SequenceEmbedder_AE_trained',
+    version = 'latest',
+    epoch_of_model = 0,
+    model_file_name = 'model'
+)
+
+model, model_config, idx_dict = load_trained_model_from_artifact(model_config)
 embedder = model.embedder.to(training_config['device'])
-point = np.zeros((len(dataset), model_config['sequence_embedding_size']))
-color = []
-for i in range(len(tmp_dataset)):
-    x = tmp_dataset[i]
-    emb = embedder(x.to(training_config['device']).unsqueeze(0))
+# embedder = untrained_model.embedder.to(training_config['device'])
+
+plot_config = dict(
+    device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu"),
+)
+
+embedding = compute_embedding(embedder, loader, plot_config)
+
+# point = np.zeros((len(dataset), model_config['sequence_embedding_size']))
+# color = []
+# for i in range(len(tmp_dataset)):
+#     x = tmp_dataset[i]
+#     emb = embedder(x.to(training_config['device']).unsqueeze(0))
     
-    emb = emb.squeeze().detach().cpu()
+#     emb = emb.squeeze().detach().cpu()
     
-    point[i] = emb
+#     point[i] = emb
     
   
 
-if point.shape[1] > 2:
-    # p = TSNE(n_components = 2, learning_rate='auto', init='random').fit_transform(point)      
-    p = PCA(n_components=2).fit_transform(point)
-else:
-    p = point
+# if point.shape[1] > 2:
+#     # p = TSNE(n_components = 2, learning_rate='auto', init='random').fit_transform(point)      
+#     p = PCA(n_components=2).fit_transform(point)
+# else:
+#     p = point
     
-plt.figure(figsize = (15, 10))
-plt.scatter(p[:, 0], p[:, 1], c = color)
+# plt.figure(figsize = (15, 10))
+# plt.scatter(p[:, 0], p[:, 1], c = color)
 # plt.xlim([0, 4 * 1e-19])
 # plt.ylim([0, - 1.5 * 1e-34])
 

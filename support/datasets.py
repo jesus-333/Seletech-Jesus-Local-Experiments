@@ -180,7 +180,6 @@ class SpectraSequenceDataset(torch.utils.data.Dataset):
     def __init__(self, spectra, config, info_array = None):
         
         # Create spectra sequence and average over sequence period of the info array
-        print("OADIOJASIODJO")
         tmp_out = divide_spectra_in_sequence(spectra, config['sequence_length'], config['shift'], info_array)
         
         if info_array is not None:
@@ -191,11 +190,17 @@ class SpectraSequenceDataset(torch.utils.data.Dataset):
         # Convert spectra sequence in Tensor
         self.spectra_sequence = torch.FloatTensor(spectra_sequence[0:-2])
         
-        if info_array is not None: self.info_avg = torch.FloatTensor(info_avg)
-        else: self.info_avg = None
+        # (OPTIONAL) Create the array with the info from other sensor
+        if info_array is not None: 
+            self.info_avg = torch.FloatTensor(info_avg)
+            if config['normalize_info_avg']:
+                self.info_avg = (self.info_avg - self.info_avg.min()) / (self.info_avg.max() - self.info_avg.min())
+        else: 
+            self.info_avg = None
         
         # Compute label
         if info_array is not None:
+            self.label = torch.zeros(self.spectra_sequence.shape[0])
             info_avg = info_avg[0:-2]
             wet_idx = info_avg >= np.mean(info_avg) + np.std(info_avg) * config['n_std']
             dry_idx = info_avg <= np.mean(info_avg) - np.std(info_avg) * config['n_std']

@@ -138,8 +138,7 @@ def build_Sequence_Embedder_autoencoder_model(config):
     if config['embedder_config']['use_attention']: model_description += " Multihead attention is used. "
     
     model = SequenceEmbedderAutoencoder(config)
-    
-    print(model_description)
+    # print(model_description)
     
     return model, model_name, model_description
 
@@ -192,11 +191,16 @@ def load_untrained_model_from_artifact_inside_run(run, artifact_name, version = 
     model.load_state_dict(torch.load(model_path, map_location = torch.device('cpu')))
     
     return model, model_config
-    
 
-def load_VAE_trained_model_from_artifact_inside_run(config, run):
+
+def load_trained_model_from_artifact(config):
+    run = wandb.init()
+    
+    return load_trained_model_from_artifact_inside_run(config, run)
+
+def load_trained_model_from_artifact_inside_run(config, run):
     if config['epoch_of_model'] < 0: config['epoch_of_model'] = 'END'
-    model_name = config['model_file_name'] + '_' + config['epoch_of_model'] + '.pth'
+    model_name = config['model_file_name'] + '_' + str(config['epoch_of_model']) + '.pth'
     
     # Retrieve trained model weights
     model_artifact = run.use_artifact("{}:{}".format(config['artifact_name'], config['version']))
@@ -205,7 +209,16 @@ def load_VAE_trained_model_from_artifact_inside_run(config, run):
     model_config = model_artifact.metadata['model_config']
     
     # Create model and load the weights
-    model, model_name, model_description = build_VAE_model(model_config)
+    if "SpectraVAE_" in config['artifact_name']:
+        model, model_name, model_description = build_VAE_model(model_config)
+    elif "SequenceEmbedder_clf" in config['artifact_name']:
+        model, model_name, model_description = build_Sequence_Embedder_clf_model(model_config)
+    elif "SequenceEmbedder_AE" in config['artifact_name']:
+        model, model_name, model_description = build_Sequence_Embedder_autoencoder_model(model_config)
+    else:
+        raise ValueError("Problem with the type of model you want to load")
+
+    # model, model_name, model_description = build_VAE_model(model_config)
     model.load_state_dict(torch.load(model_path, map_location = torch.device('cpu')))
     
     # Retrieve index
@@ -216,8 +229,9 @@ def load_VAE_trained_model_from_artifact_inside_run(config, run):
     return model, model_config, idx_dict
 
 # TODO
-def load_SE_AE_model_from_artifact():
-    pass
+# def load_SE_AE_model_from_artifact_inside_run(config, run):
+#     if config['epoch_of_model'] < 0: config['epoch_of_model'] = 'END'
+#     model_name = config['model_file_name'] + '_' + config['epoch_of_model'] + '.pth'
 
 #%% Dataset
 
@@ -247,6 +261,13 @@ def load_dataset_local_Sequence_embedder_clf(load_config, dataset_config):
     
     return dataset
 
+def split_data_idx(data, config):
+    """
+    Given some data with shape "N. example x other dimension" this function create list of index that divided the original data in various set
+    The number of set is specified by the number of elements inside config['split_percentage_list']
+    """
+    
+    percentage_train, percentage_test, percentage_validation = config['split_percentage_list']
 
 def split_dataset(dataset, config):
     if 'print_var' not in config: config['print_var'] = True

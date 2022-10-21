@@ -27,6 +27,9 @@ def train_and_log_SE_model(project_name, config):
     elif "SequenceEmbedder_AE" in config['model_artifact_name']: run_name = get_run_name('train-SE-AE-embedding')
     else: raise ValueError("Problem with the type of model you want to load")
     
+    if config['dataset_config']['return_other_sensor_data'] == False and config['train_with_info_data']:
+        raise ValueError("To use the other sensor data during the training you have to load them. The parameter return_other_sensor_data must be set to True")
+    
     
     with wandb.init(project = project_name, job_type = "train", config = config, name = run_name) as run:
         config = wandb.config
@@ -59,12 +62,15 @@ def train_and_log_SE_model(project_name, config):
         loader_list, idx_dict = load_loader(config, run)
         save_idx_to_artifact(idx_dict, model_artifact, run)
         if config['print_var']: print("Dataset loaded")
+        return loader_list
         
         # Train model
+        wandb.watch(model, log = "all", log_freq = config['log_freq'])
         model.to(config['device'])
         train_sequence_embeddeding_model(model, optimizer, loader_list, model_artifact, config, lr_scheduler)
-
-        add_model_to_artifact(model, model_artifact)
+        
+        # Save model after training
+        add_model_to_artifact(model, model_artifact, "model_END.pth")
         run.log_artifact(model_artifact)
         
     return model
@@ -76,9 +82,15 @@ def load_loader(config, run):
     # Load data from dataset artifact and get the spectra
     data = load_dataset_from_artifact_inside_run(config['dataset_config'], run)
     spectra = data[0]
-    
+
     # Create train, test and validation dataset
-    full_dataset = SpectraSequenceDataset(spectra, config['dataset_config'])
+    if config['train_with_info_data']:
+        h_array = data[4]
+        full_dataset = SpectraSequenceDataset(spectra, config['dataset_config'], h_array)
+    else:
+        full_dataset = SpectraSequenceDataset(spectra, config['dataset_config'])
+        
+    # Split the dataset
     dataset_train, dataset_test, dataset_validation, split_idx = split_dataset(full_dataset, config)
     
     # Create dataloader
@@ -102,6 +114,9 @@ def load_loader(config, run):
 def train_sequence_embeddeding_model(model, optimizer, loader_list, model_artifact, config, lr_scheduler = None):
     train_loader = loader_list[0]
     validation_loader = loader_list[1]
+    
+    # Parameter used to save the model every x epoch
+    if 'epoch_to_save_model' not in config: config['epoch_to_save_model'] = 1
     
     log_dict = {}
     # Check the type of model
@@ -130,8 +145,10 @@ def train_sequence_embeddeding_model(model, optimizer, loader_list, model_artifa
         else:
             raise ValueError("Error with sequence embedder model type. Must be classifier or autoencoder")
         
-        # Save the model
-        add_model_to_artifact(model, model_artifact, "TMP_File/model_{}.pth".format(epoch))
+        # Save the model after the epoch
+        # N.b. When the variable epoch is 0 the model is trained for an epoch when arrive at this instructions.
+        if (epoch + 1) % config['epoch_to_save_model'] == 0:
+            add_model_to_artifact(model, model_artifact, "TMP_File/model_{}.pth".format(epoch + 1))
         
         # Log data on wandb
         wandb.log(log_dict)
@@ -198,14 +215,19 @@ def update_clf_log_dict(clf_loss_list, log_dict):
 def epoch_sequence_embeddeding_autoencoder(model, loader, config, is_train, loss_function, optimizer = None):
     tot_loss = 0
     for batch in loader:
-        x = batch.to(config['device'])
-                
+        if config['train_with_info_data']:
+            x = batch[0].to(config['device'])
+            x_info = batch[1].to(config['device'])
+        else:
+            x = batch.to(config['device'])
+            x_info = None
+                        
         if(is_train): # Executed during training
             # Zeros past gradients and forward step
             optimizer.zero_grad()
             
             # Forward pass
-            x_r, sequence_embedding, cell_state = model(x)
+            x_r, sequence_embedding, cell_state = model(x, x_info)
             
             # Loss computation. 
             # N.B.The sequence embedding are always passed but not always used. Their used depends by regularize_sequence_embedding parameter in config

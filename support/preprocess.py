@@ -202,7 +202,7 @@ def divide_spectra_in_sequence(spectra, sequence_length, shift = -1, info_array 
     Divide the matrix of spectra in list of spectra. Each list contain sequence_length spectra.
     
     If an info vector is passed it also compute the average of the info vector for each sequence. The info vector must have the same number of element of the spectra matrix
-    (The info array are the array with the data from the other sensor)
+    (The info array are the array with the data from the other sensors)
     """
 
     if info_array is not None:

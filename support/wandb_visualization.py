@@ -17,7 +17,7 @@ import wandb
 
 from support.wandb_init_V1 import make_dataloader
 from support.datasets import PytorchDatasetPlantSpectra_V1
-from support.wandb_init_V2 import load_VAE_trained_model_from_artifact_inside_run, load_dataset_from_artifact_inside_run
+from support.wandb_init_V2 import load_trained_model_from_artifact_inside_run, load_dataset_from_artifact_inside_run
 from support.wandb_training_VAE import loss_ae, loss_VAE
 
 #%% Error bar for VAE
@@ -27,7 +27,7 @@ def bar_loss_wandb_V1(project_name, config):
         if 'device' not in config: config['device'] = 'cpu'
         
         # Load model
-        model, model_config, idx_dict = load_VAE_trained_model_from_artifact_inside_run(config, run)
+        model, model_config, idx_dict = load_trained_model_from_artifact_inside_run(config, run)
         config['use_as_autoencoder'] = model_config['use_as_autoencoder']
         config['dataset_config']['use_cnn'] = model_config['use_cnn']
         model.eval()
@@ -141,3 +141,25 @@ def save_plot_and_add_to_artifact(fig, path, file_type, artifact):
     
     
 #%% Sequence embedding
+
+def compute_embedding(embedder, loader, config):
+    embedder.to(config['device'])
+    embedding_list = []
+    
+    for batch in loader:
+        # Move data to device
+        x = batch.to(config['device'])
+        
+        # Compute the embedding
+        # out is all the output of the LSTM  (see PyTorch LSTM documentation)
+        # h is the embedding
+        # c is the last state of the LSTM encoder
+        out, h, c = embedder(x)
+        
+        # Save the results for the batch
+        embedding_list.append(h.detach().cpu().squeeze())
+    
+    # Convert embedding list in a single numpy array
+    embedding = torch.cat(embedding_list).numpy()
+    
+    return embedding

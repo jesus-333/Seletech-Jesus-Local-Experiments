@@ -148,7 +148,7 @@ class SequenceEmbedderAutoencoder(nn.Module):
         
         print("Number of trainable parameters (sequence autoencoder) = ", sum(p.numel() for p in self.parameters() if p.requires_grad), "\n")
     
-    def forward(self, original_sequence):
+    def forward(self, original_sequence, info_tensor = None):
         """
         original_sequence: Input sequence with dimension "B X L X H" where
             B = Batch size
@@ -160,7 +160,7 @@ class SequenceEmbedderAutoencoder(nn.Module):
         sequence_length = original_sequence.shape[1]
         
         # Compute the embedding (h) of the original sequence
-        out, h, c = self.embedder(original_sequence)
+        out, h, c = self.embedder(original_sequence, info_tensor)
         
         # Reconstruct the original sequence from the encoding
         sequence_reconstructed, sequence_decoded = self.decoder(h, sequence_length)
