@@ -115,14 +115,15 @@ class Sequence_Decoder_V1(nn.Module):
         print("Number of trainable parameters (Sequence decoder) = ", sum(p.numel() for p in self.parameters() if p.requires_grad), "\n")
         
     def forward(self, embed, sequence_length):
+        device = embed.device()
         
         # Define the input for the first time LSTM cell is used
         # N.b. Even if  batch_first = True the hidden and cell state must be define with the first dimension as sequence length and the second dimension as batch size (for batched input)
-        h = torch.zeros((1, embed.shape[0], self.decoder_LSTM_output_size))
-        c = torch.zeros((1, embed.shape[0], self.decoder_LSTM_output_size))
+        h = torch.zeros((1, embed.shape[0], self.decoder_LSTM_output_size)).to(device)
+        c = torch.zeros((1, embed.shape[0], self.decoder_LSTM_output_size)).to(device)
         
-        sequence_decoded = torch.zeros((embed.shape[0], sequence_length, self.decoder_LSTM_output_size))
-        sequence_reconstructed = torch.zeros((embed.shape[0], sequence_length, 702))
+        sequence_decoded = torch.zeros((embed.shape[0], sequence_length, self.decoder_LSTM_output_size)).to(device)
+        sequence_reconstructed = torch.zeros((embed.shape[0], sequence_length, 702)).to(device)
         
         for i in range(sequence_length):
             out, (h, c) = self.decoder(embed, (h, c))
