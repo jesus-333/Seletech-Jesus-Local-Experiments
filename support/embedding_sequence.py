@@ -115,7 +115,7 @@ class Sequence_Decoder_V1(nn.Module):
         print("Number of trainable parameters (Sequence decoder) = ", sum(p.numel() for p in self.parameters() if p.requires_grad), "\n")
         
     def forward(self, embed, sequence_length):
-        device = embed.device()
+        device = embed.device
         
         # Define the input for the first time LSTM cell is used
         # N.b. Even if  batch_first = True the hidden and cell state must be define with the first dimension as sequence length and the second dimension as batch size (for batched input)
