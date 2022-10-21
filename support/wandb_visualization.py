@@ -148,7 +148,7 @@ def compute_embedding(embedder, loader, config):
     
     for batch in loader:
         # Move data to device
-        x = batch.to(config['device'])
+        x = batch[0].to(config['device'])
         
         # Compute the embedding
         # out is all the output of the LSTM  (see PyTorch LSTM documentation)

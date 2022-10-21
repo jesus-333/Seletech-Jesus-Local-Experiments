@@ -261,15 +261,8 @@ def load_dataset_local_Sequence_embedder_clf(load_config, dataset_config):
     
     return dataset
 
-def split_data_idx(data, config):
-    """
-    Given some data with shape "N. example x other dimension" this function create list of index that divided the original data in various set
-    The number of set is specified by the number of elements inside config['split_percentage_list']
-    """
-    
-    percentage_train, percentage_test, percentage_validation = config['split_percentage_list']
 
-def split_dataset(dataset, config):
+def split_data(data, config):
     if 'print_var' not in config: config['print_var'] = True
     
     percentage_train, percentage_test, percentage_validation = config['split_percentage_list']
@@ -278,23 +271,19 @@ def split_dataset(dataset, config):
         raise ValueError("The sum of the percentage of train, test and validation must be lower or equal to 1")
 
     # Create index to divide the dataset in 3 (train, test and validation)
-    idx = np.arange(len(dataset))
-    tmp_len_list = (np.asarray(config['split_percentage_list']) * len(dataset)).astype(int)
-    tmp_len_list[-1] = abs(len(dataset) - tmp_len_list.sum()) + tmp_len_list[-1]
+    idx = np.arange(data.shape[0])
+    tmp_len_list = (np.asarray(config['split_percentage_list']) * data.shape[0]).astype(int)
+    tmp_len_list[-1] = abs(data.shape[0] - tmp_len_list.sum()) + tmp_len_list[-1]
     train_idx, test_idx, validation_idx = torch.utils.data.random_split(idx, tmp_len_list)
     
-    # Divide the dataset
-    dataset_train = dataset[train_idx]
-    dataset_test = dataset[test_idx]  
-    dataset_validation = dataset[validation_idx]
     idx_list = [train_idx, test_idx, validation_idx]
-    
+     
     if config['print_var']:
-        print("Length Training set   = " + str(len(dataset_train)))
-        print("Length Test set       = " + str(len(dataset_test)))
-        print("Length Validation set = " + str(len(dataset_validation)))
+        print("Length Training set   = " + str(len(train_idx)))
+        print("Length Test set       = " + str(len(test_idx)))
+        print("Length Validation set = " + str(len(validation_idx)))
         
-    return dataset_train, dataset_test, dataset_validation, idx_list
+    return train_idx, test_idx, validation_idx, idx_list
 
 
 def log_data(project_name):

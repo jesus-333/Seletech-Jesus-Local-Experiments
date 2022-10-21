@@ -3,4 +3,4 @@ train-VAE-anomaly 0
 build-SE-clf-embedding 0
 train-SE-clf-embedding 0
 build-SE-AE-embedding 0
-train-SE-AE-embedding 21
+train-SE-AE-embedding 34

@@ -14,7 +14,7 @@ import torch
 import pickle
 
 from support.wandb_init_V1 import make_dataloader
-from support.wandb_init_V2 import load_untrained_model_from_artifact_inside_run, load_dataset_from_artifact_inside_run, add_model_to_artifact, split_dataset
+from support.wandb_init_V2 import load_untrained_model_from_artifact_inside_run, load_dataset_from_artifact_inside_run, add_model_to_artifact, split_data
 from support.preprocess import choose_spectra_based_on_water_V1
 from support.datasets import PytorchDatasetPlantSpectra_V1
 
@@ -83,12 +83,18 @@ def load_loader(config, run):
                      time_interval_end = config['dataset_config']['time_interval_end'])
     
     good_spectra_dataset = PytorchDatasetPlantSpectra_V1(spectra[good_idx, :], used_in_cnn = config['dataset_config']['use_cnn'])
-    bad_spectra_dataset = PytorchDatasetPlantSpectra_V1(spectra[bad_idx, :], used_in_cnn = config['dataset_config']['use_cnn'])
         
+    bad_spectra = spectra[bad_idx, :]
+    
     # Divided bad dataset
-    bad_dataset_train, bad_dataset_test, bad_dataset_validation, split_idx = split_dataset(bad_spectra_dataset, config['dataset_config'])
+    bad_train_idx, bad_test_idx, bad_validation_idx, split_idx = split_data(bad_spectra, config['dataset_config'])
     # config['dataset_config']['bad_dataset_split_idx'] = split_idx
-
+    
+    bad_dataset_train = PytorchDatasetPlantSpectra_V1(bad_spectra[bad_train_idx], used_in_cnn = config['dataset_config']['use_cnn'])
+    bad_dataset_test = PytorchDatasetPlantSpectra_V1(bad_spectra[bad_test_idx, :], used_in_cnn = config['dataset_config']['use_cnn'])
+    bad_dataset_validation = PytorchDatasetPlantSpectra_V1(bad_spectra[bad_validation_idx, :], used_in_cnn = config['dataset_config']['use_cnn'])
+    
+    
     # Create dataloader
     train_loader = make_dataloader(bad_dataset_train, config)
     validation_loader = make_dataloader(bad_dataset_validation, config)

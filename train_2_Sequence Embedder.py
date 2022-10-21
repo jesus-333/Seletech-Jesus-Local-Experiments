@@ -86,7 +86,7 @@ model_config = {'embedder_config':embedder_config, 'decoder_config':decoder_conf
 
 untrained_model = build_and_log_Sequence_Embedder_autoencoder_model(project_name, model_config)
 
-#%%
+#%% Train model
 
 dataset_config = dict(
     # Artifacts info

@@ -14,7 +14,7 @@ import torch
 import pickle
 
 from support.wandb_init_V1 import make_dataloader
-from support.wandb_init_V2 import load_dataset_from_artifact_inside_run, split_dataset
+from support.wandb_init_V2 import load_dataset_from_artifact_inside_run, split_data
 from support.wandb_init_V2 import load_untrained_model_from_artifact_inside_run, add_model_to_artifact
 from support.wandb_init_V2 import get_run_name
 from support.datasets import SpectraSequenceDataset
@@ -62,7 +62,6 @@ def train_and_log_SE_model(project_name, config):
         loader_list, idx_dict = load_loader(config, run)
         save_idx_to_artifact(idx_dict, model_artifact, run)
         if config['print_var']: print("Dataset loaded")
-        return loader_list
         
         # Train model
         wandb.watch(model, log = "all", log_freq = config['log_freq'])
@@ -82,17 +81,22 @@ def load_loader(config, run):
     # Load data from dataset artifact and get the spectra
     data = load_dataset_from_artifact_inside_run(config['dataset_config'], run)
     spectra = data[0]
-
-    # Create train, test and validation dataset
-    if config['train_with_info_data']:
-        h_array = data[4]
-        full_dataset = SpectraSequenceDataset(spectra, config['dataset_config'], h_array)
-    else:
-        full_dataset = SpectraSequenceDataset(spectra, config['dataset_config'])
-        
-    # Split the dataset
-    dataset_train, dataset_test, dataset_validation, split_idx = split_dataset(full_dataset, config)
     
+    # Split the data
+    train_idx, test_idx, validation_idx, split_idx = split_data(spectra, config)
+    
+    if config['train_with_info_data']: 
+        info_train = data[4][train_idx]
+        info_test = data[4][test_idx]
+        info_validation = data[4][validation_idx]
+    else:
+        info_train = info_test = info_validation = None
+    
+    # Create train, test and validation dataset
+    dataset_train = SpectraSequenceDataset(spectra[train_idx], config['dataset_config'], info_train)
+    dataset_test = SpectraSequenceDataset(spectra[test_idx], config['dataset_config'], info_test)
+    dataset_validation = SpectraSequenceDataset(spectra[validation_idx], config['dataset_config'], info_validation)      
+
     # Create dataloader
     train_loader = make_dataloader(dataset_train, config)
     validation_loader = make_dataloader(dataset_validation, config)
@@ -217,7 +221,7 @@ def epoch_sequence_embeddeding_autoencoder(model, loader, config, is_train, loss
     for batch in loader:
         if config['train_with_info_data']:
             x = batch[0].to(config['device'])
-            x_info = batch[1].to(config['device'])
+            x_info = batch[1].to(config['device']).unsqueeze(-1).unsqueeze(-1)
         else:
             x = batch.to(config['device'])
             x_info = None
