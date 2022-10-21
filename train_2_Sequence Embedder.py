@@ -30,13 +30,13 @@ project_name = "Seletech VAE Spectra"
 
 model_config = dict(
     # Spectra embedder parameters
-    use_spectra_embedder = True,
+    use_spectra_embedder = False,
     query_embedding_size = 256,
     key_embedding_size = 256,
     value_embedding_size = 256,
     use_activation_in_spectra_embedder = True,
     # Multihead attention parameters
-    use_attention = True,
+    use_attention = False,
     num_heads = 4,
     multihead_attention_dropout = 0,
     multihead_attention_bias = True,
@@ -56,13 +56,13 @@ untrained_model = build_and_log_Sequence_Embedder_clf_model(project_name, model_
 
 embedder_config = dict(
     # Spectra embedder parameters
-    use_spectra_embedder = True,
+    use_spectra_embedder = False,
     query_embedding_size = 256,
     key_embedding_size = 256,
     value_embedding_size = 256,
     use_activation_in_spectra_embedder = True,
     # Multihead attention parameters
-    use_attention = True,
+    use_attention = False,
     num_heads = 4,
     multihead_attention_dropout = 0,
     multihead_attention_bias = True,
@@ -108,9 +108,14 @@ dataset_config = dict(
     shift = 10,
 )
 
+"""
+v1 = embedding size = 8. USE Spectra embedder 256. USE multihead attention
+v2 = embedding size = 8. NO spectra embedder. NO multihead attention
+"""
+
 training_config = dict(
     model_artifact_name = 'SequenceEmbedder_AE',
-    version = 'latest', # REMEMBER ALWAYS TO CHECK THE VERSION
+    version = 'v2', # REMEMBER ALWAYS TO CHECK THE VERSION
     split_percentage_list = [0.8, 0.05, 0.15], # Percentage of train/test/validation
     # Numerical Hyperparameter
     batch_size = 32,
