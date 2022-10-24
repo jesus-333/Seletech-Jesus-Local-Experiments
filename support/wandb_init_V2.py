@@ -224,6 +224,7 @@ def load_trained_model_from_artifact_inside_run(config, run):
     model_dir = model_artifact.download()
     model_path = os.path.join(model_dir, model_name)
     model_config = model_artifact.metadata['model_config']
+    print(model_config)
     
     # Create model and load the weights
     if "SpectraVAE_" in config['artifact_name']:

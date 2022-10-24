@@ -113,6 +113,9 @@ class Sequence_Decoder_V1(nn.Module):
     
     def __init__(self, config):
         super().__init__()
+        if 'proj_size' not in config: 
+            config['proj_size'] = 0
+            print('proj_size not find in config. Set to defualt value of 0')
         
         # LSTM decoder
         self.decoder = nn.LSTM(config['sequence_embedding_size'], config['decoder_LSTM_output_size'], 
