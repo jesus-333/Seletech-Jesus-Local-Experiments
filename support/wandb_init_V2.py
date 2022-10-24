@@ -132,15 +132,32 @@ def build_and_log_Sequence_Embedder_autoencoder_model(project_name, config):
 
 def build_Sequence_Embedder_autoencoder_model(config):
     model_name = "SequenceEmbedder_AE"
-    model_description = "Untrained sequence Embedder with AUTOENCODER. "
-    model_description += "Embedding size = {}. ".format(config['embedder_config']['sequence_embedding_size'])
-    if config['embedder_config']['use_spectra_embedder']: model_description += " Spectra embedder is used. "
-    if config['embedder_config']['use_attention']: model_description += " Multihead attention is used. "
+    model_description = description_Sequence_Embedder_autoencoder(config)
     
     model = SequenceEmbedderAutoencoder(config)
     # print(model_description)
     
     return model, model_name, model_description
+
+def description_Sequence_Embedder_autoencoder(config):
+    model_description = "Untrained sequence Embedder with AUTOENCODER. "
+    model_description += "Embedding size = {}. ".format(config['embedder_config']['sequence_embedding_size'])
+    
+    # Check if spectra embedder is used
+    if config['embedder_config']['use_spectra_embedder']: model_description += " USE Spectra embedder ({}). ".format(config['embedder_config']['query_embedding_size'])
+    else: model_description += " NO Spectra embedder. "
+    
+    # Check if attention is used
+    if config['embedder_config']['use_attention']: model_description += " USE Multihead attention. "
+    else:  model_description += " NO Multihead attention. "
+    
+    # Check if LSTM in encoder use bias
+    model_description += " LSTM bias encoder = {}.\n".format_map(config['embedder_config']['LSTM_bias'])
+    
+    model_description += " Decoder type = {}. ".format_map(config['decoder_config']['decoder_type'])
+    model_description += " Decoder LSTM output size = {}. ".format_map(config['decoder_config']['decoder_LSTM_output_size'])
+    
+    return model_description
 
 
 def add_sequence_embedder_onnx_to_artifact(config, model, artifact, model_name = "model.onnx"):

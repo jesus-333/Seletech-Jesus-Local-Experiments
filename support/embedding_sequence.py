@@ -97,20 +97,40 @@ class SequenceEmbedder(nn.Module):
 
 class Sequence_Decoder_V1(nn.Module):
     """
-    Decoder where the input is always the same for each step of the reconstructed sequence (i.e. I use always the input sequence embedding as output of the LSTM decoder).
-    Image scheme: https://www.mdpi.com/energies/energies-15-01061/article_deploy/html/images/energies-15-01061-g002.png
+    Decoder type 1:
+        Decoder where the input is always the same for each step of the reconstructed sequence (i.e. I use always the input sequence embedding as output of the LSTM decoder).
+        Image scheme: https://www.mdpi.com/energies/energies-15-01061/article_deploy/html/images/energies-15-01061-g002.png
+        N.b. This allow the decoder LSTM to have different size for input and hidden state but force to use the same embedding in each reconstruction step.
     
-    N.b. This allow the decoder LSTM to have different size for input and hidden state but force to use the same embedding in each reconstruction step.
+    Decoder type 2:
+        Decoder where the input of the next step is the output of the previous step
+        Image scheme: https://www.researchgate.net/publication/347217555/figure/fig4/AS:972284625969153@1608822127533/Seq2seq-LSTM-structure.png
+    
+    Decoder type 3:
+        The input is the sum of the previous step and of the embedding
+    
     """
     
     def __init__(self, config):
         super().__init__()
         
+        # LSTM decoder
         self.decoder = nn.LSTM(config['sequence_embedding_size'], config['decoder_LSTM_output_size'], 
-                                          batch_first = True, bias = config['LSTM_bias'], dropout = config['LSTM_dropout'])
+                                          batch_first = True, bias = config['LSTM_bias'], dropout = config['LSTM_dropout'],
+                                          proj_size  = config['proj_size'])
         self.decoder_LSTM_output_size = config['decoder_LSTM_output_size']
         
+        # FF layer to transform the output of LSTM in the original signal
+        self.use_reconstruction_layer = config['use_reconstruction_layer']
         self.reconstruction_layer = nn.Linear(config['decoder_LSTM_output_size'], 702)
+        
+        # Set the type of decoder
+        self.decoder_type = config['decoder_type']
+        
+        # Check parameters
+        if config['decoder_type'] < 1 or config['decoder_type'] > 3: raise ValueError('decoder_type inside config must be equal to 1, 2 or 3')
+        if config['decoder_type'] == 2 or config['decoder_type'] == 3: 
+            if config['sequence_embedding_size'] != config['decoder_LSTM_output_size']: raise ValueError('If decoder_type is 2 or 3 the LSTM output must have the same size of the embedding size')
         
         print("Number of trainable parameters (Sequence decoder) = ", sum(p.numel() for p in self.parameters() if p.requires_grad), "\n")
         
@@ -122,16 +142,37 @@ class Sequence_Decoder_V1(nn.Module):
         h = torch.zeros((1, embed.shape[0], self.decoder_LSTM_output_size)).to(device)
         c = torch.zeros((1, embed.shape[0], self.decoder_LSTM_output_size)).to(device)
         
+        # Create the output matrix
         sequence_decoded = torch.zeros((embed.shape[0], sequence_length, self.decoder_LSTM_output_size)).to(device)
         sequence_reconstructed = torch.zeros((embed.shape[0], sequence_length, 702)).to(device)
         
+        # Set the first input
+        input_encoder = embed
+        
         for i in range(sequence_length):
-            out, (h, c) = self.decoder(embed, (h, c))
+            out, (h, c) = self.decoder(input_encoder, (h, c))
              
-            sequence_decoded[:, i, :] = out.squeeze()
-            sequence_reconstructed[:, i, :] = self.reconstruction_layer(out).squeeze()
+            if self.use_reconstruction_layer:
+                sequence_decoded[:, i, :] = out.squeeze()
+                sequence_reconstructed[:, i, :] = self.reconstruction_layer(out).squeeze()
+            else:
+                sequence_decoded[:, i, :] = out.squeeze()
+                sequence_reconstructed[:, i, :] = out.squeeze()
+            
+            # If I use the second type of decoder set the input as the previous output
+            if self.decoder_type == 2: input_encoder = out
+            if self.decoder_type == 3: input_encoder = out + embed
             
         return sequence_reconstructed, sequence_decoded
+    
+    
+class Sequence_Decoder_V2(nn.Module):
+    """
+    Decoder where the input of the next step is the output of the previous step
+    Image scheme: https://www.researchgate.net/publication/347217555/figure/fig4/AS:972284625969153@1608822127533/Seq2seq-LSTM-structure.png
+    """
+    def __init__(self, config):
+        super().__init__()
     
 #%% Sequence autoencoder
 
@@ -142,10 +183,7 @@ class SequenceEmbedderAutoencoder(nn.Module):
         
         self.embedder = SequenceEmbedder(config['embedder_config'])
         
-        if config['decoder_config']['decoder_type'] == 1:
-            self.decoder = Sequence_Decoder_V1(config['decoder_config'])
-        else:
-            raise ValueError("The decoder type must be 1")
+        self.decoder = Sequence_Decoder_V1(config['decoder_config'])
         
         print("Number of trainable parameters (sequence autoencoder) = ", sum(p.numel() for p in self.parameters() if p.requires_grad), "\n")
     
@@ -249,11 +287,13 @@ if __name__ == "__main__":
     y = emb_clf(x)
     
     decoder_config = dict(
-        decoder_type = 1,
+        decoder_type = 3,
         sequence_embedding_size = tmp_config['sequence_embedding_size'],
+        decoder_LSTM_output_size = tmp_config['sequence_embedding_size'],
         LSTM_bias = False,
         LSTM_dropout = 0,
-        decoder_LSTM_output_size = 256
+        proj_size = 0,
+        use_reconstruction_layer = True
     )
 
     model_config = {'embedder_config':tmp_config, 'decoder_config':decoder_config}
