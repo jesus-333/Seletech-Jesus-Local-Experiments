@@ -70,16 +70,18 @@ embedder_config = dict(
     vdim = 256,
     # LSTM Parameters
     sequence_embedding_size = 8,
-    LSTM_bias = False,
+    LSTM_bias = True,
     LSTM_dropout = 0,
 )
 
 decoder_config = dict(
-    decoder_type = 1,
-    sequence_embedding_size = embedder_config['sequence_embedding_size'],
-    LSTM_bias = False,
-    LSTM_dropout = 0,
-    decoder_LSTM_output_size = 256
+        decoder_type = 3,
+        sequence_embedding_size = embedder_config['sequence_embedding_size'],
+        decoder_LSTM_output_size = embedder_config['sequence_embedding_size'],
+        LSTM_bias = False,
+        LSTM_dropout = 0,
+        proj_size = 0,
+        use_reconstruction_layer = True
 )
 
 model_config = {'embedder_config':embedder_config, 'decoder_config':decoder_config}

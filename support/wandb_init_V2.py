@@ -152,10 +152,10 @@ def description_Sequence_Embedder_autoencoder(config):
     else:  model_description += " NO Multihead attention. "
     
     # Check if LSTM in encoder use bias
-    model_description += " LSTM bias encoder = {}.\n".format_map(config['embedder_config']['LSTM_bias'])
+    model_description += " LSTM bias encoder = {}.\n".format(config['embedder_config']['LSTM_bias'])
     
-    model_description += " Decoder type = {}. ".format_map(config['decoder_config']['decoder_type'])
-    model_description += " Decoder LSTM output size = {}. ".format_map(config['decoder_config']['decoder_LSTM_output_size'])
+    model_description += " Decoder type = {}. ".format(config['decoder_config']['decoder_type'])
+    model_description += " Decoder LSTM output size = {}. ".format(config['decoder_config']['decoder_LSTM_output_size'])
     
     return model_description
 
@@ -174,7 +174,7 @@ def add_model_to_artifact(model, artifact, model_name = "model.pth"):
     
 
 def add_onnx_to_artifact(model, artifact, args, model_name = "model.onnx"):
-    torch.onnx.export(model, args = args, f = model_name)
+    torch.onnx.export(model, args = args, f = model_name, opset_version = 11)
     
     artifact.add_file(model_name)
     wandb.save(model_name)

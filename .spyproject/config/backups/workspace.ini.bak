@@ -4,7 +4,7 @@ save_data_on_exit = True
 save_history = True
 save_non_project_files = False
 project_type = 'empty-project-type'
-recent_files = ['support/wandb_init_V2.py', 'support/embedding_sequence.py', 'support/wandb_training_Sequence.py', 'train_2_Sequence Embedder.py', 'support/wandb_visualization.py', 'support/preprocess.py', 'support/datasets.py']
+recent_files = ['support\\wandb_init_V2.py', 'support\\wandb_training_Sequence.py', 'train_2_Sequence Embedder.py', 'support\\embedding_sequence.py']
 
 [main]
 version = 0.2.0
