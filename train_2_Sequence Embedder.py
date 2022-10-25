@@ -103,10 +103,10 @@ dataset_config = dict(
     n_std = 1,
     binary_label = False,
     # Normalization settings
-    normalize_trials = 1,
+    normalize_trials = 2,
     normalize_info_avg = True,
     # Sequence construction parameters
-    sequence_length = 15,
+    sequence_length = 60,
     shift = 10,
 )
 
@@ -130,7 +130,7 @@ v10: skinny model. Embedding size = 2. LSTM encoder bias = True.
 
 training_config = dict(
     model_artifact_name = 'SequenceEmbedder_AE',
-    version = 'v9', # REMEMBER ALWAYS TO CHECK THE VERSION
+    version = 'v10', # REMEMBER ALWAYS TO CHECK THE VERSION
     split_percentage_list = [0.8, 0.05, 0.15], # Percentage of train/test/validation
     # Numerical Hyperparameter
     batch_size = 32,
@@ -154,6 +154,21 @@ training_config = dict(
 
 # Train model
 model = train_and_log_SE_model(project_name, training_config)
+
+
+"""
+Trained model
+v16 (da v6 untrained). train_with_info_data = False, compute_loss_spectra_by_spectra = True, regularize_sequence_embedding = True
+Decente
+
+v17 (da v6 untrained). train_with_info_data = False, compute_loss_spectra_by_spectra = False, regularize_sequence_embedding = False
+Decente (similie a v16 con ordine di grandezza diverso)
+
+v21 e v22 (da v9 untrained). train_with_info_data = False, compute_loss_spectra_by_spectra = False, regularize_sequence_embedding = False.
+v21 ---> sequence = 15. v22 sequence ---> 60
+
+v23 (da v10 untrained). train_with_info_data = False, compute_loss_spectra_by_spectra = False, regularize_sequence_embedding = False. sequence ---> 60
+"""
 
 #%%
 

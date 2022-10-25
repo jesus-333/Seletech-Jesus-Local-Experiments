@@ -15,7 +15,7 @@ import torch
 from torch import nn
 
 from support.timestamp_function import extract_data_from_timestamp, compare_timestamp
-from support.preprocess import divide_spectra_in_sequence
+from support.preprocess import divide_spectra_in_sequence, spectra_normalization
 
 #%% Spectra related function
 
@@ -38,24 +38,6 @@ def load_spectra_data(filename, normalization_type = -1, print_var = True):
         spectra_plants_numpy = spectra_normalization(spectra_plants_numpy, normalization_type)
     
     return spectra_plants_numpy, wavelength, timestamp
-
-
-def compute_normalization_factor(spectra, norm_type):
-    if(norm_type == 0): # Half normalization
-        tmp_sum = np.sum(spectra, 0)
-        normalization_factor = tmp_sum / spectra.shape[0]
-    elif(norm_type == 1): # Full normalization
-        tmp_sum = np.sum(spectra)
-        normalization_factor = tmp_sum / (spectra.shape[0] * spectra.shape[1])
-    else: 
-        normalization_factor = 0
-
-    return normalization_factor
-
-
-def spectra_normalization(spectra, norm_type):
-    return spectra / compute_normalization_factor(spectra, norm_type)
-
 
 #%% Water related information
 

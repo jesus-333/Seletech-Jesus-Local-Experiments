@@ -11,9 +11,39 @@ It also contains function to divided the spectra in sequence
 """
 
 import numpy as np
-import pandas as pd
 
 from support.timestamp_function import extract_data_from_timestamp, extract_spectra_month, extract_spectra_day, extract_spectra_hour, extract_spectra_minute
+
+#%% Spectra Normalization
+
+def compute_normalization_factor(spectra, norm_type):
+    if(norm_type == 0): # Half normalization
+        tmp_sum = np.sum(spectra, 0)
+        normalization_factor = tmp_sum / spectra.shape[0]
+    elif(norm_type == 1): # Full normalization
+        tmp_sum = np.sum(spectra)
+        normalization_factor = tmp_sum / (spectra.shape[0] * spectra.shape[1])
+    else: 
+        normalization_factor = 0
+    
+    return normalization_factor
+
+def spectra_normalization(spectra, norm_type):
+    if norm_type == 0 : # Seletech 1 - Half normalization
+        tmp_sum = np.sum(spectra, 0)
+        normalization_factor = tmp_sum / spectra.shape[0]
+        normalized_spectra = spectra / normalization_factor
+    elif norm_type == 1 : # Seletech 2 - Full normalization
+        tmp_sum = np.sum(spectra)
+        normalization_factor = tmp_sum / (spectra.shape[0] * spectra.shape[1])
+        normalized_spectra = spectra / normalization_factor 
+    elif norm_type == 2: # Absorbance
+        normalized_spectra = np.log10(1 / spectra)
+    else: 
+        raise ValueError("Normalization type must be 0,1 or 2")
+    
+    return normalized_spectra
+   
 
 #%% Humidity and temperature data
 
