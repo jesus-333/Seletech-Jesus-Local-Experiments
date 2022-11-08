@@ -90,14 +90,13 @@ class Attention1D(nn.Module):
 
 #%% NLP Embedding
 
-class skipGram(nn.Module):
+class skipGramEmbedder(nn.Module):
     
     def __init__(self, config):
         """
         Class that implement the skipgram embedding used in NLP application.
         It is applied to spectra.
         """
-        
         super().__init__()
         
         # Embedder layer (input)
@@ -121,3 +120,13 @@ class skipGram(nn.Module):
     
     def embed(self, x):
         return self.embedder(x)
+    
+
+# TODO Implements CBOW
+class CBOW(nn.Module):
+    
+    def __init__(self, config):
+        super().__init__()
+        
+    def forward(self, x):
+        pass

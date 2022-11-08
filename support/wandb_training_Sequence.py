@@ -23,8 +23,8 @@ from support.datasets import SpectraSequenceDataset
 
 def train_and_log_SE_model(project_name, config):
     # Get the name for the actual run
-    if "SequenceEmbedder_clf" in config['model_artifact_name']:  run_name = get_run_name('train-SE-clf-embedding')
-    elif "SequenceEmbedder_AE" in config['model_artifact_name']: run_name = get_run_name('train-SE-AE-embedding')
+    if "SequenceEmbedder_clf" in config['model_artifact_name']:  run_name = get_run_name('train-SSE-clf-embedding')
+    elif "SequenceEmbedder_AE" in config['model_artifact_name']: run_name = get_run_name('train-SSE-AE-embedding')
     else: raise ValueError("Problem with the type of model you want to load")
     
     if config['dataset_config']['return_other_sensor_data'] == False and config['train_with_info_data']:

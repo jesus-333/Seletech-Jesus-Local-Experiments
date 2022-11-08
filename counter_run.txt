@@ -1,6 +1,10 @@
 build-VAE-anomaly 0
 train-VAE-anomaly 0
-build-SE-clf-embedding 0
-train-SE-clf-embedding 0
-build-SE-AE-embedding 0
-train-SE-AE-embedding 42
+build-SE-skipgram-embedding 0
+train-SE-skipgram-embedding 0
+build-SE-CBOW-embedding 0
+train-SE-CBOW-embedding 0
+build-SSE-clf-embedding 0
+train-SSE-clf-embedding 0
+build-SSE-AE-embedding 0
+train-SSE-AE-embedding 42

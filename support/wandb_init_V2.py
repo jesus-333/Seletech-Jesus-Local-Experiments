@@ -16,6 +16,7 @@ import pickle
 
 from support.VAE import SpectraVAE_Double_Mems, AttentionVAE
 from support.VAE_Conv import SpectraVAE_Double_Mems_Conv
+from support.embedding_spectra import skipGramEmbedder, CBOW
 from support.embedding_sequence import Sequence_embedding_clf, SequenceEmbedderAutoencoder
 from support.datasets import load_spectra_data, load_water_data, create_extended_water_vector
 from support.datasets import PytorchDatasetPlantSpectra_V1, SpectraSequenceDataset
@@ -79,6 +80,44 @@ def build_VAE_model(config):
             
     return model, model_name, model_description
 
+#%% Build model Spectra Embedder
+
+def build_and_log_spectra_embedder_NLP(project_name, config):
+    # Get the name for the actual run
+    if "skipGram" in config['type_embedder']:  run_name = get_run_name('build-SE-skipgram-embedding')
+    elif "CBOW" in config['type_embedder']: run_name = get_run_name('build-SE-CBOW-embedding')
+    else: raise ValueError("Problem with the type of model you want to build")
+    
+    with wandb.init(project = project_name, job_type = "model_creation", config = config) as run:
+        config = wandb.config
+        
+        model, model_name, model_description = buld_spectra_embedder_NLP(config)
+        
+        # Create the artifacts
+        metadata = dict(config)
+        model_artifact = wandb.Artifact(model_name, type = "model", description = model_description, metadata = metadata)
+
+        # Save the model and log it on wandb
+        add_model_to_artifact(model, model_artifact, "TMP_File/untrained.pth")
+        args = (torch.ones((1, config['input_size'])))
+        add_onnx_to_artifact(model, model_artifact, args, "TMP_File/untrained.onnx")
+        run.log_artifact(model_artifact)
+        
+        return model
+    
+def buld_spectra_embedder_NLP(config):
+    model_name = "SpectraEmbedder_" + config['type_embedder']
+    
+    model_description = "Untrained spectra Embedder with {}. ".format(config['type_embedder'].upper())
+    
+    if "skipGram" in config['type_embedder']:   model = skipGramEmbedder(config)
+    elif "CBOW" in config['type_embedder']:  model = CBOW(config)
+   
+    print(model_description)
+    
+    return model, model_name, model_description
+
+    
 #%% Build model Sequence Embedder
 
 def build_and_log_Sequence_Embedder_clf_model(project_name, config):
@@ -97,7 +136,6 @@ def build_and_log_Sequence_Embedder_clf_model(project_name, config):
         run.log_artifact(model_artifact)
         
         return model
-
 
 def build_Sequence_Embedder_clf_model(config):
     model_name = "SequenceEmbedder_clf"
