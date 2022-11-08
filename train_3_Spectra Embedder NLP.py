@@ -34,3 +34,5 @@ model_config = dict(
     )
 
 build_and_log_spectra_embedder_NLP(project_name, model_config)
+
+#%% Train model
