@@ -88,7 +88,7 @@ def build_and_log_spectra_embedder_NLP(project_name, config):
     elif "CBOW" in config['type_embedder']: run_name = get_run_name('build-SE-CBOW-embedding')
     else: raise ValueError("Problem with the type of model you want to build")
     
-    with wandb.init(project = project_name, job_type = "model_creation", config = config) as run:
+    with wandb.init(project = project_name, job_type = "model_creation", config = config, name = run_name) as run:
         config = wandb.config
         
         model, model_name, model_description = buld_spectra_embedder_NLP(config)

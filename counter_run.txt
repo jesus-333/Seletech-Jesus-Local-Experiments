@@ -1,6 +1,6 @@
 build-VAE-anomaly 0
 train-VAE-anomaly 0
-build-SE-skipgram-embedding 0
+build-SE-skipgram-embedding 3
 train-SE-skipgram-embedding 0
 build-SE-CBOW-embedding 0
 train-SE-CBOW-embedding 0

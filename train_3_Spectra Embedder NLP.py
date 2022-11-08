@@ -29,7 +29,8 @@ model_config = dict(
     input_size = 700,
     embedding_size = 2,
     type_embedder= 'skipGram',
-    window_size = 2
+    window_size = 2,
+    debug = True
     )
 
 build_and_log_spectra_embedder_NLP(project_name, model_config)

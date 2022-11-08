@@ -94,8 +94,7 @@ class skipGramEmbedder(nn.Module):
     
     def __init__(self, config):
         """
-        Class that implement the skipgram embedding used in NLP application.
-        It is applied to spectra.
+        Class that implement the skipgram embedding used in NLP application and applied it to spectra data
         """
         super().__init__()
         
@@ -103,8 +102,8 @@ class skipGramEmbedder(nn.Module):
         self.embedder = nn.Linear(config['input_size'], config['embedding_size'])
         
         # Reconstruction layers (output)
-        self.output_list = nn.ModuleList()
-        for i in range(config['window_size']):
+        self.output_layer_list = nn.ModuleList()
+        for i in range(config['window_size'] * 2):
             self.output_layer_list.append(nn.Linear(config['embedding_size'], config['input_size']))
         
     
