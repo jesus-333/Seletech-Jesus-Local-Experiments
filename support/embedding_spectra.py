@@ -10,7 +10,7 @@ import numpy as np
 import torch
 from torch import nn
 
-#%% Neural networks
+#%% Simple feedforward
 
 class SpectraEmbedder(nn.Module):
     
@@ -88,4 +88,36 @@ class Attention1D(nn.Module):
         
         return o
 
+#%% NLP Embedding
+
+class skipGram(nn.Module):
     
+    def __init__(self, config):
+        """
+        Class that implement the skipgram embedding used in NLP application.
+        It is applied to spectra.
+        """
+        
+        super().__init__()
+        
+        # Embedder layer (input)
+        self.embedder = nn.Linear(config['input_size'], config['embedding_size'])
+        
+        # Reconstruction layers (output)
+        self.output_list = nn.ModuleList()
+        for i in range(config['window_size']):
+            self.output_layer_list.append(nn.Linear(config['embedding_size'], config['input_size']))
+        
+    
+    def forward(self, x):
+        embed = self.embedder(x)
+        
+        output_list = []
+        for output_layer in self.output_layer_list:
+            tmp_output = output_layer(embed)
+            output_list.append(tmp_output)
+        
+        return output_list
+    
+    def embed(self, x):
+        return self.embedder(x)

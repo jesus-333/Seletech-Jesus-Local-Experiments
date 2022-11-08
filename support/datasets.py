@@ -104,7 +104,7 @@ def create_extended_water_vector(water_log_timestamp, water_vector, spectra_time
     return extended_water_vector
 
 
-#%% Dataset declaration
+#%% Dataset VAE
 
 class PytorchDatasetPlantSpectra_V1(torch.utils.data.Dataset):
     """
@@ -156,6 +156,39 @@ class PytorchDatasetPlantSpectra_V2(torch.utils.data.Dataset):
     
     def __len__(self):
         return self.spectra.shape[0]
+
+#%% Dataset sequence
+
+class SpectraNLPDataset(torch.utils.data.Dataset):
+    """
+    Dataset used to train the network that construct the embed through NLP methods
+    """
+    
+    # Inizialization method
+    def __init__(self, spectra_data, config):
+        # Matrix with all the spectra
+        self.spectra = torch.from_numpy(spectra_data).float()
+        
+        # Matrix with all the spectra that can be used (i.e. the spectra that have at least window_size spectra before and after)
+        self.used_spectra = self.spectra[config['window_size']:-config['window_size']]
+        
+        # Size of the window used in skipgram train
+        self.window_size = config['window_size']
+        # Context used in skipgram. I.e. the spectra (word) around the selected spectra
+        self.spectra_context = torch.zeros((config['window_size'] * 2, self.spectra.shape[1]))
+        
+    def __getitem__(self, idx):
+        # Get the spectra
+        spectra_word = self.used_spectra[idx, :]
+        
+        # Get the context (i.e. the spectra before and after)
+        self.spectra_context[0:self.window_size] = self.spectra[idx - self.window_size:idx]
+        self.spectra_context[self.window_size:] = self.spectra[idx + 1:idx + 1 + self.window_size]
+        
+        return spectra_word, self.spectra_context
+    
+    def __len__(self):
+        return self.used_spectra.shape[0]
 
 
 class SpectraSequenceDataset(torch.utils.data.Dataset):
