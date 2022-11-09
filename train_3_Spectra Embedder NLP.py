@@ -36,3 +36,12 @@ model_config = dict(
 build_and_log_spectra_embedder_NLP(project_name, model_config)
 
 #%% Train model
+
+dataset_config = dict(
+    window_size = 2
+)
+
+train_config = dict(
+    dataset_config = dataset_config,
+    debug = True
+)

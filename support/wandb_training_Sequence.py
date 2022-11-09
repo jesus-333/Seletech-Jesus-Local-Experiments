@@ -21,7 +21,7 @@ from support.datasets import SpectraSequenceDataset
 
 #%% Principal function
 
-def train_and_log_SE_model(project_name, config):
+def train_and_log_SEE_model(project_name, config):
     # Get the name for the actual run
     if "SequenceEmbedder_clf" in config['model_artifact_name']:  run_name = get_run_name('train-SSE-clf-embedding')
     elif "SequenceEmbedder_AE" in config['model_artifact_name']: run_name = get_run_name('train-SSE-AE-embedding')
@@ -273,8 +273,8 @@ def sequence_autoencoder_loss_function(original_sequence, reconstructed_sequence
 
 
 def update_autoencoder_log_dict(ae_loss_list, log_dict):
-    log_dict["SE_AE_loss_train"] = ae_loss_list[0]
-    log_dict["SE_AE_loss_validation"] = ae_loss_list[1]
+    log_dict["SEE_AE_loss_train"] = ae_loss_list[0]
+    log_dict["SEE_AE_loss_validation"] = ae_loss_list[1]
     
     loss_string =  "\tTrain loss     : {}".format(ae_loss_list[0]) + "\n"
     loss_string += "\tValidation loss: {}".format(ae_loss_list[1])

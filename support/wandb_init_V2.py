@@ -240,13 +240,14 @@ def load_untrained_model_from_artifact_inside_run(run, artifact_name, version = 
         model, model_name, model_description = build_Sequence_Embedder_clf_model(model_config)
     elif "SequenceEmbedder_AE" in artifact_name:
         model, model_name, model_description = build_Sequence_Embedder_autoencoder_model(model_config)
+    elif "skipgram" or "CBOW" in artifact_name:
+        model, model_name, model_description = buld_spectra_embedder_NLP(model_config)
     else:
         raise ValueError("Problem with the type of model you want to load")
 
     model.load_state_dict(torch.load(model_path, map_location = torch.device('cpu')))
     
     return model, model_config
-
 
 def load_trained_model_from_artifact(config):
     run = wandb.init()
