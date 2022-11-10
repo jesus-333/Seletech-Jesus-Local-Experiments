@@ -104,7 +104,7 @@ dataset_config = dict(
     binary_label = False,
     # Normalization settings
     normalize_trials = 2,
-    normalize_info_avg = True,
+    normalize_info_avg = True, # Normalize the array with the data from the other sensors
     # Sequence construction parameters
     sequence_length = 60,
     shift = 10,

@@ -34,7 +34,8 @@ def load_spectra_data(filename, normalization_type = -1, print_var = True):
     timestamp = spectra_plants_df['# Timestamp'].to_numpy()
     if(print_var): print("Timestamp vector shape\t=\t", timestamp.shape)
     
-    if(normalization_type == 0 or normalization_type == 1): 
+    # (OPTIONAL) Normalize data
+    if(normalization_type >= 0 or normalization_type <= 2) and isinstance(normalization_type, int): 
         spectra_plants_numpy = spectra_normalization(spectra_plants_numpy, normalization_type)
     
     return spectra_plants_numpy, wavelength, timestamp

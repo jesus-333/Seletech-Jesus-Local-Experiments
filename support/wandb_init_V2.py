@@ -167,7 +167,6 @@ def build_and_log_Sequence_Embedder_autoencoder_model(project_name, config):
         
         return model
 
-
 def build_Sequence_Embedder_autoencoder_model(config):
     model_name = "SequenceEmbedder_AE"
     model_description = description_Sequence_Embedder_autoencoder(config)

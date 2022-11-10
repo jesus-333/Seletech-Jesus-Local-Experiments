@@ -128,4 +128,8 @@ class CBOW(nn.Module):
         super().__init__()
         
     def forward(self, x):
+
         pass
+    
+    
+#%% End file
