@@ -61,7 +61,7 @@ train_config = dict(
     # Numerical Hyperparameter
     batch_size = 32,
     lr = 1e-1,
-    epochs = 20,
+    epochs = 5,
     use_scheduler = True,
     gamma = 0.9, # Parameter of the lr exponential scheduler
     optimizer_weight_decay = 1e-2,

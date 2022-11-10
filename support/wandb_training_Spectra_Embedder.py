@@ -86,7 +86,7 @@ def load_loader(config, run):
     
     return loader
 
-#%% 
+#%% Training cycle 
 
 def train_spectra_embeddeding_model(model, optimizer, loader, model_artifact, config, lr_scheduler = None):
     # Parameter used to save the model every x epoch
@@ -102,19 +102,16 @@ def train_spectra_embeddeding_model(model, optimizer, loader, model_artifact, co
             log_dict['learning_rate'] = optimizer.param_groups[0]['lr']
         
         # Compute loss (and eventually update weights)
-        if 'clf' in str(type(model)).lower():
+        if 'skipGram' in str(type(model)).lower():
             # Advance epoch
-            train_loss, train_acc = epoch_sequence_embeddeding_clf(model, train_loader, config, True, loss_function, optimizer)
-            validation_loss, validation_acc = epoch_sequence_embeddeding_clf(model, validation_loader, config, False, loss_function)
+            nlp_loss = epoch_spectra_embeddeding_skipGram(model, loader, config, True, loss_function, optimizer)
             
             # Update log dict
-            log_dict, loss_string = update_clf_log_dict([train_loss, validation_loss, train_acc, validation_acc], log_dict)
-        elif 'autoencoder' in str(type(model)).lower():
-            # Advance epoch
-            train_loss = epoch_sequence_embeddeding_autoencoder(model, train_loader, config, True, loss_function, optimizer)
-            validation_loss = epoch_sequence_embeddeding_autoencoder(model, validation_loader, config, False, loss_function)
-            
-            log_dict, loss_string = update_autoencoder_log_dict([train_loss, validation_loss], log_dict)
+            log_dict['skipGram_loss'] = nlp_loss
+            loss_string = "\tSkipGram loss: {}".format(nlp_loss)
+        elif 'CBOW' in str(type(model)).lower():
+            # TODO
+            pass
         else:
             raise ValueError("Error with sequence embedder model type. Must be classifier or autoencoder")
         
@@ -133,4 +130,35 @@ def train_spectra_embeddeding_model(model, optimizer, loader, model_artifact, co
             print("Epoch: {}".format(epoch))
             print(loss_string)
 
+#%% Epoch function
+
+def epoch_spectra_embeddeding_skipGram(model, loader, config, loss_function, optimizer):
+    # Variable to accumulate the loss
+    tot_loss = 0
     
+    for batch in loader:
+        word_original = batch[0].to(config['device'])
+        context_original = batch[1].to(config['device'])
+
+        # Zero past gradients
+        optimizer.zero_grad()
+        
+        # Forward step
+        context_reconstructed = model(word_original)
+        
+        # Loss computation
+        nlp_loss = loss_function(context_original, context_reconstructed)
+        
+        # Backward and optimization pass
+        nlp_loss.backward()
+        optimizer.step()
+        
+        # The multiplication serve to compute the average loss over the dataloader
+        tot_loss += nlp_loss * word_original.shape[0]
+        
+    # The division serve to compute the average loss over the dataloader
+    tot_loss = tot_loss / len(loader.sampler)
+
+    return tot_loss
+
+#%% End File
