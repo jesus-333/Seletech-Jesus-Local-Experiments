@@ -76,4 +76,7 @@ train_config = dict(
 
 trained_model = train_and_log_SE_model(project_name, train_config)
 
+#%% TMP PLot embedding
+
+
 #%% End file 

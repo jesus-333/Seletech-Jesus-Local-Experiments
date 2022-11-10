@@ -140,7 +140,12 @@ def save_plot_and_add_to_artifact(fig, path, file_type, artifact):
     wandb.save()
     
     
-#%% Sequence embedding
+#%% Spectra/Sequence embedding
+
+def plot_spectra_embedding(embedding, config):
+    fig, ax = plt.subplots(figsize = config['figsize'])
+    sc = ax.scatter(embedding[:,0], embedding[:,1], c = config['color'], s = config['s'],  cmap = config['cmap'])
+    plt.colorbar(sc)
 
 def compute_embedding(embedder, loader, config):
     embedder.to(config['device'])
@@ -151,13 +156,20 @@ def compute_embedding(embedder, loader, config):
         x = batch[0].to(config['device'])
         
         # Compute the embedding
-        # out is all the output of the LSTM  (see PyTorch LSTM documentation)
-        # h is the embedding
-        # c is the last state of the LSTM encoder
-        out, h, c = embedder(x)
-        
+        if config['input_type'] == 'spectra_embedding':
+            # TODO Implement CBOW version. For now works only for skipGram
+            if 'CBOW' in str(type(embedder)): raise ValueError("The embedding for now works only for skipGram")
+            tmp_emb = embedder(x)
+        elif config['input_type'] == 'sequence_embedding':
+            # out is all the output of the LSTM  (see PyTorch LSTM documentation)
+            # h is the embedding
+            # c is the last state of the LSTM encoder
+            out, h, c = embedder(x)
+            
+            tmp_emb = h
+            
         # Save the results for the batch
-        embedding_list.append(h.detach().cpu().squeeze())
+        embedding_list.append(tmp_emb.detach().cpu().squeeze())
     
     # Convert embedding list in a single numpy array
     embedding = torch.cat(embedding_list).numpy()

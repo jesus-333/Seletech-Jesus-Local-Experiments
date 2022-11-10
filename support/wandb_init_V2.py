@@ -239,7 +239,7 @@ def load_untrained_model_from_artifact_inside_run(run, artifact_name, version = 
         model, model_name, model_description = build_Sequence_Embedder_clf_model(model_config)
     elif "SequenceEmbedder_AE" in artifact_name:
         model, model_name, model_description = build_Sequence_Embedder_autoencoder_model(model_config)
-    elif "skipgram" or "CBOW" in artifact_name:
+    elif ("skipGram" or "CBOW") in artifact_name:
         model, model_name, model_description = buld_spectra_embedder_NLP(model_config)
     else:
         raise ValueError("Problem with the type of model you want to load")
@@ -271,6 +271,8 @@ def load_trained_model_from_artifact_inside_run(config, run):
         model, model_name, model_description = build_Sequence_Embedder_clf_model(model_config)
     elif "SequenceEmbedder_AE" in config['artifact_name']:
         model, model_name, model_description = build_Sequence_Embedder_autoencoder_model(model_config)
+    elif ("skipGram" or "CBOW") in config['artifact_name']:
+        model, model_name, model_description = buld_spectra_embedder_NLP(model_config)
     else:
         raise ValueError("Problem with the type of model you want to load")
 
@@ -278,11 +280,14 @@ def load_trained_model_from_artifact_inside_run(config, run):
     model.load_state_dict(torch.load(model_path, map_location = torch.device('cpu')))
     
     # Retrieve index
-    a_file = open(os.path.join(model_dir, "idx_dict.pkl"), "rb")
-    idx_dict = pickle.load(a_file)
-    a_file.close()
+    if not ("skipGram" or "CBOW") in config['artifact_name']:
+        a_file = open(os.path.join(model_dir, "idx_dict.pkl"), "rb")
+        idx_dict = pickle.load(a_file)
+        a_file.close()
     
-    return model, model_config, idx_dict
+        return model, model_config, idx_dict
+    else:
+        return model, model_config
 
 # TODO
 # def load_SE_AE_model_from_artifact_inside_run(config, run):
