@@ -183,8 +183,9 @@ class SpectraNLPDataset(torch.utils.data.Dataset):
         spectra_word = self.used_spectra[idx, :]
         
         # Get the context (i.e. the spectra before and after)
-        self.spectra_context[0:self.window_size] = self.spectra[idx - self.window_size:idx]
-        self.spectra_context[self.window_size:] = self.spectra[idx + 1:idx + 1 + self.window_size]
+        print(idx, idx - self.window_size)
+        self.spectra_context[0:self.window_size] = self.spectra[idx:idx + self.window_size]
+        self.spectra_context[self.window_size:] = self.spectra[idx + self.window_size + 1:idx + self.window_size * 2 + 1]
         
         return spectra_word, self.spectra_context
     

@@ -61,7 +61,7 @@ def train_and_log_SE_model(project_name, config):
         # Setup the dataloader
         loader= load_loader(config, run)
         if config['print_var']: print("Dataset loaded")
-        
+
         # Train model
         wandb.watch(model, log = "all", log_freq = config['log_freq'])
         model.to(config['device'])
@@ -102,18 +102,19 @@ def train_spectra_embeddeding_model(model, optimizer, loader, model_artifact, co
             log_dict['learning_rate'] = optimizer.param_groups[0]['lr']
         
         # Compute loss (and eventually update weights)
-        if 'skipGram' in str(type(model)).lower():
+        print(str(type(model)))
+        if 'skipGram' in str(type(model)):
             # Advance epoch
-            nlp_loss = epoch_spectra_embeddeding_skipGram(model, loader, config, True, loss_function, optimizer)
+            nlp_loss = epoch_spectra_embeddeding_skipGram(model, loader, config, loss_function, optimizer)
             
             # Update log dict
             log_dict['skipGram_loss'] = nlp_loss
             loss_string = "\tSkipGram loss: {}".format(nlp_loss)
-        elif 'CBOW' in str(type(model)).lower():
+        elif 'CBOW' in str(type(model)):
             # TODO
             pass
         else:
-            raise ValueError("Error with sequence embedder model type. Must be classifier or autoencoder")
+            raise ValueError("Error with spectra embedder model type. Must be classifier or autoencoder")
         
         # Save the model after the epoch
         # N.b. When the variable epoch is 0 the model is trained for an epoch when arrive at this instructions.
@@ -139,12 +140,16 @@ def epoch_spectra_embeddeding_skipGram(model, loader, config, loss_function, opt
     for batch in loader:
         word_original = batch[0].to(config['device'])
         context_original = batch[1].to(config['device'])
-
+        
         # Zero past gradients
         optimizer.zero_grad()
         
         # Forward step
         context_reconstructed = model(word_original)
+        
+        print("word_original.shape: ", word_original.shape)
+        print("context_original.shape: ", context_original.shape)
+        print("context_reconstructed.shape: ", context_reconstructed.shape)
         
         # Loss computation
         nlp_loss = loss_function(context_original, context_reconstructed)

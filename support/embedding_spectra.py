@@ -105,17 +105,27 @@ class skipGramEmbedder(nn.Module):
         self.output_layer_list = nn.ModuleList()
         for i in range(config['window_size'] * 2):
             self.output_layer_list.append(nn.Linear(config['embedding_size'], config['input_size']))
+            
+        self.input_size = config['input_size']
+        self.window_size = config['window_size']
         
-    
     def forward(self, x):
+        # Create the spectra (word) embed
         embed = self.embedder(x)
         
-        output_list = []
-        for output_layer in self.output_layer_list:
+        # Variable to store the reconstructed context
+        output = torch.zeros([x.shape[0], self.window_size * 2, self.input_size]).to(x.device)        
+
+        # Reconstruct the context
+        for i in range(len(self.output_layer_list)):
+            # Reconstruction phase
+            output_layer = self.output_layer_list[i]
             tmp_output = output_layer(embed)
-            output_list.append(tmp_output)
-        
-        return output_list
+            
+            # Save output
+            output[:, i, :] = tmp_output
+            
+        return output
     
     def embed(self, x):
         return self.embedder(x)
