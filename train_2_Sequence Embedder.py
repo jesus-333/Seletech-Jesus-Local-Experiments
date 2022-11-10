@@ -155,7 +155,6 @@ training_config = dict(
 # Train model
 model = train_and_log_SE_model(project_name, training_config)
 
-
 """
 Trained model
 v16 (da v6 untrained). train_with_info_data = False, compute_loss_spectra_by_spectra = True, regularize_sequence_embedding = True

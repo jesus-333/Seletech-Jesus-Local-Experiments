@@ -102,7 +102,6 @@ def train_spectra_embeddeding_model(model, optimizer, loader, model_artifact, co
             log_dict['learning_rate'] = optimizer.param_groups[0]['lr']
         
         # Compute loss (and eventually update weights)
-        print(str(type(model)))
         if 'skipGram' in str(type(model)):
             # Advance epoch
             nlp_loss = epoch_spectra_embeddeding_skipGram(model, loader, config, loss_function, optimizer)
@@ -147,9 +146,9 @@ def epoch_spectra_embeddeding_skipGram(model, loader, config, loss_function, opt
         # Forward step
         context_reconstructed = model(word_original)
         
-        print("word_original.shape: ", word_original.shape)
-        print("context_original.shape: ", context_original.shape)
-        print("context_reconstructed.shape: ", context_reconstructed.shape)
+        # print("word_original.shape: ", word_original.shape)
+        # print("context_original.shape: ", context_original.shape)
+        # print("context_reconstructed.shape: ", context_reconstructed.shape)
         
         # Loss computation
         nlp_loss = loss_function(context_original, context_reconstructed)

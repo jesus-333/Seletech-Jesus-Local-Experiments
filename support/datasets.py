@@ -183,7 +183,6 @@ class SpectraNLPDataset(torch.utils.data.Dataset):
         spectra_word = self.used_spectra[idx, :]
         
         # Get the context (i.e. the spectra before and after)
-        print(idx, idx - self.window_size)
         self.spectra_context[0:self.window_size] = self.spectra[idx:idx + self.window_size]
         self.spectra_context[self.window_size:] = self.spectra[idx + self.window_size + 1:idx + self.window_size * 2 + 1]
         
@@ -243,9 +242,12 @@ class SpectraSequenceDataset(torch.utils.data.Dataset):
     def __len__(self):
         return self.spectra_sequence.shape[0]
     
+#%% Other
 
 def minutes_to_hour(minutes):
   hour = minutes // 60
   remaining_minutes = minutes % 60
 
   return hour, remaining_minutes
+
+#%% End file
