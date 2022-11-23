@@ -23,7 +23,8 @@ from support.datasets import SpectraNLPDataset
 
 def train_and_log_SE_model(project_name, config):
     # Get the name for the actual run
-    if "skipGram" in config['model_artifact_name']:  run_name = get_run_name('train-SE-skipgram-embedding')
+    if "skipGram_ns" in config['model_artifact_name']:  run_name = get_run_name('train-SE-skipgram-embedding-NS')
+    elif "skipGram" in config['model_artifact_name']:  run_name = get_run_name('train-SE-skipgram-embedding')
     elif "CBOW" in config['model_artifact_name']:  run_name = get_run_name('train-SE-CBOW-embedding')
     else: raise ValueError("Problem with the type of model you want to build")
 
@@ -102,7 +103,18 @@ def train_spectra_embeddeding_model(model, optimizer, loader, model_artifact, co
             log_dict['learning_rate'] = optimizer.param_groups[0]['lr']
         
         # Compute loss (and eventually update weights)
-        if 'skipGram' in str(type(model)):
+        if 'skipGramEmbedder_ns' in str(type(model)):
+            ns_loss, positive_loss, negative_loss = epoch_spectra_embeddeding_negative_sampling(model, loader, config, optimizer)
+
+            # Update log dict
+            log_dict['skipGram_loss_ns_total'] = ns_loss
+            log_dict['skipGram_loss_ns_positive'] = positive_loss
+            log_dict['skipGram_loss_ns_negative'] = negative_loss
+
+            loss_string =  "\tSkipGram loss (Tot): {}\n".format(ns_loss)
+            loss_string += "\tSkipGram loss (+):   {}\n".format(positive_loss)
+            loss_string += "\tSkipGram loss (-):   {}".format(negative_loss)
+        elif 'skipGram' in str(type(model)):
             # Advance epoch
             nlp_loss = epoch_spectra_embeddeding_skipGram(model, loader, config, loss_function, optimizer)
             
@@ -164,5 +176,80 @@ def epoch_spectra_embeddeding_skipGram(model, loader, config, loss_function, opt
     tot_loss = tot_loss / len(loader.sampler)
 
     return tot_loss
+
+
+def epoch_spectra_embeddeding_negative_sampling(model, loader, config, optimizer):
+    # Variable to accumulate the loss
+    tot_loss = 0
+    
+    i = 0
+    for batch in loader:
+        word_original = batch[0].to(config['device'])
+        context_original = batch[1].to(config['device'])
+        
+        # Zero past gradients
+        optimizer.zero_grad()
+        
+        # Forward step
+        word_embedding = model(word_original)
+        context_embedding = model(context_original)
+        # print(word_original, word_embedding)
+        # print(context_original, context_embedding)
+        
+        # Negative sampling
+        negative_sample = negative_sampling(loader, model, config)
+        negative_sample_embedding = model(negative_sample)
+        
+        # Loss computation
+        ns_loss, positive_loss, negative_loss = negative_sampling_loss(word_embedding, context_embedding, negative_sample_embedding)
+        
+        # Backward and optimization pass
+        ns_loss.backward()
+        optimizer.step()
+        
+        # The multiplication serve to compute the average loss over the dataloader
+        tot_loss += ns_loss * word_original.shape[0]
+        
+        # print("- - - - - - - - - - - - - - - - - - - - - - - - -")
+        # if i > 3: raise ValueError()
+        # i+= 1
+        
+        
+    # The division serve to compute the average loss over the dataloader
+    tot_loss = tot_loss / len(loader.sampler)
+
+    return tot_loss, positive_loss, negative_loss
+
+#%% Other function
+
+def negative_sampling(loader, model, config):
+    """
+    Randomly sample from the database to obtain the negative sample
+    """
+    
+    tmp_list = []
+    tot_example = 0
+    for batch in loader:
+        tmp_list.append(batch[1])
+        
+        tot_example += batch[1].shape[1]
+        if tot_example >= config['num_negative_sample']: break
+    
+    negative_sample = torch.cat(tmp_list, 1)[:, 0:config['num_negative_sample'], :]
+    # negative_sample = negative_sample.to(config['device'])
+    
+    return negative_sample.to(config['device'])
+
+
+def negative_sampling_loss(word_embedding, context_embedding, negative_sample_embedding):
+    positive_loss = torch.bmm(context_embedding, word_embedding.unsqueeze(2))
+    positive_loss = torch.log(torch.sigmoid(positive_loss)).sum(1).squeeze()
+    
+    negative_loss = torch.bmm(negative_sample_embedding[0:word_embedding.shape[0], :, :], word_embedding.unsqueeze(2))
+    negative_loss = torch.log(torch.sigmoid(-negative_loss)).sum(1).squeeze()
+    
+    ns_loss = - (positive_loss + negative_loss).mean()
+    
+    return ns_loss, positive_loss.mean(), negative_loss.mean()
 
 #%% End File

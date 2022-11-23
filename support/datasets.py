@@ -26,6 +26,7 @@ def load_spectra_data(filename, normalization_type = -1, print_var = True):
     spectra_plants_numpy = spectra_plants_df.iloc[:,5:-1].to_numpy(dtype = float)
     if(print_var): print("Spectra matrix shape\t=\t", spectra_plants_numpy.shape, "\t (Time x Wavelength)")
     
+
     # Recover wavelength
     wavelength = spectra_plants_df.keys()[5:-1].to_numpy(dtype = float)
     if(print_var): print("Wavelength vector shape\t=\t", wavelength.shape)
@@ -35,7 +36,7 @@ def load_spectra_data(filename, normalization_type = -1, print_var = True):
     if(print_var): print("Timestamp vector shape\t=\t", timestamp.shape)
     
     # (OPTIONAL) Normalize data
-    if(normalization_type >= 0 or normalization_type <= 2) and isinstance(normalization_type, int): 
+    if(normalization_type >= 0 or normalization_type <= 2) and isinstance(normalization_type, int):
         spectra_plants_numpy = spectra_normalization(spectra_plants_numpy, normalization_type)
     
     return spectra_plants_numpy, wavelength, timestamp

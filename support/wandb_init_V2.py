@@ -16,7 +16,7 @@ import pickle
 
 from support.VAE import SpectraVAE_Double_Mems, AttentionVAE
 from support.VAE_Conv import SpectraVAE_Double_Mems_Conv
-from support.embedding_spectra import skipGramEmbedder, CBOW
+from support.embedding_spectra import skipGramEmbedder, CBOW, skipGramEmbedder_ns
 from support.embedding_sequence import Sequence_embedding_clf, SequenceEmbedderAutoencoder
 from support.datasets import load_spectra_data, load_water_data, create_extended_water_vector
 from support.datasets import PytorchDatasetPlantSpectra_V1, SpectraSequenceDataset
@@ -84,7 +84,8 @@ def build_VAE_model(config):
 
 def build_and_log_spectra_embedder_NLP(project_name, config):
     # Get the name for the actual run
-    if "skipGram" in config['type_embedder']:  run_name = get_run_name('build-SE-skipgram-embedding')
+    if "skipGram_ns" in config['type_embedder']: run_name = get_run_name('build-SE-skipgram-embedding-NS')
+    elif "skipGram" in config['type_embedder']: run_name = get_run_name('build-SE-skipgram-embedding')
     elif "CBOW" in config['type_embedder']: run_name = get_run_name('build-SE-CBOW-embedding')
     else: raise ValueError("Problem with the type of model you want to build")
     
@@ -110,7 +111,8 @@ def buld_spectra_embedder_NLP(config):
     
     model_description = "Untrained spectra Embedder with {}. ".format(config['type_embedder'].upper())
     
-    if "skipGram" in config['type_embedder']:   model = skipGramEmbedder(config)
+    if "skipGram_ns" in config['type_embedder']:   model = skipGramEmbedder_ns(config)
+    elif "skipGram" in config['type_embedder']:   model = skipGramEmbedder(config)
     elif "CBOW" in config['type_embedder']:  model = CBOW(config)
    
     print(model_description)
@@ -233,7 +235,7 @@ def load_untrained_model_from_artifact_inside_run(run, artifact_name, version = 
     
     # Check which model is loaded
     # N.b. The model is selected thorugh the ARTIFACT NAME
-    if "VAE" in artifact_name:
+    if "SpectraVAE_" in artifact_name:
         model, model_name, model_description = build_VAE_model(model_config)
     elif "SequenceEmbedder_clf" in artifact_name:
         model, model_name, model_description = build_Sequence_Embedder_clf_model(model_config)

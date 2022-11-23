@@ -15,7 +15,7 @@ import wandb
 
 from support.wandb_init_V1 import make_dataloader
 from support.wandb_init_V2 import build_and_log_VAE_model
-from support.wandb_init_V2 import build_VAE_model, load_dataset_local_VAE, split_dataset
+from support.wandb_init_V2 import build_VAE_model, load_dataset_local_VAE
 from support.wandb_training_VAE import train_and_log_VAE_model
 from support.wandb_visualization import bar_loss_wandb_V1
 
@@ -55,7 +55,7 @@ dataset_config = dict(
 
 good_dataset, bad_dataset = load_dataset_local_VAE(dataset_config)
 
-bad_dataset_train, bad_dataset_test, bad_dataset_validation = split_dataset(bad_dataset, dataset_config)
+# bad_dataset_train, bad_dataset_test, bad_dataset_validation = split_dataset(bad_dataset, dataset_config)
 
 #%% Train model
 

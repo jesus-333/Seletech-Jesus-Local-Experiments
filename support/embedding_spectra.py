@@ -130,7 +130,21 @@ class skipGramEmbedder(nn.Module):
     def embed(self, x):
         return self.embedder(x)
     
-
+class skipGramEmbedder_ns(nn.Module):
+    def __init__(self, config):
+        """
+        Class that implement the skipgram embedding for the negative samplings training
+        
+        """
+        super().__init__()
+        
+        # Embedder layer (input)
+        self.embedder = nn.Linear(config['input_size'], config['embedding_size'])
+       
+    def forward(self, x):
+        return self.embedder(x)
+    
+    
 # TODO Implements CBOW
 class CBOW(nn.Module):
     

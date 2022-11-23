@@ -19,6 +19,8 @@ from support.wandb_init_V1 import make_dataloader
 from support.datasets import PytorchDatasetPlantSpectra_V1
 from support.wandb_init_V2 import load_trained_model_from_artifact_inside_run, load_dataset_from_artifact_inside_run
 from support.wandb_training_VAE import loss_ae, loss_VAE
+from sklearn.manifold import TSNE
+from sklearn.decomposition import PCA
 
 #%% Error bar for VAE
 
@@ -175,3 +177,16 @@ def compute_embedding(embedder, loader, config):
     embedding = torch.cat(embedding_list).numpy()
     
     return embedding
+
+
+def reduce_dimension(x, final_dimension, method):
+    if method == 'tsne':
+        x = TSNE(n_components = final_dimension, learning_rate='auto', init='random').fit_transform(x)
+    elif method == 'pca':
+        x = PCA(n_components = final_dimension).fit_transform(x)
+    else: 
+        raise ValueError("The methods must have value pca or tsne")
+        
+    return x
+
+#%% End file

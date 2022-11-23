@@ -29,9 +29,9 @@ project_name = "Seletech VAE Spectra"
 
 model_config = dict(
     input_size = 702,
-    embedding_size = 2,
-    type_embedder= 'skipGram',
-    window_size = 2,
+    embedding_size = 32,
+    type_embedder= 'skipGram_ns',
+    window_size = 3, # Not used for skipGram_ns
     debug = False
     )
 
@@ -52,22 +52,23 @@ dataset_config = dict(
     # Normalization settings
     normalize_trials = 2,
     # Dataset config
-    window_size = 2
+    window_size = 6
 )
 
 train_config = dict(
-    model_artifact_name = 'SpectraEmbedder_skipGram',
-    version = 'latest', # REMEMBER ALWAYS TO CHECK THE VERSION
+    model_artifact_name = 'SpectraEmbedder_skipGram_ns',
+    version = 'v0', # REMEMBER ALWAYS TO CHECK THE VERSION
     # Numerical Hyperparameter
     batch_size = 32,
-    lr = 1e-1,
-    epochs = 5,
+    lr = 1e-3,
+    epochs = 25,
     use_scheduler = True,
     gamma = 0.9, # Parameter of the lr exponential scheduler
     optimizer_weight_decay = 1e-2,
+    num_negative_sample = 5,
     # Support stuff (device, log frequency etc)
     device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu"),
-    log_freq = 5,
+    log_freq = 1,
     epoch_to_save_model = 1,
     dataset_config = dataset_config,
     print_var = True,
@@ -81,9 +82,10 @@ import torch
 import wandb
 import matplotlib.pyplot as plt
 import numpy as np
-from support.wandb_init_V2 import load_trained_model_from_artifact
+from support.wandb_init_V2 import load_trained_model_from_artifact, load_untrained_model_from_artifact
 from support.wandb_init_V2 import load_dataset_from_artifact
 from support.datasets import SpectraNLPDataset
+from support.wandb_visualization import reduce_dimension
 device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
 
 def compute_embedding(embedder, dataset, config):
@@ -108,6 +110,7 @@ def compute_embedding(embedder, dataset, config):
 
     return embedding
 
+
 def compute_water_gradient_vector(extended_water_timestamp, n_samples):
     if(n_samples <= 0): n_samples = len(extended_water_timestamp)
     
@@ -125,6 +128,7 @@ def compute_water_gradient_vector(extended_water_timestamp, n_samples):
     
     return water_gradient
 
+
 dataset_config = dict(
     # Artifacts info
     artifact_name = 'jesus_333/Seletech VAE Spectra/Dataset_Spectra_1',
@@ -136,7 +140,7 @@ dataset_config = dict(
     ht_timestamp_path = 'jesus_ht_timestamp.csv', 
     spectra_timstamp_path = 'jesus_spectra_timestamp.csv',
     # Normalization settings
-    normalize_trials = 2,
+    normalize_trials = 1,
     # Dataset config
     window_size = 2,
     batch_size = 32
@@ -148,8 +152,8 @@ data = load_dataset_from_artifact(dataset_config)
 dataset = SpectraNLPDataset(data[0], dataset_config)
 
 model_config = dict(
-    artifact_name = 'jesus_333/Seletech VAE Spectra/SpectraEmbedder_skipGram_trained',
-    version = 'latest',
+    artifact_name = 'jesus_333/Seletech VAE Spectra/SpectraEmbedder_skipGram_ns_trained',
+    version = 'v2',
     epoch_of_model = 3,
     model_file_name = 'model'
 )
