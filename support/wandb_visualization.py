@@ -91,7 +91,7 @@ def compute_avg_loss(dataloader, model, config):
     for batch in dataloader:
         # Move data to device
         x = batch.to(config['device'])
-        
+    
         # Compute loss
         if(config['use_as_autoencoder']):
             recon_loss = loss_ae(x, model, loss_function)
@@ -148,8 +148,15 @@ def plot_spectra_embedding(embedding, config):
     fig, ax = plt.subplots(figsize = config['figsize'])
     sc = ax.scatter(embedding[:,0], embedding[:,1], c = config['color'], s = config['s'],  cmap = config['cmap'])
     plt.colorbar(sc)
+    plt.show()
+
+    return fig, ax
 
 def compute_embedding(embedder, loader, config):
+    """
+    Compute the embedding (both for sequence and for spectra)
+    You need to pass a pytorch dataloader. Used if you have a lot of data
+    """
     embedder.to(config['device'])
     embedding_list = []
     
@@ -178,6 +185,11 @@ def compute_embedding(embedder, loader, config):
     
     return embedding
 
+def fast_compute_embedding(embedder, data, device = 'cpu'):
+    embedder.to(device)
+    embedding = embedder(data.to(device).float())
+
+    return embedding.detach().cpu()
 
 def reduce_dimension(x, final_dimension, method):
     if method == 'tsne':
@@ -188,5 +200,23 @@ def reduce_dimension(x, final_dimension, method):
         raise ValueError("The methods must have value pca or tsne")
         
     return x
+
+
+def plot_evolution(spectra, embedder, config):
+    for i in range(len(config['idx_list'])):
+        idx = config['idx_dict'][i]
+
+        # Load the path for the current epoch
+        model_path = config['path_weight'] + str(idx) + 'pth'
+        embedder.load_state_dict(torch.load(model_path, map_location = torch.device(config['device'])))
+        embedder.eval()
+        
+        # Compute the embedding
+        embedding = embedder(spectra.to(config['device']).float()).cpu().numpy()
+        
+        # Reduce the dimension to plot
+        if embedding.shape[1] > 2: embedding = reduce_dimension(embedding, 2, config['method'])
+
+        plot_spectra_embedding(embedding, config)
 
 #%% End file
