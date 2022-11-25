@@ -29,7 +29,7 @@ project_name = "Seletech VAE Spectra"
 
 model_config = dict(
     input_size = 702,
-    embedding_size = 32,
+    embedding_size = 24,
     type_embedder= 'skipGram_ns',
     window_size = 3, # Not used for skipGram_ns
     debug = False
@@ -52,16 +52,16 @@ dataset_config = dict(
     # Normalization settings
     normalize_trials = 2,
     # Dataset config
-    window_size = 6
+    window_size = 3
 )
 
 train_config = dict(
     model_artifact_name = 'SpectraEmbedder_skipGram_ns',
-    version = 'v0', # REMEMBER ALWAYS TO CHECK THE VERSION
+    version = 'latest', # REMEMBER ALWAYS TO CHECK THE VERSION
     # Numerical Hyperparameter
     batch_size = 32,
     lr = 1e-3,
-    epochs = 25,
+    epochs = 10,
     use_scheduler = True,
     gamma = 0.9, # Parameter of the lr exponential scheduler
     optimizer_weight_decay = 1e-2,
@@ -72,7 +72,7 @@ train_config = dict(
     epoch_to_save_model = 1,
     dataset_config = dataset_config,
     print_var = True,
-    debug = True,
+    debug = False,
 )
 
 trained_model = train_and_log_SE_model(project_name, train_config)

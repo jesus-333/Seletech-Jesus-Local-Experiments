@@ -147,6 +147,10 @@ def save_plot_and_add_to_artifact(fig, path, file_type, artifact):
 def plot_spectra_embedding(embedding, config):
     fig, ax = plt.subplots(figsize = config['figsize'])
     sc = ax.scatter(embedding[:,0], embedding[:,1], c = config['color'], s = config['s'],  cmap = config['cmap'])
+    
+    if 'xlim' in config: ax.set_xlim(config['xlim'])
+    if 'ylim' in config: ax.set_xlim(config['ylim'])
+    
     plt.colorbar(sc)
     plt.show()
 
@@ -204,18 +208,20 @@ def reduce_dimension(x, final_dimension, method):
 
 def plot_evolution(spectra, embedder, config):
     for i in range(len(config['idx_list'])):
-        idx = config['idx_dict'][i]
+        idx = config['idx_list'][i]
 
         # Load the path for the current epoch
-        model_path = config['path_weight'] + str(idx) + 'pth'
-        embedder.load_state_dict(torch.load(model_path, map_location = torch.device(config['device'])))
+        model_path = config['path_weight'] + str(idx) + '.pth'
+        embedder.load_state_dict(torch.load(model_path, map_location = torch.device('cpu')))
+        embedder.to(config['device'])
         embedder.eval()
         
         # Compute the embedding
-        embedding = embedder(spectra.to(config['device']).float()).cpu().numpy()
+        with torch.no_grad():
+            embedding = embedder(spectra.to(config['device']).float()).cpu().numpy()
         
         # Reduce the dimension to plot
-        if embedding.shape[1] > 2: embedding = reduce_dimension(embedding, 2, config['method'])
+        if embedding.shape[1] > 2: embedding = reduce_dimension(embedding, 2, config['dimensionaly_reduction_method'])
 
         plot_spectra_embedding(embedding, config)
 
