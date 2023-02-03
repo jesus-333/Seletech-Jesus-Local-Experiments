@@ -19,6 +19,7 @@ from support.wandb_init_V2 import load_dataset_from_artifact_inside_run, split_d
 from support.wandb_init_V2 import load_untrained_model_from_artifact_inside_run, add_model_to_artifact
 from support.datasets import SpectraNLPDataset
 
+#- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
 #%% Principal function
 
 def train_and_log_SE_model(project_name, config):
@@ -94,7 +95,6 @@ def train_spectra_embeddeding_model(model, optimizer, loader, model_artifact, co
     if 'epoch_to_save_model' not in config: config['epoch_to_save_model'] = 1
     
     log_dict = {}
-    # Check the type of model
     loss_function = torch.nn.MSELoss()
     
     for epoch in range(config['epochs']):
@@ -220,6 +220,7 @@ def epoch_spectra_embeddeding_negative_sampling(model, loader, config, optimizer
 
     return tot_loss, positive_loss, negative_loss
 
+#- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
 #%% Other function
 
 def negative_sampling(loader, model, config):

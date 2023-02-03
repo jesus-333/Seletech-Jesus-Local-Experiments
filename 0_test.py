@@ -179,4 +179,31 @@ params = {'mathtext.default': 'regular', 'font.size': 24}
 plt.rcParams.update(params)
 
 # plt.tight_layout()
+
+#%% Correlation
+
+idx = 777
+signal_length_list = [10, 60, int(24 * 60)]
+corr = []
+n_el = 20
+
+for signal_length in signal_length_list:
+    mean_corr = np.zeros((4,4))
+    
+    for i in range(n_el):
+        idx = np.random.randint(0, spectra.shape[0])
+        tmp_humidity = humidity[idx:idx + signal_length]
+        tmp_temperature = temperature[idx:idx + signal_length]
+        
+        mems_1 = spectra[idx:idx + signal_length, 0:300].min(1)[0].numpy()
+        mems_2 = spectra[idx:idx + signal_length, -401:-1].min(1)[0].numpy()
+        
+        data_list = [tmp_humidity, tmp_temperature, mems_1, mems_2]
+        
+        tmp_corr = np.corrcoef(data_list)
+        mean_corr += tmp_corr
+    
+    print(corr)
+    corr.append(mean_corr/n_el)
+
 #%% End file

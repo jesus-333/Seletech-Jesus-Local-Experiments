@@ -29,8 +29,9 @@ project_name = "Seletech VAE Spectra"
 
 model_config = dict(
     input_size = 702,
-    embedding_size = 24,
+    embedding_size = 16,
     type_embedder= 'skipGram_ns',
+    linear_embedder = False,
     window_size = 3, # Not used for skipGram_ns
     debug = False
     )

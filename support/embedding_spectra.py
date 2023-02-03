@@ -133,14 +133,21 @@ class skipGramEmbedder(nn.Module):
 class skipGramEmbedder_ns(nn.Module):
     def __init__(self, config):
         """
-        Class that implement the skipgram embedding for the negative samplings training
+        Class that implement the skipgram embedding for the negative samplings (NS) training
         
         """
         super().__init__()
         
         # Embedder layer (input)
-        self.embedder = nn.Linear(config['input_size'], config['embedding_size'])
-       
+        if config['linear_embedder']:    
+            self.embedder = nn.Linear(config['input_size'], config['embedding_size'])
+        else:
+            self.embedder = torch.nn.Sequential(
+            torch.nn.Linear(config['input_size'], 128),
+            torch.nn.SELU(),
+            torch.nn.Linear(128, config['embedding_size']),
+        )
+
     def forward(self, x):
         return self.embedder(x)
     
