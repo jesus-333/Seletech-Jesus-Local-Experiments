@@ -4,7 +4,7 @@ save_data_on_exit = True
 save_history = True
 save_non_project_files = False
 project_type = 'empty-project-type'
-recent_files = []
+recent_files = ['../Variational-Autoencoder-for-EEG-analysis/analysisi_script/reconstruction_3.py', '../Variational-Autoencoder-for-EEG-analysis/analysisi_script/download_artifact_1.py', '../Variational-Autoencoder-for-EEG-analysis/analysisi_script/load_results_1.py', '../Variational-Autoencoder-for-EEG-analysis/analysisi_script/compute_table_recon_error.py']
 
 [main]
 version = 0.2.0

@@ -1,0 +1,20 @@
+vicia faba:
+
+con1 
+con2
+con3
+con4
+con5 foglia vibra, causato dal tavolo che vibra
+nacl150 1 tavolo vibra
+nacl150 2 tavolo vibra
+nacl150 3 tavolo vibra, foglia un po' rovina e riurva, da notare che la sorella (affinaco) è stata attaccata da qualche parassita. Buchi? Aggiunti contrappesi, tutti, per la curvatura della foglia importante.
+nacl150 4 smesse vibrazioni, ricominciate a metà test.
+nacl150 5 tavolo vibra, pianta con poca resistenza
+nacl300 1 tavolo vibra
+nacl300 2 scelta foglia numero 4 in quanto la 3 presentava dei problemi morfologici
+nacl300 3
+nacl300 4 scelta 4 foglia perchè altre troppo piccole
+nacl300 5
+
+
+miflora interrupted at: 27/06/2023 10:56
