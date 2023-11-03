@@ -25,6 +25,9 @@ def extract_spectra_from_beans_dataframe(dataframe):
     return spectra_data
 
 def compute_average_and_std_per_group(dataframe, group_labels_list : list):
+    """
+    Compute the average for the 3 main group: control, test_150, test_300
+    """
     mean_array = np.zeros((len(group_labels_list), 702))
     std_array  = np.zeros((len(group_labels_list), 702))
     for i in range(len(group_labels_list)):
@@ -36,4 +39,21 @@ def compute_average_and_std_per_group(dataframe, group_labels_list : list):
         std_array[i] = extract_spectra_from_beans_dataframe(group_dataframe).std(0)
 
     return mean_array, std_array
+
+def compute_average_and_std_per_subgroup(dataframe, subgroup_labels_list : list):
+    """
+    Compute the average for the each subgroup: CON1, CON2, etc
+    """
+    mean_dict = {}
+    std_dict  = {}
+    for i in range(len(subgroup_labels_list)):
+        subgroup_label = subgroup_labels_list[i]
+
+        subgroup_dataframe = dataframe[dataframe['type'] == subgroup_label]
+
+        mean_dict[subgroup_label] = extract_spectra_from_beans_dataframe(subgroup_dataframe).mean(0)
+        std_dict[subgroup_label] = extract_spectra_from_beans_dataframe(subgroup_dataframe).std(0)
+
+    return mean_dict, std_dict
+
 
