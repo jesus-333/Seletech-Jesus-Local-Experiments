@@ -8,7 +8,7 @@ from library import manage_data_beans
 t_list = [0, 1, 2, 3, 4, 5, 6] # Different day (see path)
 
 plant = 'PhaseolusVulgaris'
-plant = 'ViciaFaba'
+# plant = 'ViciaFaba's
 
 plot_config = dict(
     figsize = (25, 40),
@@ -18,7 +18,12 @@ plot_config = dict(
 
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
 
-group_to_idx_dict = {'control' : 0, 'test_150' : 1, 'test_300' : 2}
+plant_type_phaseoulus = ['CON1', 'CON2', 'CON3', 'CON4', 'CON5', 'NACL150_2', 'NACL150_3', 'NACL150_4', 'NACL150_5']
+plant_labels_to_dict = {'CON1' : 0, 'CON2' : 0, 'CON3' : 0, 'CON4' : 0, 'CON5' : 0, 
+                      'NACL150_1' : 1, 'NACL150_2' : 1, 'NACL150_3' : 1, 'NACL150_4' : 1, 'NACL150_5' : 1,
+                      'NACL300_1' : 2, 'NACL300_2' : 2, 'NACL300_3' : 2, 'NACL300_4' : 2, 'NACL300_5' : 2
+                      }
+
 
 plt.rcParams.update({'font.size': plot_config['fontsize']})
 fig, axs = plt.subplots(len(t_list), 3, figsize = plot_config['figsize'])
@@ -30,19 +35,22 @@ for i in range(len(t_list)):
 
     data = data[data['plant'] == plant]
 
-    mean_array, std_array = manage_data_beans.compute_average_and_std_per_group(data, group_labels_list)
+    mean_dict, std_dict = manage_data_beans.compute_average_and_std_per_subgroup(data, plant_labels_list)
 
-    for j in range(len(group_labels_list)):
+    for j in range(len(plant_labels_list)):
+        plant_label = plant_labels_list[j]
 
-        idx = group_to_idx_dict[group_labels_list[j]]
-        print(group_labels_list[j], idx)
+        idx = plant_labels_to_dict[plant_label]
+        print(plant_labels_list[j], idx)
 
         ax = axs[i, idx]
-        ax.plot(wavelength, mean_array[idx], label = group_labels_list[idx])
-        ax.fill_between(wavelength, mean_array[idx] + std_array[idx], mean_array[idx] - std_array[idx], alpha = 0.25)
+        ax.plot(wavelength, mean_dict[plant_label], label = plant_label)
+        ax.fill_between(wavelength, mean_dict[plant_label] + std_dict[plant_label], mean_dict[plant_label] - std_dict[plant_label], alpha = 0.25)
         ax.set_ylim([750, 2750])
         ax.set_xlim([1350, 2150])
-        ax.set_title('{} - t{}'.format(group_labels_list[idx], t_list[i]))
+        ax.set_title('{} - t{}'.format(plant_label, t_list[i]))
+        ax.legend()
+    print("- - - - - - - - - - - - ")
 
 fig.tight_layout()
 fig.show()
@@ -53,6 +61,6 @@ if plot_config['save_fig']:
     os.makedirs(path_save, exist_ok = True)
 
     path_save = 'Saved Results/beans_spectra/'
-    path_save += 'average_spectra_different_group'
+    path_save += 'average_spectra_different_group_{}'.format(plant)
     fig.savefig(path_save + ".png", format = 'png')
     fig.savefig(path_save + ".pdf", format = 'pdf')
