@@ -1,7 +1,7 @@
 import matplotlib.pyplot as plt
 import os
 
-from library import manage_data_beans
+from library import manage_data_beans, preprocess, config
 
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
 
@@ -11,10 +11,12 @@ t_list = [0, 1, 2, 3, 4, 5, 6] # Different day (see path)
 plant = 'ViciaFaba'
 
 plot_config = dict(
-    figsize = (60, 25),
+    figsize = (100, 25),
     fontsize = 15,
     save_fig = True
 )
+
+preprocess_config = config.get_config_preprocess()
 
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
 
@@ -41,6 +43,8 @@ for i in range(len(t_list)):
 
     data = data[data['plant'] == plant]
 
+    data = preprocess.beans_preprocess_pipeline(data, preprocess_config, wavelength)
+
     mean_dict, std_dict = manage_data_beans.compute_average_and_std_per_subgroup(data, plant_labels_list)
 
     for j in range(len(plant_labels_list)):
@@ -56,7 +60,7 @@ for i in range(len(t_list)):
                 label = plant_label, color = idx_to_color_dict[idx_line], linewidth = 2)
         # ax.fill_between(wavelength, mean_dict[plant_label] + std_dict[plant_label], mean_dict[plant_label] - std_dict[plant_label], 
         #                 alpha = 0.25, color = idx_to_color_dict[idx_line])
-        ax.set_ylim([750, 2750])
+        # ax.set_ylim([750, 2750])
         ax.set_xlim([1350, 2150])
         ax.set_title('{} - t{}'.format(plant_label, t_list[i]))
         ax.grid(True)

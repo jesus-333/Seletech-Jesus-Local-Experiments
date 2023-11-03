@@ -24,6 +24,9 @@ def extract_spectra_from_beans_dataframe(dataframe):
 
     return spectra_data
 
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
+# Average computation per group/subgroup
+
 def compute_average_and_std_per_group(dataframe, group_labels_list : list):
     """
     Compute the average for the 3 main group: control, test_150, test_300
