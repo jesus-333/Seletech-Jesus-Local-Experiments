@@ -32,7 +32,7 @@ def pair_with_NIRS_sensor_timestamp(NIRS_timestamps_list : list, MiFlora_datafra
     """
 
     MiFlora_paired_data = pd.DataFrame()
-    MiFlora_timestamps_list = list( MiFlora_dataframe('TIMESTAMP') )
+    MiFlora_timestamps_list = list( MiFlora_dataframe['TIMESTAMP'])
     
     difference_list = []
 

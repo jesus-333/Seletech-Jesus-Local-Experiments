@@ -75,7 +75,6 @@ def get_closest_timestamp(timestamp_a : str, timestamps_list : list):
 
     return idx_closest, min_difference
 
-
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
 #%% Select data by timestamp
     

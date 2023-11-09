@@ -1,5 +1,14 @@
+"""
+Function to load and manage the data collected from beans experiment with the NIRS sensors
+
+@author: Alberto Zancanaro (Jesus)
+@organization: University of Padua (Italy)
+"""
+
 import pandas as pd
 import numpy as np
+
+from . import timestamp_functions
 
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
 
@@ -7,6 +16,9 @@ def read_data_beans_single_file(path : str, return_numpy : bool = False):
     data = pd.read_csv(path)
 
     wavelength = data.keys()[1:-10].to_numpy(dtype = float)
+
+    old_timestamps = data['timestamp']
+    data['timestamp'] = timestamp_functions.convert_timestamps_format_1(list(old_timestamps)) 
 
     if return_numpy:
         # Extract only the spectra and return them
