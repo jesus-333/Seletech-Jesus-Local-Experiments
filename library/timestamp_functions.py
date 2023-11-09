@@ -12,6 +12,8 @@ import torch
 from torch import nn
 import numpy as np
 import pandas as pd
+from datetime import datetime
+import sys
 
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
 #%% Information from timestamp
@@ -47,21 +49,37 @@ def compare_timestamp(timestamp_1, timestamp_2):
     
     return False
 
-# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
-#%% Select spectra by timestamp
+def get_closest_timestamp(timestamp_a : str, timestamps_list : list):
+    """
+    Given timestamp_a search the closest timestamp in timestamp_list.
+    Note that the timestamps must have format YYYY_MM_DD_h_m_s.
+    """
 
-def extract_spectra_month_OLD(all_spectra, all_timestamp, month):
-    # Small dictionary with the index of the start of each month for the file with all plant spectra
-    month_index = {8: 0, 9: 37100, 10: 78818, 11: 121929}
+    year_1, month_1, day_1, hour_1, minutes_1, seconds_1 = extract_data_from_timestamp(timestamp_a)
+    datetime_obj_1 = datetime(year_1, month_1, day_1, hour_1, minutes_1, seconds_1)
+
+    min_difference = sys.maxsize
+    idx_closest = 0
+
+    for i in range(len(timestamps_list)):
+        year_2, month_2, day_2, hour_2, minutes_2, seconds_2 = extract_data_from_timestamp(timestamps_list[i])
+
+        datetime_obj_1 = datetime(year_1, month_1, day_1, hour_1, minutes_1, seconds_1)
+        datetime_obj_2 = datetime(year_2, month_2, day_2, hour_2, minutes_2, seconds_2)
+
+        difference = abs(( datetime_obj_1 - datetime_obj_2 ).total_seconds())
+
+        if difference < min_difference:
+            min_difference = difference
+            idx_closest = i
+
+    return idx_closest, min_difference
+
+
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
+#%% Select data by timestamp
     
-    if(month < 8 or month > 11): Exception("ERROR. Month must be between 8 and 11") 
-    else:
-        start_index = month_index[month]
-        end_index = month_index[month + 1] - 1
-        
-        return  all_spectra[start_index:end_index, :], all_timestamp[start_index:end_index]
-    
-def extract_spectra_month(spectra, timestamp, month):
+def extract_data_month(data, timestamp, month):
     tmp_index = np.zeros(len(timestamp))
     
     for i in range(len(timestamp)):
@@ -71,14 +89,14 @@ def extract_spectra_month(spectra, timestamp, month):
       # If the day correspond to the ones I search, save the position
       if(tmp_month == month): tmp_index[i] = 1
     
-    # Extract spectra and timestamp
-    month_spectra = spectra[tmp_index == 1, :]
+    # Extract data and timestamp
+    month_data = data[tmp_index == 1, :]
     month_timestamp = timestamp[tmp_index == 1]
     
-    return month_spectra, month_timestamp
+    return month_data, month_timestamp
     
 
-def extract_spectra_day(spectra, timestamp, day):
+def extract_data_day(data, timestamp, day):
     tmp_index = np.zeros(len(timestamp))
     
     for i in range(len(timestamp)):
@@ -88,14 +106,14 @@ def extract_spectra_day(spectra, timestamp, day):
       # If the day correspond to the ones I search, save the position
       if(tmp_day == day): tmp_index[i] = 1
     
-    # Extract spectra and timestamp
-    day_spectra = spectra[tmp_index == 1, :]
+    # Extract data and timestamp
+    day_data = data[tmp_index == 1, :]
     day_timestamp = timestamp[tmp_index == 1]
     
-    return day_spectra, day_timestamp
+    return day_data, day_timestamp
 
 
-def extract_spectra_hour(spectra, timestamp, hour):
+def extract_data_hour(data, timestamp, hour):
     tmp_index = np.zeros(len(timestamp))
     
     for i in range(len(timestamp)):
@@ -105,14 +123,14 @@ def extract_spectra_hour(spectra, timestamp, hour):
       # If the hour correspond to the ones I search, save the position
       if(tmp_hour == hour): tmp_index[i] = 1
     
-    # Extract spectra and timestamp
-    hour_spectra = spectra[tmp_index == 1, :]
+    # Extract data and timestamp
+    hour_data = data[tmp_index == 1, :]
     hour_timestamp = timestamp[tmp_index == 1]
     
-    return hour_spectra, hour_timestamp
+    return hour_data, hour_timestamp
 
 
-def extract_spectra_minute(spectra, timestamp, minute):
+def extract_data_minute(data, timestamp, minute):
     tmp_index = np.zeros(len(timestamp))
     
     for i in range(len(timestamp)):
@@ -122,34 +140,32 @@ def extract_spectra_minute(spectra, timestamp, minute):
       # If the hour correspond to the ones I search, save the position
       if(tmp_minute == minute): tmp_index[i] = 1
     
-    # Extract spectra and timestamp
-    minute_spectra = spectra[tmp_index == 1, :]
+    # Extract data and timestamp
+    minute_data = data[tmp_index == 1, :]
     minute_timestamp = timestamp[tmp_index == 1]
     
-    return minute_spectra, minute_timestamp
+    return minute_data, minute_timestamp
 
 
-def extract_spectra_month_day(all_spectra, all_timestamp, month, day):
-    month_spectra, month_timestamp = extract_spectra_month(all_spectra, all_timestamp, month)
-    day_spectra, day_timestamp = extract_spectra_day(month_spectra, month_timestamp, day)
+def extract_data_month_day(all_data, all_timestamp, month, day):
+    month_data, month_timestamp = extract_data_month(all_data, all_timestamp, month)
+    day_data, day_timestamp = extract_data_day(month_data, month_timestamp, day)
     
-    return day_spectra, day_timestamp
+    return day_data, day_timestamp
 
-
-def extract_spectra_month_day_hour(all_spectra, all_timestamp, month, day, hour):
-    month_spectra, month_timestamp = extract_spectra_month(all_spectra, all_timestamp, month)
-    day_spectra, day_timestamp = extract_spectra_day(month_spectra, month_timestamp, day)
-    hour_spectra, hour_timestamp = extract_spectra_hour(day_spectra, day_timestamp, hour)
+def extract_data_month_day_hour(all_data, all_timestamp, month, day, hour):
+    month_data, month_timestamp = extract_data_month(all_data, all_timestamp, month)
+    day_data, day_timestamp = extract_data_day(month_data, month_timestamp, day)
+    hour_data, hour_timestamp = extract_data_hour(day_data, day_timestamp, hour)
     
-    return hour_spectra, hour_spectra
+    return hour_data, hour_data
 
-
-def divide_spectra_per_day(spectra, timestamp):
+def divide_data_per_day(data, timestamp):
     start_index = 0
     end_index = 0
     actual_day = int(timestamp[0].split('_')[2])
     
-    spectra_per_day = []
+    data_per_day = []
     timestamp_per_day = []
     
     
@@ -161,17 +177,17 @@ def divide_spectra_per_day(spectra, timestamp):
         if(tmp_day != actual_day):
             end_index = i - 1
         
-            # Extract and save spectra and timestamp for specific day
-            tmp_spectra = spectra[start_index:end_index, :]
+            # Extract and save data and timestamp for specific day
+            tmp_data = data[start_index:end_index, :]
             tmp_timestamp = timestamp[start_index:end_index]
-            spectra_per_day.append(tmp_spectra)
+            data_per_day.append(tmp_data)
             timestamp_per_day.append(tmp_timestamp)
         
             # Reset start index and actual_day
             start_index = i
             actual_day = tmp_day
     
-    return spectra_per_day, timestamp_per_day
+    return data_per_day, timestamp_per_day
 
 
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
@@ -224,3 +240,4 @@ def convert_timestamps_in_dataframe(timestamps_list : list):
     timestamp_dataframe = pd.DataFrame(timestamp_array, columns = ['year', 'month', 'day', 'hour', 'minutes', 'seconds']).astype(int)
     
     return timestamp_dataframe
+
