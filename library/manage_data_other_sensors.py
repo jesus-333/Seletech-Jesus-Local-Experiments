@@ -33,10 +33,9 @@ def pair_with_NIRS_sensor_timestamp(NIRS_timestamps_list : list, MiFlora_datafra
 
     MiFlora_paired_data = pd.DataFrame(columns = MiFlora_dataframe.columns)
     MiFlora_timestamps_list = list( MiFlora_dataframe['TIMESTAMP'])
-    
-    difference_list = []
 
-    print(MiFlora_paired_data)
+    # List to save the difference in seconds between the NIRS timestamps and the MiFlora timestamps
+    difference_list = []
 
     for i in range(len(NIRS_timestamps_list)):
         # Get the timestamp of NIRS
