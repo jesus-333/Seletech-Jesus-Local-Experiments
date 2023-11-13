@@ -1,5 +1,7 @@
 """
-Compute and plot water indices for the beans experiment
+For the beans experiment plot across time the 1450nm and the 1950nm wavelength
+For each group (control, test_150, test_300) we take the AVERAGE of the measures.
+Each group has different plants inside
 
 @author: Alberto Zancanaro (Jesus)
 @organization: University of Padua (Italy)
@@ -65,8 +67,8 @@ for i in range(len(t_list)):
     grouped_data = data_beans.groupby('test_control')
 
     # Compute NDNI
-    wavelength_mean = grouped_data[wavelength_to_plot ].mean()
-    wavelength_std = grouped_data[wavelength_to_plot ].std()
+    wavelength_mean = grouped_data[wavelength_to_plot].mean()
+    wavelength_std = grouped_data[wavelength_to_plot].std()
 
     for plant_group in plant_group_list :
         if plant_group in wavelength_mean:
