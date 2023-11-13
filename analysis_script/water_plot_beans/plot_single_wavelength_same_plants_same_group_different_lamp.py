@@ -1,7 +1,6 @@
 """
 For the beans experiment plot across time the 1450nm and the 1950nm wavelength
-For each group (control, test_150, test_300) visualize the average value of the lenght across time, average among plants.
-E.g. if a group has 3 plants and for each plant there are 5 measure the average is taken over those 5 measurement.Eaech group has a different plot.
+Select a group (control, test_150, test_300)  visualize the average value of the wavelenght across time, average among the different lamp power.
 
 @author: Alberto Zancanaro (Jesus)
 @organization: University of Padua (Italy)
@@ -21,7 +20,7 @@ from library import preprocess
 #%% Settings 
 
 plant_to_examine = 'PhaseolusVulgaris'
-# plant_to_examine = 'ViciaFaba'
+# plant_to_examine = 'ViciaFba'
 t_list = [0, 1, 2, 3, 4, 5, 6]
 
 use_sg_preprocess = False
@@ -35,9 +34,11 @@ plot_config = dict(
 use_shaded_area = False
 
 wavelength_to_plot = "1450"
-# wavelength_to_plot = "1950"
+wavelength_to_plot = "1950"
 
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
+
+lamp_power_list = [50, 60, 70, 80]
 
 if plant_to_examine == 'PhaseolusVulgaris': plant_group_list = ['control', 'test_150',]
 else : plant_group_list = ['control', 'test_150', 'test_300']
@@ -46,8 +47,8 @@ color_per_group = {'control' : 'blue', 'test_150' : 'green', 'test_300' : 'red'}
 for group in plant_group_list:
     print(group)
 
-    wavelength_mean_per_plant = dict()
-    wavelength_std_per_plant = dict()
+    wavelength_mean_per_lamp_power = dict()
+    wavelength_std_per_lamp_power = dict()
 
     for i in range(len(t_list)):
         # Get NIRS data 
@@ -58,50 +59,45 @@ for group in plant_group_list:
         data_beans = data_beans_full[data_beans_full['plant'] == plant_to_examine]
         data_beans = data_beans[data_beans['test_control'] == group]
 
-        # Remove measure with 0 gains (it is a single measure per plant)
+        # Remove measure with 0 gain (it is a single measure per plant)
         data_beans = data_beans[data_beans['gain_0'] != 0]
         
-        # Preprocess and average per plant (CON1, CON2 etc)(the field it is called type inside the csv)
+        # Preprocess and average per lamp power 
         if use_sg_preprocess : data_beans = preprocess.sg(data_beans)
-        grouped_data = data_beans.groupby('type')
+        grouped_data = data_beans.groupby('lamp_0')
 
         # Get wavelength
         wavelength_mean = grouped_data[wavelength_to_plot].mean()
         wavelength_std = grouped_data[wavelength_to_plot].std()
 
-        # Get list of plants inside the group
-        plant_labels_list = list(set(data_beans['type']))
-        plant_labels_list.sort()
-        if i == 0: labels_to_plot = plant_labels_list.copy()
-
-        for j in range(len(labels_to_plot)): 
-            plant_label = labels_to_plot[j]
+        for j in range(len(lamp_power_list)): 
+            lamp_power = lamp_power_list[j]
             
             if i == 0: # Only during the first day create empty list to save the data
-                wavelength_std_per_plant[plant_label] = []
-                wavelength_mean_per_plant[plant_label] = []
+                wavelength_std_per_lamp_power[lamp_power] = []
+                wavelength_mean_per_lamp_power[lamp_power] = []
 
-            if plant_label in wavelength_mean:
-                wavelength_std_per_plant[plant_label].append(wavelength_std[plant_label])
-                wavelength_mean_per_plant[plant_label].append(wavelength_mean[plant_label])
+            if lamp_power in wavelength_mean:
+                wavelength_std_per_lamp_power[lamp_power].append(wavelength_std[lamp_power])
+                wavelength_mean_per_lamp_power[lamp_power].append(wavelength_mean[lamp_power])
             else:
-                wavelength_mean_per_plant[plant_label].append(wavelength_mean_per_plant[plant_label][-1])
-                wavelength_std_per_plant[plant_label].append(wavelength_std_per_plant[plant_label][-1])
+                wavelength_mean_per_lamp_power[lamp_power].append(wavelength_mean_per_lamp_power[lamp_power][-1])
+                wavelength_std_per_lamp_power[lamp_power].append(wavelength_std_per_lamp_power[lamp_power][-1])
 
     plt.rcParams.update({'font.size': plot_config['fontsize']})
     fig, ax = plt.subplots(1, 1, figsize = plot_config['figsize'])
-    for plant_label in labels_to_plot:
+    for lamp_power in lamp_power_list:
         if use_shaded_area:
-            ax.plot(t_list, wavelength_mean_per_plant[plant_label],
-                        label = plant_label, marker = 'o'
+            ax.plot(t_list, wavelength_mean_per_lamp_power[lamp_power],
+                        label = lamp_power, marker = 'o'
                         )
-            ax.fill_between(t_list, np.asarray( wavelength_mean_per_plant[plant_label] ) + np.asarray( wavelength_std_per_plant[plant_label] ),
-                            np.asarray( wavelength_mean_per_plant[plant_label] ) - np.asarray( wavelength_std_per_plant[plant_label] ),
+            ax.fill_between(t_list, np.asarray( wavelength_mean_per_lamp_power[lamp_power] ) + np.asarray( wavelength_std_per_lamp_power[lamp_power] ),
+                            np.asarray( wavelength_mean_per_lamp_power[lamp_power] ) - np.asarray( wavelength_std_per_lamp_power[lamp_power] ),
                             alpha = 0.25, 
                             )
         else:
-            ax.errorbar(t_list, wavelength_mean_per_plant[plant_label], wavelength_std_per_plant[plant_label],
-                        label = plant_label, marker = 'o', capsize = 8,
+            ax.errorbar(t_list, wavelength_mean_per_lamp_power[lamp_power], wavelength_std_per_lamp_power[lamp_power],
+                        label = lamp_power, marker = 'o', capsize = 8,
                         )
 
     ax.set_xlabel("Time point")
@@ -118,6 +114,6 @@ for group in plant_group_list:
         os.makedirs(path_save, exist_ok = True)
 
         path_save = 'Saved Results/beans_spectra/'
-        path_save += '{}_{}_wavelength_{}_per_plant_beans'.format(group, plant_to_examine, wavelength_to_plot)
+        path_save += '{}_{}_wavelength_{}_per_lamp_power_beans'.format(group, plant_to_examine, wavelength_to_plot)
         fig.savefig(path_save + ".png", format = 'png')
         # fig.savefig(path_save + ".pdf", format = 'pdf')
