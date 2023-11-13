@@ -1,5 +1,7 @@
 """
-Compute and plot water indices for the beans experiment
+Compute and plot water indices for the beans experiment for the 3 different groups: control, 150ml salt and 300ml salt.
+For each group we take the AVERAGE of the measures and then compute the indices
+Each group has different plants inside
 
 @author: Alberto Zancanaro (Jesus)
 @organization: University of Padua (Italy)
