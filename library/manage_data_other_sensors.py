@@ -44,9 +44,15 @@ def pair_with_NIRS_sensor_timestamp(NIRS_timestamps_list : list, MiFlora_datafra
         MiFlora_paired_data = pd.concat([MiFlora_paired_data, MiFlora_dataframe.iloc[idx_closest]], axis = 0)
 
         difference_list.append(timestamp_difference)
+        
+        print(i, MiFlora_paired_data.shape)
+        print(MiFlora_dataframe.iloc[idx_closest].shape)
+        print(idx_closest, "\n")
 
     if return_difference:
         difference_list = pd.DataFrame(difference_list, columns = ['Difference_with_paired_NIRS_timestamp'])
+        print(MiFlora_paired_data.shape)
+        print(difference_list.shape)
         MiFlora_paired_data = pd.concat([MiFlora_paired_data, difference_list], axis = 1)
 
     return MiFlora_paired_data
