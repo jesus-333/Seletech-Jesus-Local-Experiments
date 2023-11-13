@@ -59,20 +59,21 @@ def get_closest_timestamp(timestamp_a : str, timestamps_list : list):
     datetime_obj_1 = datetime(year_1, month_1, day_1, hour_1, minutes_1, seconds_1)
 
     min_difference = sys.maxsize
+    closest_datetime = None
     idx_closest = 0
 
     for i in range(len(timestamps_list)):
         year_2, month_2, day_2, hour_2, minutes_2, seconds_2 = extract_data_from_timestamp(timestamps_list[i])
-
-        datetime_obj_1 = datetime(year_1, month_1, day_1, hour_1, minutes_1, seconds_1)
         datetime_obj_2 = datetime(year_2, month_2, day_2, hour_2, minutes_2, seconds_2)
 
         difference = abs(( datetime_obj_1 - datetime_obj_2 ).total_seconds())
 
         if difference < min_difference:
             min_difference = difference
+            closest_datetime = datetime_obj_2
             idx_closest = i
-
+    
+    print(closest_datetime, datetime_obj_1)
     return idx_closest, min_difference
 
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
