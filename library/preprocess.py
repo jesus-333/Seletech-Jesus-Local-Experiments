@@ -65,17 +65,17 @@ def normalize_with_values_first_column(data, divide_mems : bool = False):
     """
 
     if divide_mems == True:
-        data_mems_1 = data.loc["1350":"1650"]
+        data_mems_1 = data.loc[:, "1350":"1650"]
         data_mems_1 = __normalize_with_values_first_column(data_mems_1)
-        data.loc["1350":"1650"] = data_mems_1
+        data.loc[:, "1350":"1650"] = data_mems_1.iloc[:, :]
 
-        data_mems_2 = data.loc["1750":"2150"]
+        data_mems_2 = data.loc[:, "1750":"2150"]
         data_mems_2 = __normalize_with_values_first_column(data_mems_2)
-        data.loc["1750":"2150"] = data_mems_2  
+        data.loc[:, "1750":"2150"] = data_mems_2  
     else:
-        data_both_mems = data.loc["1350":"2150"]
+        data_both_mems = data.loc[:, "1350":"2150"]
         data_both_mems = __normalize_with_values_first_column(data_both_mems)
-        data.loc["1350":"2150"] = data_both_mems
+        data.loc[:, "1350":"2150"] = data_both_mems
 
     return data
 
@@ -88,7 +88,44 @@ def __normalize_with_values_first_column(data):
     first_value = data_numpy[:, 0]
     data_numpy /= first_value[:, None]
 
-    data = pd.DataFrame(data_numpy, columns = data.columns)
+    data.iloc[:, :] = data_numpy
+
+    return data
+
+
+def normalize_divide_by_mean(data, divide_mems : bool = False):
+    """
+    Normalize dividing each row for the first value of the row
+    If divide_mems is True compute the normalization separately for each sensors
+    """
+
+    scaler = StandardScaler(with_mean = True, with_std = False)
+
+    if divide_mems == True:
+        data_mems_1 = data.loc[:, "1350":"1650"]
+        data_mems_1 =  __normalize_divide_by_mean(data_mems_1)
+        data.loc[:, "1350":"1650"] = data_mems_1.iloc[:, :]
+
+        data_mems_2 = data.loc[:, "1750":"2150"]
+        data_mems_2 =  __normalize_divide_by_mean(data_mems_2)
+        data.loc[:, "1750":"2150"] = data_mems_2  
+    else:
+        data_both_mems = data.loc[:, "1350":"2150"]
+        data_both_mems =  __normalize_divide_by_mean(data_both_mems)
+        data.loc[:, "1350":"2150"] = data_both_mems
+
+    return data
+
+def __normalize_divide_by_mean(data):
+    """
+    Normalize the Dataframe by the value of the first column
+    """
+    data_numpy = data.to_numpy()
+
+    average_data = data_numpy.mean(1)
+    data_numpy /= average_data[:, None]
+
+    data.iloc[:, :] = data_numpy
 
     return data
     
