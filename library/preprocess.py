@@ -15,7 +15,7 @@ from . import manage_data_beans
 
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
 
-def normalize(data, scaler_type : int):
+def normalize_sklearn_scaler(data, scaler_type : int):
     """
     Normalize the data with one of the following scaler. The scaler is decided by the scaler type parameter
     StandardScaler (scaler_type = 0) : z = (x - u) / s
@@ -57,6 +57,41 @@ def derivate(data, n_order : int):
         new_data[i, :] = tmp_spectra
 
     return new_data
+
+def normalize_with_values_first_column(data, divide_mems : bool = False):
+    """
+    Normalize dividing each row for the first value of the row
+    If divide_mems is True compute the normalization separately for each sensors
+    """
+
+    if divide_mems == True:
+        data_mems_1 = data.loc["1350":"1650"]
+        data_mems_1 = __normalize_with_values_first_column(data_mems_1)
+        data.loc["1350":"1650"] = data_mems_1
+
+        data_mems_2 = data.loc["1750":"2150"]
+        data_mems_2 = __normalize_with_values_first_column(data_mems_2)
+        data.loc["1750":"2150"] = data_mems_2  
+    else:
+        data_both_mems = data.loc["1350":"2150"]
+        data_both_mems = __normalize_with_values_first_column(data_both_mems)
+        data.loc["1350":"2150"] = data_both_mems
+
+    return data
+
+def __normalize_with_values_first_column(data):
+    """
+    Normalize the Dataframe by the value of the first column
+    """
+    data_numpy = data.to_numpy()
+
+    first_value = data_numpy[:, 0]
+    data_numpy /= first_value[:, None]
+
+    data = pd.DataFrame(data_numpy, columns = data.columns)
+
+    return data
+    
 
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
 
