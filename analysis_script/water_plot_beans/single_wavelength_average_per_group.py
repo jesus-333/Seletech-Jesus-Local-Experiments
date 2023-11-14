@@ -21,8 +21,12 @@ from library import preprocess
 #%% Settings 
 
 plant_to_examine = 'PhaseolusVulgaris'
-# plant_to_examine = 'ViciaFaba'
+plant_to_examine = 'ViciaFaba'
 t_list = [0, 1, 2, 3, 4, 5, 6]
+
+normalize_first_value = False
+normalize_divide_by_average = True
+use_sg_preprocess = False
 
 plot_config = dict(
     figsize = (12, 8),
@@ -60,10 +64,11 @@ for i in range(len(t_list)):
     path_beans = "data/beans/t{}/csv/beans.csv".format(t_list[i])
     data_beans, wavelength, group_labels_list, plant_labels_list, plant_type_list = manage_data_beans.read_data_beans_single_file(path_beans, return_numpy = False)
     data_beans = data_beans[data_beans['plant'] == plant_to_examine]
-    print(set(data_beans['test_control']))
     
     # Preprocess and average by plant tpe
-    data_beans = preprocess.sg(data_beans)
+    if normalize_first_value : data_beans = preprocess.normalize_with_values_first_column(data_beans, divide_mems = True)
+    if normalize_divide_by_average : data_beans = preprocess.normalize_divide_by_mean(data_beans, divide_mems = True)
+    if use_sg_preprocess : data_beans = preprocess.sg(data_beans)
     grouped_data = data_beans.groupby('test_control')
 
     # Compute NDNI
