@@ -93,39 +93,43 @@ def __normalize_with_values_first_column(data):
     return data
 
 
-def normalize_divide_by_mean(data, divide_mems : bool = False):
+def normalize_standardization(data, divide_mems : bool = False, remove_mean = True, divide_by_std = True):
     """
     Normalize dividing each row for the first value of the row
     If divide_mems is True compute the normalization separately for each sensors
     """
 
-    scaler = StandardScaler(with_mean = True, with_std = False)
-
     if divide_mems == True:
         data_mems_1 = data.loc[:, "1350":"1650"]
-        data_mems_1 =  __normalize_divide_by_mean(data_mems_1)
+        data_mems_1 =  __normalize_standardization(data_mems_1, remove_mean, divide_by_std)
         data.loc[:, "1350":"1650"] = data_mems_1.iloc[:, :]
 
         data_mems_2 = data.loc[:, "1750":"2150"]
-        data_mems_2 =  __normalize_divide_by_mean(data_mems_2)
+        data_mems_2 =  __normalize_standardization(data_mems_2, remove_mean, divide_by_std)
         data.loc[:, "1750":"2150"] = data_mems_2  
     else:
         data_both_mems = data.loc[:, "1350":"2150"]
-        data_both_mems =  __normalize_divide_by_mean(data_both_mems)
+        data_both_mems =  __normalize_standardization(data_both_mems, remove_mean, divide_by_std)
         data.loc[:, "1350":"2150"] = data_both_mems
 
     return data
 
-def __normalize_divide_by_mean(data):
+def __normalize_standardization(data, remove_mean, divide_by_std):
     """
     Normalize the Dataframe by the value of the first column
     """
     data_numpy = data.to_numpy()
+    
+    if remove_mean: 
+        mean_data = data_numpy.mean(1)
+        data_numpy -= mean_data[:, None]
 
-    average_data = data_numpy.mean(1)
-    data_numpy /= average_data[:, None]
+    if divide_by_std:
+        std_data = data_numpy.std(1)
+        data_numpy /= std_data[:, None]
 
     data.iloc[:, :] = data_numpy
+    # data.sub(data.mean(1), axis=0).div(data.std(1), axis=0)
 
     return data
     
