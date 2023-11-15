@@ -25,8 +25,12 @@ plant_to_examine = 'ViciaFaba'
 t_list = [0, 1, 2, 3, 4, 5, 6]
 
 normalize_first_value = False
-normalize_divide_by_average = True
+use_standardization = True
 use_sg_preprocess = False
+
+normalize_per_lamp_power = False # If true normalize each group of lamp power separately
+
+normalize_time_series = False # If True normalize the series of point t0, t1 etc
 
 plot_config = dict(
     figsize = (12, 8),
@@ -65,13 +69,29 @@ for i in range(len(t_list)):
     data_beans, wavelength, group_labels_list, plant_labels_list, plant_type_list = manage_data_beans.read_data_beans_single_file(path_beans, return_numpy = False)
     data_beans = data_beans[data_beans['plant'] == plant_to_examine]
     
+    # Remove measure with 0 gain (it is a single measure per plant)
+    data_beans = data_beans[data_beans['gain_0'] != 0]
+
     # Preprocess and average by plant tpe
-    if normalize_first_value : data_beans = preprocess.normalize_with_values_first_column(data_beans, divide_mems = True)
-    if normalize_divide_by_average : data_beans = preprocess.normalize_divide_by_mean(data_beans, divide_mems = True)
-    if use_sg_preprocess : data_beans = preprocess.sg(data_beans)
+    if normalize_per_lamp_power :
+        lamp_power_list = [50, 60, 70, 80]
+        for lamp_power in lamp_power_list :
+            data_lamp_power = data_beans[data_beans['lamp_0'] == lamp_power]
+
+            if normalize_first_value : data_lamp_power = preprocess.normalize_with_values_first_column(data_lamp_power, divide_mems = True)
+            if use_standardization  : data_lamp_power = preprocess.normalize_standardization(data_lamp_power, divide_mems = True)
+            if use_sg_preprocess : data_lamp_power = preprocess.sg(data_lamp_power)
+
+            data_beans[data_beans['lamp_0'] == lamp_power] = data_lamp_power
+
+    else :
+        if normalize_first_value : data_beans = preprocess.normalize_with_values_first_column(data_beans, divide_mems = True)
+        if use_standardization  : data_beans = preprocess.normalize_standardization(data_beans, divide_mems = True)
+        if use_sg_preprocess : data_beans = preprocess.sg(data_beans)
+
     grouped_data = data_beans.groupby('test_control')
 
-    # Compute NDNI
+    # Get wavelength
     wavelength_mean = grouped_data[wavelength_to_plot].mean()
     wavelength_std = grouped_data[wavelength_to_plot].std()
 
@@ -86,12 +106,25 @@ for i in range(len(t_list)):
 plt.rcParams.update({'font.size': plot_config['fontsize']})
 fig, ax = plt.subplots(1, 1, figsize = plot_config['figsize'])
 for plant_group in plant_group_list :
+    # Convert in numpy array
+    wavelength_mean_per_type[plant_group] = np.asarray( wavelength_mean_per_type[plant_group] )
+    wavelength_std_per_type[plant_group] = np.asarray( wavelength_std_per_type[plant_group] )
+
+    # Normalize time series (remove mean and divide by std)
+    if normalize_time_series :
+        time_series_mean = wavelength_mean_per_type[plant_group].mean()
+        time_series_std = wavelength_std_per_type[plant_group].std()
+
+        wavelength_mean_per_type[plant_group] = (wavelength_mean_per_type[plant_group] - time_series_mean) / time_series_std
+        # wavelength_std_per_type[plant_group] = (wavelength_std_per_type[plant_group] - time_series_mean) / time_series_std
+        wavelength_std_per_type[plant_group] = (wavelength_std_per_type[plant_group]) / time_series_std
+
     if use_shaded_area:
         ax.plot(t_list, wavelength_mean_per_type[plant_group],
                     label = plant_group, marker = 'o', color = color_per_group[plant_group]
                     )
-        ax.fill_between(t_list, np.asarray( wavelength_mean_per_type[plant_group] ) + np.asarray( wavelength_std_per_type[plant_group] ),
-                        np.asarray( wavelength_mean_per_type[plant_group] ) - np.asarray( wavelength_std_per_type[plant_group] ),
+        ax.fill_between(t_list, wavelength_mean_per_type[plant_group] + wavelength_std_per_type[plant_group],
+                        wavelength_mean_per_type[plant_group] - wavelength_std_per_type[plant_group],
                         alpha = 0.25, color = color_per_group[plant_group]
                         )
     else:
@@ -117,3 +150,6 @@ if plot_config['save_fig']:
     path_save += '{}_wavelength_{}_per_group_beans'.format(plant_to_examine, wavelength_to_plot)
     fig.savefig(path_save + ".png", format = 'png')
     # fig.savefig(path_save + ".pdf", format = 'pdf')
+
+# TODO remove
+data_numpy = data_beans.loc[:, "1350":"1650"].to_numpy()

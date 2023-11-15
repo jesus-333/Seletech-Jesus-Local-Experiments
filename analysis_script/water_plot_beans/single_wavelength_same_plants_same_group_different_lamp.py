@@ -24,8 +24,10 @@ plant_to_examine = 'ViciaFaba'
 t_list = [0, 1, 2, 3, 4, 5, 6]
 
 normalize_first_value = False
-normalize_divide_by_average = False
+use_standardization = True
 use_sg_preprocess = False
+
+normalize_per_lamp_power = False
 
 plot_config = dict(
     figsize = (12, 8),
@@ -65,9 +67,21 @@ for group in plant_group_list:
         data_beans = data_beans[data_beans['gain_0'] != 0]
         
         # Preprocess and average per lamp power 
-        if normalize_first_value : data_beans = preprocess.normalize_with_values_first_column(data_beans, divide_mems = True)
-        if normalize_divide_by_average : data_beans = preprocess.normalize_divide_by_mean(data_beans, divide_mems = True)
-        if use_sg_preprocess : data_beans = preprocess.sg(data_beans)
+        if normalize_per_lamp_power :
+            lamp_power_list = [50, 60, 70, 80]
+            for lamp_power in lamp_power_list :
+                data_lamp_power = data_beans[data_beans['lamp_0'] == lamp_power]
+
+                if normalize_first_value : data_lamp_power = preprocess.normalize_with_values_first_column(data_lamp_power, divide_mems = True)
+                if use_standardization  : data_lamp_power = preprocess.normalize_standardization(data_lamp_power, divide_mems = True)
+                if use_sg_preprocess : data_lamp_power = preprocess.sg(data_lamp_power)
+
+                data_beans[data_beans['lamp_0'] == lamp_power] = data_lamp_power
+
+        else :
+            if normalize_first_value : data_beans = preprocess.normalize_with_values_first_column(data_beans, divide_mems = True)
+            if use_standardization  : data_beans = preprocess.normalize_standardization(data_beans, divide_mems = True)
+            if use_sg_preprocess : data_beans = preprocess.sg(data_beans)
         grouped_data = data_beans.groupby('lamp_0')
 
         # Get wavelength
@@ -106,7 +120,7 @@ for group in plant_group_list:
 
     ax.set_xlabel("Time point")
     ax.set_ylabel("Amplitude")
-    ax.set_ylim([700, 3000])
+    # ax.set_ylim([700, 3000])
     ax.set_title("Wavelength {} evolution - {} {}".format(wavelength_to_plot, plant_to_examine, group))
     ax.legend()
     ax.grid()
