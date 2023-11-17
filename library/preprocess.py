@@ -225,7 +225,7 @@ def normalize_with_control_group(data, norm_type : int):
     If norm_type == 1 for each spectra remove the mean of the control group, then divide by same mean and multiply by 100
     If norm_type == 2 for each spectra remove the mean of the control group, then divide by the std of the control group 
     This operations are made separately for each wavelength.
-    N.b. note that this normalization is computed along the wavelength, i.e., each wavelength is normalized respect the values of other wavelength
+    N.b. note that this normalization is computed along the wavelength, i.e., each wavelength is normalized respect the values of other wavelengths
     """
     plant_group_list = list(set(data['test_control']))
     data_control = data[data['test_control'] == 'control']
