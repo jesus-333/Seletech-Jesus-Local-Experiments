@@ -23,12 +23,15 @@ from library import preprocess
 plant_to_examine = 'PhaseolusVulgaris'
 plant_to_examine = 'ViciaFaba'
 t_list = [0, 1, 2, 3, 4, 5, 6]
+t_list = [0]
 
 normalize_first_value = False
-use_standardization = True
+use_standardization = False
+use_control_group_to_calibrate = True
+norm_type_with_control_group = 2 # Used only if use_control_group_to_calibrate == True
 use_sg_preprocess = False
 
-normalize_per_lamp_power = False # If true normalize each group of lamp power separately
+normalize_per_lamp_power = True # If true normalize each group of lamp power separately
 
 normalize_time_series = False # If True normalize the series of point t0, t1 etc
 
@@ -41,6 +44,7 @@ plot_config = dict(
 use_shaded_area = False
 
 wavelength_to_plot = "1450"
+# wavelength_to_plot = "2075"
 
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
 
@@ -70,7 +74,7 @@ for i in range(len(t_list)):
     data_beans = data_beans[data_beans['plant'] == plant_to_examine]
     
     # Remove measure with 0 gain (it is a single measure per plant)
-    data_beans = data_beans[data_beans['gain_0'] != 0]
+    # data_beans = data_beans[data_beans['gain_0'] != 0]
 
     # Preprocess and average by plant tpe
     if normalize_per_lamp_power :
@@ -80,6 +84,7 @@ for i in range(len(t_list)):
 
             if normalize_first_value : data_lamp_power = preprocess.normalize_with_values_first_column(data_lamp_power, divide_mems = True)
             if use_standardization  : data_lamp_power = preprocess.normalize_standardization(data_lamp_power, divide_mems = True)
+            if use_control_group_to_calibrate : data_lamp_power = preprocess.normalize_with_control_group(data_lamp_power, norm_type = norm_type_with_control_group)
             if use_sg_preprocess : data_lamp_power = preprocess.sg(data_lamp_power)
 
             data_beans[data_beans['lamp_0'] == lamp_power] = data_lamp_power
@@ -87,6 +92,7 @@ for i in range(len(t_list)):
     else :
         if normalize_first_value : data_beans = preprocess.normalize_with_values_first_column(data_beans, divide_mems = True)
         if use_standardization  : data_beans = preprocess.normalize_standardization(data_beans, divide_mems = True)
+        if use_control_group_to_calibrate : data_beans = preprocess.normalize_with_control_group(data_beans, norm_type = norm_type_with_control_group)
         if use_sg_preprocess : data_beans = preprocess.sg(data_beans)
 
     grouped_data = data_beans.groupby('test_control')

@@ -105,6 +105,19 @@ for group in plant_group_list:
     plt.rcParams.update({'font.size': plot_config['fontsize']})
     fig, ax = plt.subplots(1, 1, figsize = plot_config['figsize'])
     for lamp_power in lamp_power_list:
+
+        # Convert in numpy array
+        wavelength_mean_per_lamp_power[lamp_power] = np.asarray( wavelength_mean_per_lamp_power[lamp_power] )
+        wavelength_std_per_lamp_power[lamp_power] = np.asarray( wavelength_std_per_lamp_power[lamp_power] )
+
+        # Normalize time series (remove mean and divide by std)
+        if True :
+            time_series_mean = wavelength_mean_per_lamp_power[lamp_power].mean()
+            time_series_std = wavelength_std_per_lamp_power[lamp_power].std()
+
+        wavelength_mean_per_lamp_power[lamp_power] = (wavelength_mean_per_lamp_power[lamp_power] - time_series_mean) / time_series_std
+        # wavelength_std_per_lamp_power[plant_group] = (wavelength_std_per_lamp_power[plant_group] - time_series_mean) / time_series_std
+        wavelength_std_per_lamp_power[lamp_power] = (wavelength_std_per_lamp_power[lamp_power]) / time_series_std
         if use_shaded_area:
             ax.plot(t_list, wavelength_mean_per_lamp_power[lamp_power],
                         label = lamp_power, marker = 'o'

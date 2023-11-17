@@ -95,7 +95,6 @@ def __normalize_with_values_first_column(data):
 
 def normalize_standardization(data, divide_mems : bool = False, remove_mean = True, divide_by_std = True):
     """
-    Normalize dividing each row for the first value of the row
     If divide_mems is True compute the normalization separately for each sensors
     """
 
@@ -116,7 +115,8 @@ def normalize_standardization(data, divide_mems : bool = False, remove_mean = Tr
 
 def __normalize_standardization(data, remove_mean, divide_by_std):
     """
-    Normalize the Dataframe by the value of the first column
+    Normalize EACH spectra trough standardization. This mean that each spectra will have mean 0 and std 1.
+    N.b. If we take the same wavelength but with different spectra the std between wavelength can still be very high respect the mean between wavelength.
     """
     data_numpy = data.to_numpy()
     
@@ -190,6 +190,7 @@ def R_A(data):
 
 
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
+# Beans experiment function
 
 def beans_preprocess_pipeline(dataframe, config : dict, wavelength = None):
 
@@ -200,8 +201,8 @@ def beans_preprocess_pipeline(dataframe, config : dict, wavelength = None):
         beans_data_mems_1 = beans_data[:, wavelength <= 1650]
         beans_data_mems_2 = beans_data[:, wavelength >= 1750]
 
-        beans_data_mems_1 = normalize(beans_data_mems_1, config['normalization_type'])
-        beans_data_mems_2 = normalize(beans_data_mems_2, config['normalization_type'])
+        beans_data_mems_1 = normalize_sklearn_scaler(beans_data_mems_1, config['normalization_type'])
+        beans_data_mems_2 = normalize_sklearn_scaler(beans_data_mems_2, config['normalization_type'])
 
         if config['compute_derivative']:
             beans_data_mems_1 = derivate(beans_data_mems_1, config['derivative_order'])
@@ -210,7 +211,7 @@ def beans_preprocess_pipeline(dataframe, config : dict, wavelength = None):
         beans_data = np.hstack((beans_data_mems_1, beans_data_mems_2))
 
     else: # Do the computation for the 2 mems together
-        beans_data = normalize(beans_data, config['normalization_type'])
+        beans_data = normalize_sklearn_scaler(beans_data, config['normalization_type'])
         
         if config['compute_derivative']:
             beans_data = derivate(beans_data, config['derivative_order'])
@@ -218,5 +219,54 @@ def beans_preprocess_pipeline(dataframe, config : dict, wavelength = None):
     dataframe.iloc[:, 1:len(wavelength) + 1] = beans_data
 
     return dataframe
+
+def normalize_with_control_group(data, norm_type : int):
+    """
+    If norm_type == 1 for each spectra remove the mean of the control group, then divide by same mean and multiply by 100
+    If norm_type == 2 for each spectra remove the mean of the control group, then divide by the std of the control group 
+    This operations are made separately for each wavelength.
+    N.b. note that this normalization is computed along the wavelength, i.e., each wavelength is normalized respect the values of other wavelength
+    """
+    plant_group_list = list(set(data['test_control']))
+    data_control = data[data['test_control'] == 'control']
+    data_control_mems_1 = data_control.loc[:, "1350":"1650"]
+    data_control_mems_2 = data_control.loc[:, "1750":"2150"]
+
+    for plant_group in plant_group_list:
+        # Get data for the group
+        data_group = data[data['test_control'] == plant_group]
+
+        # Normalize mems1
+        data_group_mems_1 = data_group.loc[:, "1350":"1650"]
+        data_group_mems_1 = __normalize_with_control_group(data_group_mems_1, data_control_mems_1, norm_type)
+        data_group.loc[:, "1350":"1650"] = data_group_mems_1.iloc[:, :]
+    
+        # Normalize mems2
+        data_group_mems_2 = data_group.loc[:, "1750":"2150"]
+        data_group_mems_2 = __normalize_with_control_group(data_group_mems_2, data_control_mems_2, norm_type)
+        data_group.loc[:, "1750":"2150"] = data_group_mems_2.iloc[:, :]
+
+        # Save the normalized data
+        data[data['test_control'] == plant_group] = data_group
+
+    return data
+
+def __normalize_with_control_group(data_to_normalize, data_control_group, norm_type : int):
+    data_numpy_to_normalize = data_to_normalize.to_numpy()
+    data_numpy_control_group = data_control_group.to_numpy()
+    
+    mean_control = data_numpy_control_group.mean(0)
+
+    if norm_type == 1:
+        data_numpy_to_normalize = ( ( data_numpy_to_normalize - mean_control ) / mean_control ) * 100
+    elif norm_type == 2:
+        std_control = data_numpy_control_group.std(0)
+        data_numpy_to_normalize = ( ( data_numpy_to_normalize - mean_control ) / std_control)
+    else:
+        raise ValueError("norm_type can be only 1 or 2")
+
+    data_to_normalize.iloc[:, :] = data_numpy_to_normalize
+
+    return data_to_normalize
 
 
