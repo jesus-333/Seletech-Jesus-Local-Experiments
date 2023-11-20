@@ -227,7 +227,6 @@ def convert_timestamps_format_2(timestamps_list : list):
     for i in range(len(timestamps_list)):
         old_timestamp = timestamps_list[i]
 
-
         if old_timestamp == 'TIMESTAMP' :
             new_timestamps_list.append(new_timestamps_list[-1])
             continue 

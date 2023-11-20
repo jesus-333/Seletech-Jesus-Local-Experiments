@@ -17,9 +17,8 @@ from library import manage_data_other_sensors, manage_data_beans, timestamp_func
 #%% Settings 
 
 plant_to_examine = 'PhaseolusVulgaris'
-t_list = [0, 1, 2, 3, 4, 6]
+# plant_to_examine = 'ViciaFaba'
 
-plant_to_examine = 'ViciaFaba'
 t_list = [0, 1, 2, 3, 4, 5, 6]
 
 plot_config = dict(
@@ -33,7 +32,7 @@ plot_config = dict(
 
 if plant_to_examine == 'PhaseolusVulgaris': 
     plant_group_list = ['control', 'test_150',]
-    timestamp_conversion_mode  = [1, 1, 1, 1, 1, 1, 1]
+    timestamp_conversion_mode  = [1, 1, 1, 1, 1, 2, 1]
 else : 
     plant_group_list = ['control', 'test_150', 'test_300']
     timestamp_conversion_mode = [2, 1, 1, 1, 1, 2, 1]
@@ -67,7 +66,7 @@ for i in range(len(t_list)):
         # Compute and save average conductivity
         average_conductivity = data_MiFlora['MI_CONDUCTIVITY'].to_numpy(dtype = float).mean()
         conductivity_per_plant_group[plant_group].append(average_conductivity)
-        print(average_conductivity)
+        # print(average_conductivity)
 
 
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
@@ -80,6 +79,9 @@ for plant_group in plant_group_list:
 
 ax.grid(True)
 ax.legend()
+ax.set_xlabel("Time points")
+ax.set_ylabel("Conductivity")
+ax.set_title("{} - Conductivity MiFlora".format(plant_to_examine))
 
 fig.tight_layout()
 fig.show()
