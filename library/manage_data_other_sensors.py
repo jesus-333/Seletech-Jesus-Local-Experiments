@@ -16,11 +16,16 @@ from . import timestamp_functions
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
 # MiFlora sensor
 
-def read_data_MiFlora(path : str, return_numpy : bool = False) :
+def read_data_MiFlora(path : str, timestamp_conversion_mode : int, return_numpy : bool = False) :
     data = pd.read_csv(path)
 
     old_timestamps = data['TIMESTAMP']
-    data['TIMESTAMP'] = timestamp_functions.convert_timestamps_format_1(list(old_timestamps)) 
+    if timestamp_conversion_mode == 1 :
+        data['TIMESTAMP'] = timestamp_functions.convert_timestamps_format_1(list(old_timestamps)) 
+    elif timestamp_conversion_mode == 2:
+        data['TIMESTAMP'] = timestamp_functions.convert_timestamps_format_2(list(old_timestamps)) 
+    else:
+        raise ValueError("timestamp_conversion_mode can only have value 1 or 2")
 
     return data
 
@@ -47,14 +52,14 @@ def pair_with_NIRS_sensor_timestamp(NIRS_timestamps_list : list, MiFlora_datafra
 
         difference_list.append(timestamp_difference)
         
-        print(i, MiFlora_paired_data.shape)
-        print(MiFlora_dataframe.iloc[idx_closest].shape)
-        print(idx_closest, "\n")
+        # print(i, MiFlora_paired_data.shape)
+        # print(MiFlora_dataframe.iloc[idx_closest].shape)
+        # print(idx_closest, "\n")
 
     if return_difference:
         difference_list = pd.DataFrame(difference_list, columns = ['Difference_with_paired_NIRS_timestamp'])
-        print(MiFlora_paired_data.shape)
-        print(difference_list.shape)
+        # print(MiFlora_paired_data.shape)
+        # print(difference_list.shape)
         MiFlora_paired_data = pd.concat([MiFlora_paired_data, difference_list], axis = 1)
 
     return MiFlora_paired_data

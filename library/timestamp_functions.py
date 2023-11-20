@@ -73,7 +73,7 @@ def get_closest_timestamp(timestamp_a : str, timestamps_list : list):
             closest_datetime = datetime_obj_2
             idx_closest = i
     
-    print(closest_datetime, datetime_obj_1)
+    # print(closest_datetime, datetime_obj_1)
     return idx_closest, min_difference
 
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
@@ -215,6 +215,33 @@ def convert_timestamps_format_1(timestamps_list : list):
 
     return new_timestamps_list
 
+def convert_timestamps_format_2(timestamps_list : list):
+    """
+    Given a list of timestamps in format "DD/MM/YYYY h:m" convert them in format "YYYY_MM_DD_h_m_s"
+    Since the seconds (s) are not present in the original timestamps they are set to 0 by default.
+    Used to convert the timestamps of beans to work with previous functions 
+    """
+
+    new_timestamps_list = []
+
+    for i in range(len(timestamps_list)):
+        old_timestamp = timestamps_list[i]
+
+
+        if old_timestamp == 'TIMESTAMP' :
+            new_timestamps_list.append(new_timestamps_list[-1])
+            continue 
+        
+        date_information, hour_information = old_timestamp.split(" ")
+
+        day, month, year = date_information.split('/')
+        hours, minutes = hour_information.split(':')
+
+        new_timestamp = "{}_{}_{}_{}_{}_{}".format(year, month, day, hours, minutes, 0)
+
+        new_timestamps_list.append(new_timestamp)
+
+    return new_timestamps_list
 
 def convert_timestamps_in_dataframe(timestamps_list : list):
     """
