@@ -21,6 +21,7 @@ plant_to_examine = 'PhaseolusVulgaris'
 plant_to_examine = 'ViciaFaba'
 
 t_list = [0, 1, 2, 3, 4, 5, 6]
+# t_list = [5]
 
 type_data_to_plot = 'MI_MOISTURE'
 type_data_to_plot = 'MI_CONDUCTIVITY'
@@ -28,8 +29,12 @@ type_data_to_plot = 'MI_CONDUCTIVITY'
 plot_config = dict(
     figsize = (12, 8),
     fontsize = 15,
-    save_fig = True
+    save_fig = False
 )
+
+mi_flora_to_use = None
+mi_flora_to_use = 'Green'
+mi_flora_to_use = 'White'
 
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
 #%% Get the data
@@ -39,6 +44,7 @@ if plant_to_examine == 'PhaseolusVulgaris':
     timestamp_conversion_mode  = [1, 1, 1, 1, 1, 2, 1]
 else : 
     plant_group_list = ['control', 'test_150', 'test_300']
+    plant_group_list = ['test_150']
     timestamp_conversion_mode = [2, 1, 1, 1, 1, 2, 1]
 
 
@@ -63,6 +69,10 @@ for i in range(len(t_list)):
     
     # Get MiFlora data 
     data_MiFlora_full = manage_data_other_sensors.read_data_MiFlora(path_MiFlora, timestamp_conversion_mode = timestamp_conversion_mode[i])
+    if mi_flora_to_use is not None : 
+        id_device_list = list(set(data_MiFlora_full['DEVICEID']))
+        idx_id_device = 0 if mi_flora_to_use in id_device_list[0] else 1
+        data_MiFlora_full = data_MiFlora_full[data_MiFlora_full['DEVICEID'] == id_device_list[idx_id_device]]
 
     for plant_group in plant_group_list:
         data_beans = data_beans_full[data_beans_full['plant'] == plant_to_examine]
