@@ -129,7 +129,6 @@ def __normalize_standardization(data, remove_mean, divide_by_std):
         data_numpy /= std_data[:, None]
 
     data.iloc[:, :] = data_numpy
-    # data.sub(data.mean(1), axis=0).div(data.std(1), axis=0)
 
     return data
     
