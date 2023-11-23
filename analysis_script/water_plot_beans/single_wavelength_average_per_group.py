@@ -23,17 +23,17 @@ from library import preprocess
 plant_to_examine = 'PhaseolusVulgaris'
 plant_to_examine = 'ViciaFaba'
 t_list = [0, 1, 2, 3, 4, 5, 6]
-t_list = [0]
+# t_list = [0]
 
 normalize_first_value = False
-use_standardization = False
-use_control_group_to_calibrate = True
+use_standardization = True
+use_control_group_to_calibrate = False
 norm_type_with_control_group = 2 # Used only if use_control_group_to_calibrate == True
 use_sg_preprocess = False
 
 normalize_per_lamp_power = True # If true normalize each group of lamp power separately
 
-normalize_time_series = False # If True normalize the series of point t0, t1 etc
+normalize_time_series = True # If True normalize the series of point t0, t1 etc
 
 plot_config = dict(
     figsize = (12, 8),
@@ -124,6 +124,10 @@ for plant_group in plant_group_list :
         wavelength_mean_per_type[plant_group] = (wavelength_mean_per_type[plant_group] - time_series_mean) / time_series_std
         # wavelength_std_per_type[plant_group] = (wavelength_std_per_type[plant_group] - time_series_mean) / time_series_std
         wavelength_std_per_type[plant_group] = (wavelength_std_per_type[plant_group]) / time_series_std
+        std_to_use = time_series_std
+    else:
+        std_to_use = wavelength_std_per_type[plant_group],
+
 
     if use_shaded_area:
         ax.plot(t_list, wavelength_mean_per_type[plant_group],
@@ -134,7 +138,7 @@ for plant_group in plant_group_list :
                         alpha = 0.25, color = color_per_group[plant_group]
                         )
     else:
-        ax.errorbar(t_list, wavelength_mean_per_type[plant_group], wavelength_std_per_type[plant_group],
+        ax.errorbar(t_list, wavelength_mean_per_type[plant_group], std_to_use,
                     label = plant_group, marker = 'o', capsize = 8,color = color_per_group[plant_group]
                     )
 

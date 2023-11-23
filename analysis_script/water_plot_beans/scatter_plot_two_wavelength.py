@@ -27,13 +27,15 @@ t_list = [0, 1, 2, 3, 4, 5, 6]
 # t_list = [0]
 
 wavelength_1 = 1450
-wavelength_2 = 1818
+wavelength_2 = 1950
 
 plot_config = dict(
     figsize = (12, 8),
     fontsize = 15,
     save_fig = True
 )
+
+color_type = 1
 
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
 #%%  
@@ -43,7 +45,9 @@ plant_group_list = ['control', 'test_150', 'test_300']
 
 # Marker and color to use for the plot
 marker_per_time_point = { 0 : 'x', 1 : '^', 2 : '*', 3 : '+', 4 : 'D', 5 : 's', 6 : 'o'} # Different marker for each time point
+marker_per_time_point = { 0 : 'x', 1 : 'x', 2 : 'x', 3 : '+', 4 : 'o', 5 : 'o', 6 : 'o'} # Different marker for each time point
 color_per_group = {'control' : 'blue', 'test_150' : 'green', 'test_300' : 'red'} # Different color for each group
+color_per_time_point = { 0 : 'green', 1 : 'green', 2 : 'green', 3 : 'blue', 4 : 'red', 5 : 'red', 6 : 'red'} # Different color for each group
 
 # Prepare the dictionary to save the data to plot
 data_for_wavelength_1 = dict()
@@ -86,10 +90,18 @@ for i in range(len(t_list)):
             tmp_data_wavelegth_2  = data_group.loc[:, str(wavelength_2)]
             data_for_wavelength_2[plant_group] = np.concatenate((data_for_wavelength_2[plant_group], tmp_data_wavelegth_2))
 
-            ax.scatter(x = tmp_data_wavelegth_1, y = tmp_data_wavelegth_2,
-                       c = color_per_group[plant_group], marker = marker_per_time_point[t_list[i]], s = 20,
-                       label = 't{} - {}'.format(t_list[i], plant_group)
-                       )
+            if color_type == 1 :
+                ax.scatter(x = tmp_data_wavelegth_1, y = tmp_data_wavelegth_2,
+                           c = color_per_group[plant_group], marker = marker_per_time_point[t_list[i]], s = 20,
+                           label = 't{} - {}'.format(t_list[i], plant_group)
+                           )
+            elif color_type == 2 :
+                ax.scatter(x = tmp_data_wavelegth_1, y = tmp_data_wavelegth_2,
+                           c = color_per_time_point[t_list[i]], marker = marker_per_time_point[t_list[i]], s = 20,
+                           label = 't{} - {}'.format(t_list[i], plant_group)
+                           )
+            else:
+                raise ValueError("color_type can have only 1 or 2 as value")
 
 ax.set_xlabel("wavelength {}nm".format(wavelength_1))
 ax.set_ylabel("wavelength {}nm".format(wavelength_2))
@@ -127,5 +139,5 @@ if plot_config:
     
 
     path_save = 'Saved Results/beans_spectra/scatter_plot_wavelength/'
-    path_save += '{}_scatter_wavelength_t{}_{}'.format(plant_to_examine, t_string, normalization_string)
+    path_save += '{}_scatter_wavelength_t{}_{}_color_{}'.format(plant_to_examine, t_string, normalization_string, color_type)
     fig.savefig(path_save + ".png", format = 'png')
