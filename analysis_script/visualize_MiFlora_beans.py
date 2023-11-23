@@ -10,6 +10,7 @@ Visualize the data collected through the MiFlora during the beans experiment
 
 import numpy as np
 import matplotlib.pyplot as plt
+import os
 
 from library import manage_data_other_sensors, manage_data_beans, timestamp_functions
 
@@ -20,6 +21,9 @@ plant_to_examine = 'PhaseolusVulgaris'
 plant_to_examine = 'ViciaFaba'
 
 t_list = [0, 1, 2, 3, 4, 5, 6]
+
+type_data_to_plot = 'MI_MOISTURE'
+type_data_to_plot = 'MI_CONDUCTIVITY'
 
 plot_config = dict(
     figsize = (12, 8),
@@ -42,8 +46,8 @@ color_per_group = {'control' : 'blue', 'test_150' : 'green', 'test_300' : 'red'}
 marker_per_group = {'control' : 'x', 'test_150' : 'o', 'test_300' : 's'}
 linestyle_per_group = {'control' : 'solid', 'test_150' : 'dashdot', 'test_300' : 'dashed'}
 
-conductivity_per_plant_group = dict()
-for group in plant_group_list: conductivity_per_plant_group[group] = []
+mi_flora_data_per_plant_group = dict()
+for group in plant_group_list: mi_flora_data_per_plant_group[group] = []
 
 for i in range(len(t_list)):
     print(i)
@@ -69,9 +73,8 @@ for i in range(len(t_list)):
         data_MiFlora = manage_data_other_sensors.pair_with_NIRS_sensor_timestamp(NIRS_timestamps_list, data_MiFlora_full, return_difference = True)
         
         # Compute and save average conductivity
-        # average_conductivity = data_MiFlora['MI_CONDUCTIVITY'].to_numpy(dtype = float).mean()
-        average_conductivity = data_MiFlora['MI_MOISTURE'].to_numpy(dtype = float).mean()
-        conductivity_per_plant_group[plant_group].append(average_conductivity)
+        average_mi_flora_data = data_MiFlora[type_data_to_plot].to_numpy(dtype = float).mean()
+        mi_flora_data_per_plant_group[plant_group].append(average_mi_flora_data)
         # print(average_conductivity)
 
 
@@ -81,7 +84,7 @@ for i in range(len(t_list)):
 plt.rcParams.update({'font.size': plot_config['fontsize']})
 fig, ax = plt.subplots(1, 1, figsize = plot_config['figsize'])
 for plant_group in plant_group_list:
-    ax.plot(t_list, conductivity_per_plant_group[plant_group], 
+    ax.plot(t_list, mi_flora_data_per_plant_group[plant_group], 
             label = plant_group, linestyle = linestyle_per_group[plant_group],
             marker = marker_per_group[plant_group], markersize = 10,
             )
@@ -89,8 +92,16 @@ for plant_group in plant_group_list:
 ax.grid(True)
 ax.legend()
 ax.set_xlabel("Time points")
-ax.set_ylabel("Conductivity")
-ax.set_title("{} - Conductivity MiFlora".format(plant_to_examine))
+ax.set_ylabel(type_data_to_plot)
+ax.set_title("{} - {} MiFlora".format(plant_to_examine, type_data_to_plot))
 
 fig.tight_layout()
 fig.show()
+
+if plot_config['save_fig']:
+    path_save = 'Saved Results/beans_spectra/mi_flora/'
+    os.makedirs(path_save, exist_ok = True)
+
+    path_save += 'data_{}'.format(type_data_to_plot)
+    fig.savefig(path_save + ".png", format = 'png')
+    # fig.savefig(path_save + ".pdf", format = 'pdf')
