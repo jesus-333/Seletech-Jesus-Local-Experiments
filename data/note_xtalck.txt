@@ -1,0 +1,11 @@
+SRS 0 
+Satura NIRS 2 sopra lampo power 70
+
+SRS 3:
+Unica misura valida mems 1 a lamp power 50
+
+wcs 4:
+mems 1 satura sopra lampo power 70
+mems 2 satura tutto
+
+cross talk 5: niente da segnalare
