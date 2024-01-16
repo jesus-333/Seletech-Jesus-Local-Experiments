@@ -33,7 +33,6 @@ for i in range(len(idx_gain)):
 
     print(i, set(data_to_plot['target']))
 
-    
     # If lamp_power_to_plot is not None select only some lamp power to plot. Otherwise plot all the lamp power
     if lamp_power_to_plot is not None :
         lamp_idx = np.zeros(len(lamp_power_list))
@@ -59,4 +58,3 @@ for i in range(len(idx_gain)):
 
     fig.tight_layout()
     fig.show()
-

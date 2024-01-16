@@ -15,7 +15,10 @@ from . import timestamp_functions
 def read_data_beans_single_file(path : str, return_numpy : bool = False):
     data = pd.read_csv(path)
 
-    wavelength = data.keys()[1:-10].to_numpy(dtype = float)
+    # wavelength = data.keys()[1:-10].to_numpy(dtype = float)
+    wavelengts_1 = np.hstack(np.arange(1350, 1650 + 1))
+    wavelengts_2 = np.arange(1750, 2150 + 1)
+    wavelength = np.hstack(( wavelengts_1, wavelengts_2 ))
 
     old_timestamps = data['timestamp']
     data['timestamp'] = timestamp_functions.convert_timestamps_format_1(list(old_timestamps)) 
