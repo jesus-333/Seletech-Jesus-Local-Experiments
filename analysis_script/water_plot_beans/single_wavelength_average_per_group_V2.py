@@ -25,6 +25,8 @@ t_list = [0, 1, 2, 3, 4, 5, 6]
 use_standardization = False
 use_control_group_to_calibrate = False
 norm_type_with_control_group = 2 # Used only if use_control_group_to_calibrate == True
+
+compute_absorbance = True
 use_sg_preprocess = True
 
 plot_config = dict(
@@ -36,7 +38,7 @@ plot_config = dict(
 use_shaded_area = False
 
 wavelength_to_plot = "1450"
-# wavelength_to_plot = "1750"
+wavelength_to_plot = "1360"
 
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
 
@@ -79,6 +81,8 @@ for i in range(len(t_list)):
                 # Normalize data
                 if use_standardization  : data_lamp_power  = preprocess.normalize_standardization(data_lamp_power, divide_mems = True)
                 if use_control_group_to_calibrate : data_lamp_power  = preprocess.normalize_with_control_group(data_lamp_power, norm_type = norm_type_with_control_group)
+
+                if compute_absorbance : data_lamp_power = preprocess.R_A(data_lamp_power) 
                 if use_sg_preprocess : data_lamp_power  = preprocess.sg(data_lamp_power)
 
                 # Get wavelength
