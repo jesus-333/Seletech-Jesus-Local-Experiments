@@ -4,7 +4,7 @@ import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 
-from library import manage_data_beans
+from library import manage_data_beans, preprocess
 
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
 # Settings
@@ -17,6 +17,8 @@ gain = 1
 plant = 'ViciaFaba'
 
 remove_mean = True
+
+percentage_reflectance_srs = 0.99
 
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
 
@@ -62,6 +64,7 @@ if len(spectra_data) == 0 : raise ValueError("There are no spectra data with the
 if len(calibration_data) == 0 : raise ValueError("There are no calibration data with these settings")
 
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
+# Compare spectra with calibration data
 
 # Get xtalk, srs and wcs in separate array
 calibration_data['target'] = calibration_data['target'].str.lower()
@@ -70,16 +73,12 @@ wcs_data_1, wcs_data_2 = split_data_per_mems(calibration_data[calibration_data['
 crosstalk_data_1, crosstalk_data_2 = split_data_per_mems(calibration_data[calibration_data['target'] == 'crosstalk'], remove_mean)
 
 # Get sample data for each catagory of spectra data
-
 data_control_1, data_control_2 = split_data_per_mems(spectra_data[spectra_data['test_control'] == 'control'], remove_mean)
 data_test_150_1, data_test_150_2 = split_data_per_mems(spectra_data[spectra_data['test_control'] == 'test_150'], remove_mean)
 data_test_300_1, data_test_300_2 = split_data_per_mems(spectra_data[spectra_data['test_control'] == 'test_300'], remove_mean)
-
-# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
-# Compare spectra with calibration data
-
 idx_spectra = np.random.randint(5)
 
+# Create figure
 fig, axs = plt.subplots(1, 2, figsize = (12, 8))
 
 # Spectra (mems 1)
@@ -105,6 +104,53 @@ for ax in axs:
     ax.set_xlabel("Wavelength [nm]")
     ax.grid(True)
 
+fig.suptitle("Spectra at t{}".format(t))
 fig.tight_layout()
 fig.show()
 
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
+# Normalized spectra with calibration data
+
+normalized_data = preprocess.normalize_with_srs_and_xtalk(spectra_data, calibration_data[calibration_data['target'] == 'srs'], calibration_data[calibration_data['target'] == 'crosstalk'], percentage_reflectance_srs)
+spectra_data, _, _, _, _ = manage_data_beans.read_data_beans_single_file(path_spectra, return_numpy = False)
+
+fig, axs = plt.subplots(1, 2, figsize = (12, 8))
+
+idx_spectra = np.random.randint(5)
+
+# Create figure
+fig, axs = plt.subplots(1, 2, figsize = (12, 8))
+
+remove_mean = False
+
+# Normalized data
+data_control_1, _ = split_data_per_mems(normalized_data[normalized_data['test_control'] == 'control'], remove_mean)
+data_test_150_1, _ = split_data_per_mems(normalized_data[normalized_data['test_control'] == 'test_150'], remove_mean)
+data_test_300_1, _ = split_data_per_mems(normalized_data[normalized_data['test_control'] == 'test_300'], remove_mean)
+axs[0].plot(wavelengts_1, data_control_1[idx_spectra], label = 'control')
+axs[0].plot(wavelengts_1, data_test_150_1[idx_spectra], label = 'test_150')
+axs[0].plot(wavelengts_1, data_test_300_1[idx_spectra], label = 'test_300')
+axs[0].set_title("Normalized data")
+
+
+# Normalized data
+data_control_1, _  = split_data_per_mems(spectra_data[spectra_data['test_control'] == 'control'], remove_mean)
+data_test_150_1, _ = split_data_per_mems(spectra_data[spectra_data['test_control'] == 'test_150'], remove_mean)
+data_test_300_1, _ = split_data_per_mems(spectra_data[spectra_data['test_control'] == 'test_300'], remove_mean)
+axs[1].plot(wavelengts_1, data_control_1[idx_spectra], label = 'control')
+axs[1].plot(wavelengts_1, data_test_150_1[idx_spectra], label = 'test_150')
+axs[1].plot(wavelengts_1, data_test_300_1[idx_spectra], label = 'test_300')
+axs[1].set_title("NON Normalized data")
+
+ax.legend()
+ax.set_xlabel("Wavelength [nm]")
+ax.grid(True)
+
+for ax in axs: 
+    ax.legend()
+    ax.set_xlabel("Wavelength [nm]")
+    ax.grid(True)
+
+fig.suptitle("Spectra at t{}".format(t))
+fig.tight_layout()
+fig.show()
