@@ -78,26 +78,39 @@ data_test_150_1, data_test_150_2 = split_data_per_mems(spectra_data[spectra_data
 data_test_300_1, data_test_300_2 = split_data_per_mems(spectra_data[spectra_data['test_control'] == 'test_300'], remove_mean)
 idx_spectra = np.random.randint(5)
 
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
+# Normalized spectra with calibration data
+
+normalized_data = preprocess.normalize_with_srs_and_xtalk(spectra_data, calibration_data[calibration_data['target'] == 'srs'], calibration_data[calibration_data['target'] == 'crosstalk'], percentage_reflectance_srs)
+
+fig, axs = plt.subplots(2, 1, figsize = (12, 8))
+
+idx_spectra = np.random.randint(5)
+idx_spectra = 3
+
 # Create figure
 fig, axs = plt.subplots(1, 2, figsize = (12, 8))
 
-# Spectra (mems 1)
+remove_mean = True
+
+# NON Calibrated data
+data_control_1, _  = split_data_per_mems(spectra_data[spectra_data['test_control'] == 'control'], remove_mean)
+data_test_150_1, _ = split_data_per_mems(spectra_data[spectra_data['test_control'] == 'test_150'], remove_mean)
+data_test_300_1, _ = split_data_per_mems(spectra_data[spectra_data['test_control'] == 'test_300'], remove_mean)
 axs[0].plot(wavelengts_1, data_control_1[idx_spectra], label = 'control')
 axs[0].plot(wavelengts_1, data_test_150_1[idx_spectra], label = 'test_150')
 axs[0].plot(wavelengts_1, data_test_300_1[idx_spectra], label = 'test_300')
+axs[0].set_title("NON Calibrated data")
 
-# Calibartion data (mems 1)
-axs[0].plot(wavelengts_1, srs_data_1, label = 'srs')
-axs[0].plot(wavelengts_1, crosstalk_data_1, label = 'crosstalk')
 
-# Spectra (mems 2)
-axs[1].plot(wavelengts_2, data_control_2[idx_spectra], label = 'control')
-axs[1].plot(wavelengts_2, data_test_150_2[idx_spectra], label = 'test_150')
-axs[1].plot(wavelengts_2, data_test_300_2[idx_spectra], label = 'test_300')
-
-# Calibartion data (mems 2)
-axs[1].plot(wavelengts_2, srs_data_2, label = 'srs')
-axs[1].plot(wavelengts_2, crosstalk_data_2, label = 'crosstalk')
+# Calibrated data
+data_control_1, _ = split_data_per_mems(normalized_data[normalized_data['test_control'] == 'control'], remove_mean)
+data_test_150_1, _ = split_data_per_mems(normalized_data[normalized_data['test_control'] == 'test_150'], remove_mean)
+data_test_300_1, _ = split_data_per_mems(normalized_data[normalized_data['test_control'] == 'test_300'], remove_mean)
+axs[1].plot(wavelengts_1, data_control_1[idx_spectra], label = 'control')
+axs[1].plot(wavelengts_1, data_test_150_1[idx_spectra], label = 'test_150')
+axs[1].plot(wavelengts_1, data_test_300_1[idx_spectra], label = 'test_300')
+axs[1].set_title("Calibrated data")
 
 for ax in axs: 
     ax.legend()
