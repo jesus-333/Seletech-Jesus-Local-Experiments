@@ -117,6 +117,7 @@ spectra_data, _, _, _, _ = manage_data_beans.read_data_beans_single_file(path_sp
 fig, axs = plt.subplots(1, 2, figsize = (12, 8))
 
 idx_spectra = np.random.randint(5)
+idx_spectra = 3
 
 # Create figure
 fig, axs = plt.subplots(1, 2, figsize = (12, 8))
