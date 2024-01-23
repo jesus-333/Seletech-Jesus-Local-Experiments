@@ -21,7 +21,7 @@ plant_to_examine = 'PhaseolusVulgaris'
 plant_to_examine = 'ViciaFaba'
 
 t_list = [0, 1, 2, 3, 4, 5, 6]
-# t_list = [0]
+# t_list = [3]
 
 type_data_to_plot = 'MI_MOISTURE'
 type_data_to_plot = 'MI_CONDUCTIVITY'
@@ -46,6 +46,7 @@ else :
     plant_group_list = ['control', 'test_150', 'test_300']
     # plant_group_list = ['test_150']
     timestamp_conversion_mode = [2, 1, 1, 1, 1, 2, 1]
+    timestamp_conversion_mode = {0 : 2, 1 : 1, 2 : 1, 3 : 1, 4 : 1, 5 : 2, 6 : 1}
 
 
 color_per_group = {'control' : 'blue', 'test_150' : 'green', 'test_300' : 'red'}
@@ -68,7 +69,7 @@ for i in range(len(t_list)):
     data_beans_full = data_beans_full[data_beans_full['gain_0'] != 0]
     
     # Get MiFlora data 
-    data_MiFlora_full = manage_data_other_sensors.read_data_MiFlora(path_MiFlora, timestamp_conversion_mode = timestamp_conversion_mode[i])
+    data_MiFlora_full = manage_data_other_sensors.read_data_MiFlora(path_MiFlora, timestamp_conversion_mode = timestamp_conversion_mode[t_list[i]])
     if mi_flora_to_use is not None : 
         id_device_list = list(set(data_MiFlora_full['DEVICEID']))
         idx_id_device = 0 if mi_flora_to_use in id_device_list[0] else 1
@@ -86,7 +87,6 @@ for i in range(len(t_list)):
         # Compute and save average conductivity
         average_mi_flora_data = data_MiFlora[type_data_to_plot].to_numpy(dtype = float).mean()
         mi_flora_data_per_plant_group[plant_group].append(average_mi_flora_data)
-        # print(average_conductivity)
 
         print("\t{}\t: {}±{}".format(plant_group, round(data_MiFlora['Difference_with_paired_NIRS_timestamp'].mean(), 2), round(data_MiFlora['Difference_with_paired_NIRS_timestamp'].std(), 2)))
 

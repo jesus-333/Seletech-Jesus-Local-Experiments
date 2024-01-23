@@ -26,8 +26,8 @@ use_standardization = False
 use_control_group_to_calibrate = False
 norm_type_with_control_group = 2 # Used only if use_control_group_to_calibrate == True
 
-compute_absorbance = True
-use_sg_preprocess = True
+compute_absorbance = False
+use_sg_preprocess = False
 
 plot_config = dict(
     figsize = (12, 8),
@@ -37,8 +37,11 @@ plot_config = dict(
 
 use_shaded_area = False
 
-wavelength_to_plot = "1450"
-wavelength_to_plot = "1360"
+wavelength_to_plot = 1450
+# wavelength_to_plot = 1360
+
+average_range_wavelength = False # If true average some wavelengths around the specified wavelength_to_plot
+average_range = 15 # N. of wavelength to use on left and right to compute the average
 
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
 
@@ -86,8 +89,17 @@ for i in range(len(t_list)):
                 if use_sg_preprocess : data_lamp_power  = preprocess.sg(data_lamp_power)
 
                 # Get wavelength
-                wavelength_mean = data_lamp_power.loc[:, wavelength_to_plot].mean()
-                wavelength_std = data_lamp_power.loc[:, wavelength_to_plot].std()
+                if average_range_wavelength :
+                    wavelength_mean = data_lamp_power.loc[:, str(wavelength_to_plot - average_range):str(wavelength_to_plot + average_range)].mean()
+                    wavelength_std = data_lamp_power.loc[:, str(wavelength_to_plot - average_range):str(wavelength_to_plot + average_range)].std()
+                    wavelength_mean = wavelength_mean.mean()
+                    wavelength_std = wavelength_std.mean()
+                else :
+                    wavelength_mean = data_lamp_power.loc[:, str(wavelength_to_plot)].mean()
+                    wavelength_std = data_lamp_power.loc[:, str(wavelength_to_plot)].std()
+
+                print(wavelength_mean)
+
 
                 wavelength_mean_per_lamp_power.append(wavelength_mean)
                 wavelength_std_per_lamp_power.append(wavelength_std)

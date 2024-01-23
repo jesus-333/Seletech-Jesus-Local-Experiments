@@ -6,7 +6,7 @@ import matplotlib.pyplot as plt
 
 from library import manage_data_beans, preprocess
 
-# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # Settings
 t = 0
 
@@ -20,23 +20,23 @@ remove_mean = True
 
 percentage_reflectance_srs = 0.99
 
-# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
 def split_data_per_mems(data_dataframe, remove_mean = False):
     data_mems_1 = data_dataframe.loc[:, "1350":"1650"].to_numpy().squeeze()
     data_mems_2 = data_dataframe.loc[:, "1750":"2150"].to_numpy().squeeze()
 
-    if remove_mean : 
+    if remove_mean :
         if len(data_mems_1.shape) > 1:
             data_mems_1 = ( data_mems_1.T - data_mems_1.mean(1) ).T
             data_mems_2 = ( data_mems_2.T - data_mems_2.mean(1) ).T
-        else : 
+        else :
             data_mems_1 = data_mems_1 - data_mems_1.mean()
             data_mems_2 = data_mems_2 - data_mems_2.mean()
 
     return data_mems_1, data_mems_2
 
-# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
 # Create wavelength arrays
 wavelengts_1 = np.hstack(np.arange(1350, 1650 + 1))
@@ -63,7 +63,7 @@ calibration_data = calibration_data[calibration_data['lamp_0'] == lamp_power_to_
 if len(spectra_data) == 0 : raise ValueError("There are no spectra data with these settings")
 if len(calibration_data) == 0 : raise ValueError("There are no calibration data with these settings")
 
-# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # Compare spectra with calibration data
 
 # Get xtalk, srs and wcs in separate array
@@ -99,7 +99,7 @@ axs[1].plot(wavelengts_2, data_test_300_2[idx_spectra], label = 'test_300')
 axs[1].plot(wavelengts_2, srs_data_2, label = 'srs')
 axs[1].plot(wavelengts_2, crosstalk_data_2, label = 'crosstalk')
 
-for ax in axs: 
+for ax in axs:
     ax.legend()
     ax.set_xlabel("Wavelength [nm]")
     ax.grid(True)
@@ -108,7 +108,7 @@ fig.suptitle("Spectra at t{}".format(t))
 fig.tight_layout()
 fig.show()
 
-# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # Normalized spectra with calibration data
 
 normalized_data = preprocess.normalize_with_srs_and_xtalk(spectra_data, calibration_data[calibration_data['target'] == 'srs'], calibration_data[calibration_data['target'] == 'crosstalk'], percentage_reflectance_srs)
@@ -147,7 +147,7 @@ ax.legend()
 ax.set_xlabel("Wavelength [nm]")
 ax.grid(True)
 
-for ax in axs: 
+for ax in axs:
     ax.legend()
     ax.set_xlabel("Wavelength [nm]")
     ax.grid(True)

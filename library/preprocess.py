@@ -269,6 +269,7 @@ def __normalize_with_control_group(data_to_normalize, data_control_group, norm_t
     return data_to_normalize
 
 def normalize_with_srs_and_xtalk(data, spectra_srs, spectra_xtalk, percentage_reflectance_srs : float = 0.99):
+    normalized_data = data.copy(deep = True)
     spectra_srs_mems_1 = spectra_srs.loc[:, "1350":"1650"].to_numpy()
     spectra_srs_mems_2 = spectra_srs.loc[:, "1750":"2150"].to_numpy()
 
@@ -277,14 +278,14 @@ def normalize_with_srs_and_xtalk(data, spectra_srs, spectra_xtalk, percentage_re
 
     data_mems_1 = data.loc[:, "1350":"1650"]
     data_mems_1 = __normalize_with_srs_and_xtalk(data_mems_1, spectra_srs_mems_1, spectra_xtalk_mems_1, percentage_reflectance_srs)
-    data.loc[:, "1350":"1650"] = data_mems_1.iloc[:, :]
+    normalized_data.loc[:, "1350":"1650"] = data_mems_1.iloc[:, :]
 
 
     data_mems_2 = data.loc[:, "1750":"2150"]
     data_mems_2 = __normalize_with_srs_and_xtalk(data_mems_2, spectra_srs_mems_2, spectra_xtalk_mems_2, percentage_reflectance_srs)
-    data.loc[:, "1750":"2150"] = data_mems_2.iloc[:, :]
+    normalized_data.loc[:, "1750":"2150"] = data_mems_2.iloc[:, :]
 
-    return data
+    return normalized_data
 
 def __normalize_with_srs_and_xtalk(data_to_normalize, spectra_srs, spectra_xtalk, percentage_reflectance_srs : float) :
     data_numpy_to_normalize = data_to_normalize.to_numpy()
