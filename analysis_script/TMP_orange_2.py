@@ -146,8 +146,8 @@ fig, ax = plt.subplots(1, 1, figsize = plot_config['figsize'])
 # ax.plot(wavelengts_2, data_calib_2, label = 'Calib', color = 'red')
 # ax.plot(wavelengts_2, data_non_calib_2, label = 'Non calib', color = 'orange')
 
-ax.plot(wavelengts_2_smooth, data_calib_2_smooth, label = 'Calib', color = 'red')
-ax.plot(wavelengts_2_smooth, data_non_calib_2_smooth, label = 'Non calib', color = 'orange')
+ax.plot(wavelengts_2_smooth, data_calib_2_smooth, label = 'Calib', color = 'orange')
+ax.plot(wavelengts_2_smooth, data_non_calib_2_smooth, label = 'Non calib', color = 'red')
 
 ax.grid(True)
 ax.set_xlabel("Wavelength [nm]")
