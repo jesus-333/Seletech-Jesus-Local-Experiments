@@ -9,6 +9,8 @@ from library import manage_data_beans, preprocess
 path_calib = 'data/Orange/fruit_orange_calib.csv'
 path_NON_calib = 'data/Orange/fruit_orange.csv'
 
+mems_to_use = 1
+
 compute_absorbance = False
 use_sg_preprocess = False
 
@@ -64,8 +66,14 @@ if compute_absorbance or use_sg_preprocess or use_minmax_norm:
     data_calib = compute_preprocess(data_calib, compute_absorbance, use_sg_preprocess)
     data_non_calib = compute_preprocess(data_non_calib, compute_absorbance, use_sg_preprocess)
 
-data_calib_1, data_calib_2 = split_data_per_mems(data_calib)
-data_non_calib_1, data_non_calib_2 = split_data_per_mems(data_non_calib)
+# Dato che il codice è stato fatto inizialmente per mems2 nel caso voglia plottare il mems1 scambio le variabili.
+# Cioè assegno ai dati del mems1 il nome delle variabili del mems2
+if mems_to_use == 1 : 
+    data_calib_2, _ = split_data_per_mems(data_calib)
+    data_non_calib_2, _ = split_data_per_mems(data_non_calib)
+else : 
+    _, data_calib_2 = split_data_per_mems(data_calib)
+    _, data_non_calib_2 = split_data_per_mems(data_non_calib)
 
 data_calib_2 = data_calib_2[idx]
 data_non_calib_2 = data_non_calib_2[idx]
