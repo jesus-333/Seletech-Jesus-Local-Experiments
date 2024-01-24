@@ -102,7 +102,6 @@ axs[0].plot(wavelengts_1, data_test_150_1[idx_spectra], label = 'test_150')
 axs[0].plot(wavelengts_1, data_test_300_1[idx_spectra], label = 'test_300')
 axs[0].set_title("NON Calibrated data")
 
-
 # Calibrated data
 data_control_1, _ = split_data_per_mems(normalized_data[normalized_data['test_control'] == 'control'], remove_mean)
 data_test_150_1, _ = split_data_per_mems(normalized_data[normalized_data['test_control'] == 'test_150'], remove_mean)
