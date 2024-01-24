@@ -10,7 +10,7 @@ path_calib = 'data/Orange/fruit_orange_calib.csv'
 path_NON_calib = 'data/Orange/fruit_orange.csv'
 
 compute_absorbance = False
-use_sg_preprocess = False
+use_sg_preprocess = True
 
 w = 50
 p = 3
@@ -105,12 +105,14 @@ ax.plot(wavelengts_1, data_calib_1, label = 'calib')
 
 ax.grid(True)
 ax.set_xlabel("Wavelength [nm]")
+if compute_absorbance : ax.set_ylabel("Absorbance")
+else : ax.set_ylabel("Reflectance")
 ax.legend()
 
 fig.tight_layout()
 fig.show()
 
-if plot_config['save_fig'] and not plot_config['use_same_figure']: 
+if plot_config['save_fig'] : 
     path_save = 'Saved Results/orange_spectra/'
     os.makedirs(path_save, exist_ok = True)
 
@@ -120,7 +122,7 @@ if plot_config['save_fig'] and not plot_config['use_same_figure']:
 
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
 
-if not plot_config['use_same_figure'] : fig, ax = plt.subplots(1, 1, figsize = plot_config['figsize'])
+fig, ax = plt.subplots(1, 1, figsize = plot_config['figsize'])
 
 ax.plot(wavelengts_2, data_non_calib_2, label = 'Non calib')
 ax.plot(wavelengts_2, data_calib_2, label = 'calib')
@@ -135,8 +137,7 @@ fig.show()
 if plot_config['save_fig'] : 
     path_save = 'Saved Results/orange_spectra/'
     os.makedirs(path_save, exist_ok = True)
-    
-    if plot_config['use_same_figure'] : path_save += 'orange_calibrated_vs_non_w_{}_p_{}_der_{}'.format(w, p, der)
-    else : path_save += 'orange_calibrated_vs_non_w_{}_p_{}_der_{}_mems2'.format(w, p, der)
+
+    path_save += 'orange_calibrated_vs_non_w_{}_p_{}_der_{}_mems2'.format(w, p, der)
     fig.savefig(path_save + ".png", format = 'png')
     # fig.savefig(path_save + ".pdf", format = 'pdf')
