@@ -48,6 +48,7 @@ def split_data_per_mems(data_dataframe, remove_mean = False):
         else :
             data_mems_1 = data_mems_1 - data_mems_1.mean()
             data_mems_2 = data_mems_2 - data_mems_2.mean()
+            
 
     return data_mems_1, data_mems_2
 
@@ -71,6 +72,7 @@ if compute_absorbance or use_sg_preprocess or use_minmax_norm:
 if mems_to_use == 1 : 
     data_calib_2, _ = split_data_per_mems(data_calib)
     data_non_calib_2, _ = split_data_per_mems(data_non_calib)
+
 else : 
     _, data_calib_2 = split_data_per_mems(data_calib)
     _, data_non_calib_2 = split_data_per_mems(data_non_calib)
@@ -82,8 +84,13 @@ N = moving_average_windows
 data_calib_2_smooth = np.convolve(data_calib_2, np.ones(N)/N, mode='valid')
 data_non_calib_2_smooth = np.convolve(data_non_calib_2, np.ones(N)/N, mode='valid')
 
-wavelengts_2 = np.arange(1750, 2150 + 1)
-wavelengts_2_smooth = np.linspace(1750, 2150, len(data_calib_2_smooth))
+if mems_to_use == 1 : 
+    wavelengts_2 = np.arange(1350, 1650 + 1)
+    wavelengts_2_smooth = np.linspace(1350, 1650, len(data_calib_2_smooth))
+
+else : 
+    wavelengts_2 = np.arange(1750, 2150 + 1)
+    wavelengts_2_smooth = np.linspace(1750, 2150, len(data_calib_2_smooth))
 
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
 # Plot spectra and smoothed version together
@@ -91,7 +98,7 @@ wavelengts_2_smooth = np.linspace(1750, 2150, len(data_calib_2_smooth))
 fig, ax = plt.subplots(1, 1, figsize = plot_config['figsize'])
 
 ax.plot(wavelengts_2, data_non_calib_2, label = 'Non calib')
-ax.plot(wavelengts_2_smooth, data_non_calib_2_smooth, label = 'Non calib (smooth)', color = 'red')
+# ax.plot(wavelengts_2_smooth, data_non_calib_2_smooth, label = 'Non calib (smooth)', color = 'red')
 
 ax.grid(True)
 ax.set_xlabel("Wavelength [nm]")
@@ -117,7 +124,7 @@ if plot_config['save_fig'] :
 fig, ax = plt.subplots(1, 1, figsize = plot_config['figsize'])
 
 ax.plot(wavelengts_2, data_calib_2, label = 'Calib')
-ax.plot(wavelengts_2_smooth, data_calib_2_smooth, label = 'Calib (smooth)', color = 'orange')
+# ax.plot(wavelengts_2_smooth, data_calib_2_smooth, label = 'Calib (smooth)', color = 'orange')
 
 ax.grid(True)
 ax.set_xlabel("Wavelength [nm]")
