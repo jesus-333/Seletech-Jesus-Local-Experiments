@@ -38,6 +38,8 @@ plot_config = dict(
 
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
 
+plt.rcParams.update({'font.size': plot_config['fontsize']})
+
 def split_data_per_mems(data_dataframe, remove_mean = False):
     data_mems_1 = data_dataframe.loc[:, "1350":"1650"].to_numpy().squeeze()
     data_mems_2 = data_dataframe.loc[:, "1750":"2150"].to_numpy().squeeze()
