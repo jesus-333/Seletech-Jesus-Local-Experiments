@@ -54,6 +54,12 @@ def split_data_per_mems(data_dataframe, remove_mean = False):
 
     return data_mems_1, data_mems_2
 
+def compute_preprocess(data, compute_absorbance, use_sg_preprocess):
+    if compute_absorbance : data  = preprocess.R_A(data, keep_meta = False)
+    if use_sg_preprocess : data  = preprocess.sg(data, keep_meta = False, w = w, p = p, deriv = der)
+
+    return data
+
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
 
 # Create wavelength arrays
@@ -92,6 +98,11 @@ calibration_data['target'] = calibration_data['target'].str.lower()
 
 spectra_data_calib = preprocess.normalize_with_srs_and_xtalk(spectra_data, calibration_data[calibration_data['target'] == 'srs'], calibration_data[calibration_data['target'] == 'crosstalk'], percentage_reflectance_srs)
 
+if compute_absorbance or use_sg_preprocess or use_minmax_norm:
+    spectra_data = compute_preprocess(spectra_data, compute_absorbance, use_sg_preprocess)
+    spectra_data_calib = compute_preprocess(spectra_data_calib, compute_absorbance, use_sg_preprocess)
+
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
 
 # Create figure
 fig, ax = plt.subplots(1, 1, figsize = (12, 8))
