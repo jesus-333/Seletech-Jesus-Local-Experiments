@@ -184,8 +184,8 @@ def R_A(data, keep_meta = True):
     if keep_meta : meta = data.loc[:, "device_id":]
     ab_mems1 = np.log10(1/mems1)
     ab_mems2 = np.log10(1/mems2)
-    if keep_meta : data = pd.concat([sav_mems1, sav_mems2, meta], axis=1)
-    else : data = pd.concat([sav_mems1, sav_mems2], axis=1)
+    if keep_meta : data = pd.concat([ab_mems1, ab_mems2, meta], axis=1)
+    else : data = pd.concat([ab_mems1, ab_mems2], axis=1)
     
     return data
 
