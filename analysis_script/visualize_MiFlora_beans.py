@@ -29,7 +29,7 @@ type_data_to_plot = 'MI_CONDUCTIVITY'
 plot_config = dict(
     figsize = (12, 8),
     fontsize = 15,
-    save_fig = False
+    save_fig = True
 )
 
 mi_flora_to_use = None

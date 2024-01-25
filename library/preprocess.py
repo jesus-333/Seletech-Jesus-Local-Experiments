@@ -135,7 +135,7 @@ def __normalize_standardization(data, remove_mean, divide_by_std):
 
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
 
-def sg(data, w =51, p =3, deriv=0):
+def sg(data, w = 51, p = 3, deriv = 0, keep_meta = True):
     """
     @author = Dag
     Savitky Golay filter for spectra. Splits spectra into two mems
@@ -155,7 +155,7 @@ def sg(data, w =51, p =3, deriv=0):
     # data_col = data.iloc[:, :702].columns
     mems1 = data.loc[:, "1350":"1650"]
     mems2 = data.loc[:, "1750":"2150"]
-    meta = data.loc[:, "device_id":]
+    if keep_meta : meta = data.loc[:, "device_id":]
     del data
     sav_mems1 = pd.DataFrame(
         savgol_filter(mems1, **param),
@@ -165,12 +165,13 @@ def sg(data, w =51, p =3, deriv=0):
         savgol_filter(mems2, **param),
         columns=mems2.columns,
         index=data_id)
-    data = pd.concat([sav_mems1, sav_mems2, meta], axis=1)
+    if keep_meta : data = pd.concat([sav_mems1, sav_mems2, meta], axis=1)
+    else : data = pd.concat([sav_mems1, sav_mems2], axis=1)
     print(f'data shape after filter {data.shape}')
     return data
 
 #savisky golay filter,
-def R_A(data):
+def R_A(data, keep_meta = True):
     """
     @author = Dag
     Reflectance to absorbance
@@ -180,10 +181,11 @@ def R_A(data):
     # data_col = data.iloc[:, :702].columns
     mems1 = data.loc[:, "1350":"1650"]
     mems2 = data.loc[:, "1750":"2150"]
-    meta = data.loc[:, "device_id":]
+    if keep_meta : meta = data.loc[:, "device_id":]
     ab_mems1 = np.log10(1/mems1)
     ab_mems2 = np.log10(1/mems2)
-    data = pd.concat([ab_mems1, ab_mems2, meta], axis=1)
+    if keep_meta : data = pd.concat([ab_mems1, ab_mems2, meta], axis=1)
+    else : data = pd.concat([ab_mems1, ab_mems2], axis=1)
     
     return data
 
