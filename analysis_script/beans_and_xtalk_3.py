@@ -18,12 +18,12 @@ plant = 'ViciaFaba'
 
 percentage_reflectance_srs = 0.99
 
-compute_absorbance = False
-use_sg_preprocess = False
+compute_absorbance = True
+use_sg_preprocess = True
 
 w = 50
 p = 3
-der = 2
+der = 1
 
 use_minmax_norm = True
 
@@ -112,6 +112,8 @@ spectra_data_1, _  = split_data_per_mems(spectra_data, False)
 ax.plot(wavelengts_1, spectra_data_1[idx_spectra], label = 'Non calibrated', color = 'red')
 ax.legend()
 ax.set_xlabel("Wavelength [nm]")
+if compute_absorbance : ax.set_ylabel("Absorbance")
+else : ax.set_ylabel("Reflectance")
 ax.grid(True)
 fig.tight_layout()
 fig.show()
@@ -125,6 +127,8 @@ spectra_data_calib_1, _  = split_data_per_mems(spectra_data_calib, False)
 ax.plot(wavelengts_1, spectra_data_calib_1[idx_spectra], label = 'Calibrated', color = 'orange')
 ax.legend()
 ax.set_xlabel("Wavelength [nm]")
+if compute_absorbance : ax.set_ylabel("Absorbance")
+else : ax.set_ylabel("Reflectance")
 ax.grid(True)
 fig.tight_layout()
 fig.show()
@@ -141,6 +145,8 @@ ax.plot(wavelengts_1, spectra_data_1[idx_spectra], label = 'Non Calibrated', col
 ax.plot(wavelengts_1, spectra_data_calib_1[idx_spectra], label = 'Calibrated', color = 'orange')
 ax.legend()
 ax.set_xlabel("Wavelength [nm]")
+if compute_absorbance : ax.set_ylabel("Absorbance")
+else : ax.set_ylabel("Reflectance")
 ax.grid(True)
 fig.tight_layout()
 fig.show()
