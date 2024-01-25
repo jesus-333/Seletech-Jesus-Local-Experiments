@@ -56,7 +56,7 @@ def split_data_per_mems(data_dataframe, remove_mean = False):
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
 
 # Create wavelength arrays
-wavelengts_1 = np.hstack(np.arange(1350, 1650 + 1))
+wavelengts_1 = np.arange(1350, 1650 + 1)
 wavelengts_2 = np.arange(1750, 2150 + 1)
 
 # Get data (calibration)
