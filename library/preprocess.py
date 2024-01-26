@@ -13,7 +13,7 @@ import pandas as pd
 from . import config
 from . import manage_data_beans
 
-# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
 def normalize_sklearn_scaler(data, scaler_type : int):
     """
@@ -71,7 +71,7 @@ def normalize_with_values_first_column(data, divide_mems : bool = False):
 
         data_mems_2 = data.loc[:, "1750":"2150"]
         data_mems_2 = __normalize_with_values_first_column(data_mems_2)
-        data.loc[:, "1750":"2150"] = data_mems_2  
+        data.loc[:, "1750":"2150"] = data_mems_2
     else:
         data_both_mems = data.loc[:, "1350":"2150"]
         data_both_mems = __normalize_with_values_first_column(data_both_mems)
@@ -105,7 +105,7 @@ def normalize_standardization(data, divide_mems : bool = False, remove_mean = Tr
 
         data_mems_2 = data.loc[:, "1750":"2150"]
         data_mems_2 =  __normalize_standardization(data_mems_2, remove_mean, divide_by_std)
-        data.loc[:, "1750":"2150"] = data_mems_2  
+        data.loc[:, "1750":"2150"] = data_mems_2
     else:
         data_both_mems = data.loc[:, "1350":"2150"]
         data_both_mems =  __normalize_standardization(data_both_mems, remove_mean, divide_by_std)
@@ -119,8 +119,8 @@ def __normalize_standardization(data, remove_mean, divide_by_std):
     N.b. If we take the same wavelength but with different spectra the std between wavelength can still be very high respect the mean between wavelength.
     """
     data_numpy = data.to_numpy()
-    
-    if remove_mean: 
+
+    if remove_mean:
         mean_data = data_numpy.mean(1)
         data_numpy -= mean_data[:, None]
 
@@ -131,15 +131,15 @@ def __normalize_standardization(data, remove_mean, divide_by_std):
     data.iloc[:, :] = data_numpy
 
     return data
-    
 
-# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
 
-def sg(data, w =51, p =3, deriv=0, keep_meta = True):
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+def sg(data, w = 51, p = 3, deriv = 0, keep_meta = True):
     """
     @author = Dag
     Savitky Golay filter for spectra. Splits spectra into two mems
-    
+
     window size default 15
     polynomial order 3
     derivative 0
@@ -186,11 +186,11 @@ def R_A(data, keep_meta = True):
     ab_mems2 = np.log10(1/mems2)
     if keep_meta : data = pd.concat([ab_mems1, ab_mems2, meta], axis=1)
     else : data = pd.concat([ab_mems1, ab_mems2], axis=1)
-    
+
     return data
 
 
-# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # Beans experiment function
 
 def beans_preprocess_pipeline(dataframe, config : dict, wavelength = None):
@@ -213,10 +213,10 @@ def beans_preprocess_pipeline(dataframe, config : dict, wavelength = None):
 
     else: # Do the computation for the 2 mems together
         beans_data = normalize_sklearn_scaler(beans_data, config['normalization_type'])
-        
+
         if config['compute_derivative']:
             beans_data = derivate(beans_data, config['derivative_order'])
-    
+
     dataframe.iloc[:, 1:len(wavelength) + 1] = beans_data
 
     return dataframe
@@ -224,7 +224,7 @@ def beans_preprocess_pipeline(dataframe, config : dict, wavelength = None):
 def normalize_with_control_group(data, norm_type : int):
     """
     If norm_type == 1 for each spectra remove the mean of the control group, then divide by same mean and multiply by 100
-    If norm_type == 2 for each spectra remove the mean of the control group, then divide by the std of the control group 
+    If norm_type == 2 for each spectra remove the mean of the control group, then divide by the std of the control group
     This operations are made separately for each wavelength.
     N.b. note that this normalization is computed along the wavelength, i.e., each wavelength is normalized respect the values of other wavelengths
     """
@@ -241,7 +241,7 @@ def normalize_with_control_group(data, norm_type : int):
         data_group_mems_1 = data_group.loc[:, "1350":"1650"]
         data_group_mems_1 = __normalize_with_control_group(data_group_mems_1, data_control_mems_1, norm_type)
         data_group.loc[:, "1350":"1650"] = data_group_mems_1.iloc[:, :]
-    
+
         # Normalize mems2
         data_group_mems_2 = data_group.loc[:, "1750":"2150"]
         data_group_mems_2 = __normalize_with_control_group(data_group_mems_2, data_control_mems_2, norm_type)
@@ -255,7 +255,7 @@ def normalize_with_control_group(data, norm_type : int):
 def __normalize_with_control_group(data_to_normalize, data_control_group, norm_type : int):
     data_numpy_to_normalize = data_to_normalize.to_numpy()
     data_numpy_control_group = data_control_group.to_numpy()
-    
+
     mean_control = data_numpy_control_group.mean(0)
 
     if norm_type == 1:

@@ -3,6 +3,7 @@
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
+import os
 
 from library import manage_data_beans, preprocess
 
@@ -20,13 +21,21 @@ remove_mean = True
 
 compute_absorbance = True
 use_sg_preprocess = True
-compute_absorbance = False
-use_sg_preprocess = False
+# compute_absorbance = False
+# use_sg_preprocess = False
 w = 50
 p = 3
 deriv = 2
 
 percentage_reflectance_srs = 0.99
+
+idx_spectra = np.random.randint(5)
+idx_spectra = 3 
+
+plot_config = dict(
+    figsize = (12, 8),
+    save_fig = True,
+)
 
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
 
@@ -47,7 +56,7 @@ def split_data_per_mems(data_dataframe, remove_mean = False):
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
 
 # Create wavelength arrays
-wavelengts_1 = np.hstack(np.arange(1350, 1650 + 1))
+wavelengts_1 = np.arange(1350, 1650 + 1)
 wavelengts_2 = np.arange(1750, 2150 + 1)
 
 # Get data (calibration)
@@ -72,8 +81,9 @@ if len(spectra_data) == 0 : raise ValueError("There are no spectra data with the
 if len(calibration_data) == 0 : raise ValueError("There are no calibration data with these settings")
 
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
-# Get xtalk, srs and wcs in separate array
+# Compare spectra with calibration data
 
+# Get xtalk, srs and wcs in separate array
 calibration_data['target'] = calibration_data['target'].str.lower()
 srs_data_1, srs_data_2 = split_data_per_mems(calibration_data[calibration_data['target'] == 'srs'], remove_mean)
 wcs_data_1, wcs_data_2 = split_data_per_mems(calibration_data[calibration_data['target'] == 'wcs'], remove_mean)
@@ -98,38 +108,33 @@ if use_sg_preprocess :
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
 # Plot data
 
-
-idx_spectra = np.random.randint(5)
-idx_spectra = 3
-
-# Create figure
-fig, axs = plt.subplots(1, 2, figsize = (12, 8))
+fig, ax = plt.subplots(1, 1, figsize = plot_config['figsize'])
 
 remove_mean = True
 
 # NON Calibrated data
-data_control_1, _  = split_data_per_mems(spectra_data[spectra_data['test_control'] == 'control'], remove_mean)
-data_test_150_1, _ = split_data_per_mems(spectra_data[spectra_data['test_control'] == 'test_150'], remove_mean)
-data_test_300_1, _ = split_data_per_mems(spectra_data[spectra_data['test_control'] == 'test_300'], remove_mean)
-axs[0].plot(wavelengts_1, data_control_1[idx_spectra], label = 'control')
-# axs[0].plot(wavelengts_1, data_test_150_1[idx_spectra], label = 'test_150')
-# axs[0].plot(wavelengts_1, data_test_300_1[idx_spectra], label = 'test_300')
-axs[0].set_title("NON Calibrated data")
+spectra_data_1, _  = split_data_per_mems(spectra_data, remove_mean)
+ax.plot(wavelengts_1, spectra_data_1[idx_spectra], label = 'NON calibrated')
 
 # Calibrated data
-data_control_1, _ = split_data_per_mems(normalized_data[normalized_data['test_control'] == 'control'], remove_mean)
-data_test_150_1, _ = split_data_per_mems(normalized_data[normalized_data['test_control'] == 'test_150'], remove_mean)
-data_test_300_1, _ = split_data_per_mems(normalized_data[normalized_data['test_control'] == 'test_300'], remove_mean)
-axs[1].plot(wavelengts_1, data_control_1[idx_spectra], label = 'control')
-# axs[1].plot(wavelengts_1, data_test_150_1[idx_spectra], label = 'test_150')
-# axs[1].plot(wavelengts_1, data_test_300_1[idx_spectra], label = 'test_300')
-axs[1].set_title("Calibrated data")
+normalized_data_1, _ = split_data_per_mems(normalized_data, remove_mean)
+ax.plot(wavelengts_1, normalized_data_1[idx_spectra], label = 'calibrated')
 
-for ax in axs: 
-    ax.legend()
-    ax.set_xlabel("Wavelength [nm]")
-    ax.grid(True)
+ax.legend()
+ax.set_xlabel("Wavelength [nm]")
+ax.grid(True)
 
-fig.suptitle("Spectra at t{}".format(t))
+title = "Spectra at t{}".format(t)
+if use_sg_preprocess :
+    title += " - w = {}, p = {}, der = {}".format(w, p, deriv)
+ax.set_title(title)
+
 fig.tight_layout()
 fig.show()
+
+if plot_config['save_fig']:
+    path_save = 'Saved Results/beans_spectra/single_spectra/'
+    os.makedirs(path_save, exist_ok = True)
+
+    path_save += 'calibraton_idx_{}_t{}_w_{}_p_{}_der_{}'.format(idx_spectra, t, w, p, deriv)
+    fig.savefig(path_save + ".png", format = 'png')
