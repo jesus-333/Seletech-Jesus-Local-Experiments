@@ -13,7 +13,7 @@ t_list = [0, 1, 2, 3, 4, 5]
 gain = 1
 
 plant = 'PhaseolusVulgaris'
-# plant = 'ViciaFaba'
+plant = 'ViciaFaba'
 
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
 
@@ -29,6 +29,7 @@ def filter_spectra_by_threshold(spectra_dataframe, threshold : int):
 
 info_to_print = "Plant {}\n".format(plant)
 specific_plant_removed_count = dict()
+group_plant_kept_count = dict()
 
 for i in range(len(t_list)):
     t = t_list[i]
@@ -39,11 +40,15 @@ for i in range(len(t_list)):
     spectra_data_ALL = spectra_data_ALL[spectra_data_ALL['gain_0'] == gain]
     if plant is not None : spectra_data_ALL = spectra_data_ALL[spectra_data_ALL['plant'] == plant]
     
-    # Get the list with all the different plants
+    # Get the list with all the different plants/group
     if i == 0:
         tmp_plant_type_list = list(set(spectra_data_ALL['type']))
         for tmp_plant_type in tmp_plant_type_list : specific_plant_removed_count[tmp_plant_type] = 0
         del tmp_plant_type, tmp_plant_type_list
+        
+        tmp_plant_group_list = list(set(spectra_data_ALL['test_control']))
+        for tmp_plant_group in tmp_plant_group_list : group_plant_kept_count[tmp_plant_group] = 0
+        del tmp_plant_group, tmp_plant_group_list
 
     # Remove spectra with lower value
     spectra_kept, idx_data_to_keep = filter_spectra_by_threshold(spectra_data_ALL, threshold)
@@ -53,6 +58,7 @@ for i in range(len(t_list)):
     spectra_removed = spectra_data_ALL[idx_data_to_remove]
     
     # Percentage of spectra kept and removed
+    print(len(spectra_data_ALL))
     percentage_kept = len(spectra_kept) / len(spectra_data_ALL) * 100
     percentage_removed = len(spectra_removed) / len(spectra_data_ALL) * 100
 
@@ -63,7 +69,6 @@ for i in range(len(t_list)):
 
     # Get lamp power removed spectra
     lamp_power_removed = list(set(spectra_removed['lamp_0']))
-    
     info_to_print += "\tDistribution of lamp power in removed spectra:\n"
     for lamp_power in lamp_power_removed : 
         tmp_spectra = spectra_removed[spectra_removed['lamp_0'] == lamp_power]
@@ -75,8 +80,12 @@ for i in range(len(t_list)):
         if lamp_power != 50 : 
             tmp_plant_type_list = list(set(tmp_spectra['type']))
             for tmp_plant_type in tmp_plant_type_list : specific_plant_removed_count[tmp_plant_type] += 1
-
     del tmp_spectra, tmp_percentage, tmp_plant_type_list, tmp_plant_type
+    
+    group_plant_kept = list(set(spectra_kept['test_control']))
+    for group_plant in group_plant_kept :
+        tmp_group = spectra_kept[spectra_kept['test_control'] == group_plant]
+        info_to_print += "Group {} : {}\n".format(group_plant, len(tmp_group))
 
     info_to_print += "\n"
 
@@ -87,4 +96,3 @@ for specific_plant in specific_plant_removed_count:
 info_to_print += "\n"
 
 print(info_to_print)
-
