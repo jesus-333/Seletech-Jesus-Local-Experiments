@@ -2,7 +2,7 @@
 Script per dei risultati per il 4 meeting.
 Cercare i picchi come ha suggerito Dag.
 
-In questo script viene creato una figura per ogni giorno. In ogni giorno ci sono 4 plot, 1 per lamp power, dove vengono visualizzate media e std dei gruppi di piante
+In questo script viene creato una figura per ogni giorno. In ogni giorno ci sono 3 plot, 1 per ogni tipo di pianta, dove vengono visualizzate media e std per le varie lamp power
 """
 
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -32,10 +32,10 @@ w = 50
 p = 3
 deriv = 2
 
-mems_to_plot = 1
+mems_to_plot = 2
 
 plot_config = dict(
-    figsize = (20, 12),
+    figsize = (20, 8),
     fontsize = 20,
     add_std = True,
     save_fig = True,
@@ -46,6 +46,7 @@ plot_config = dict(
 plt.rcParams.update({'font.size': plot_config['fontsize']})
 
 lamp_power_list = [50, 60, 70, 80]
+lamp_to_color = {50 : 'red', 60 : 'black', 70 : 'green', 80 : 'orange'}
 
 for i in range(len(t_list)):
     t = t_list[i]
@@ -69,53 +70,56 @@ for i in range(len(t_list)):
         raise ValueError("At least 1 between compute_absorbance and use_sg_filter must be true")
     
     # Create figure for the plots
-    fig, axs = plt.subplots(2, 2, figsize = plot_config['figsize'])
+    fig, axs = plt.subplots(1, 3, figsize = plot_config['figsize'])
     
     idx_lamp_power = 0
-    for j in range(2):
-        for k in range(2):
-            # Get spectra with specific lamp power
-            lamp_power = lamp_power_list[idx_lamp_power]
-            idx_lamp_power += 1
-            tmp_spectra = spectra_data[spectra_data['lamp_0'] == lamp_power]
+    for lamp_power_idx in range(len(lamp_power_list)):
+        # Get spectra with specific lamp power
+        lamp_power = lamp_power_list[lamp_power_idx]
+        idx_lamp_power += 1
+        tmp_spectra = spectra_data[spectra_data['lamp_0'] == lamp_power]
 
-            # Select axis for the plot
-            ax = axs[j, k]
 
-            if len(tmp_spectra) > 0:
-                # Get average and std per group
-                tmp_spectra_mean = tmp_spectra.groupby("test_control").mean()
-                tmp_spectra_std = tmp_spectra.groupby("test_control").std()
+        if len(tmp_spectra) > 0:
+            # Get average and std per group
+            tmp_spectra_mean = tmp_spectra.groupby("test_control").mean()
+            tmp_spectra_std = tmp_spectra.groupby("test_control").std()
+            
+            # Select mems to plot
+            if mems_to_plot == 1 :
+                tmp_spectra_mean = tmp_spectra_mean.loc[:, "1350":"1650"]
+                tmp_spectra_std = tmp_spectra_std.loc[:, "1350":"1650"]
+                tmp_wavelength = wavelength[wavelength <= 1650]
+            elif mems_to_plot == 2 :
+                tmp_spectra_mean = tmp_spectra_mean.loc[:, "1750":"2150"]
+                tmp_spectra_std = tmp_spectra_std.loc[:, "1750":"2150"]
+                tmp_wavelength = wavelength[wavelength >= 1750]
+            elif mems_to_plot == 'both' :
+                tmp_spectra_mean = tmp_spectra_mean.loc[:, "1350":"2150"]
+                tmp_spectra_std = tmp_spectra_std.loc[:, "1350":"2150"]
+                tmp_wavelength = wavelength[:]
+            else:
+                raise ValueError("mems_to_plot must have value 1 or 2 or both")
+
+
+            # Plot the spectra for each group
+            for idx_group in range(len(tmp_spectra_mean)):
+                # Select axis for the plot
+                ax = axs[idx_group]
+
+                spectra_to_plot_mean = tmp_spectra_mean.iloc[idx_group, :]
+                spectra_to_plot_std = tmp_spectra_std.iloc[idx_group, :]
                 
-                # Select mems to plot
-                if mems_to_plot == 1 :
-                    tmp_spectra_mean = tmp_spectra_mean.loc[:, "1350":"1650"]
-                    tmp_spectra_std = tmp_spectra_std.loc[:, "1350":"1650"]
-                    tmp_wavelength = wavelength[wavelength <= 1650]
-                elif mems_to_plot == 2 :
-                    tmp_spectra_mean = tmp_spectra_mean.loc[:, "1750":"2150"]
-                    tmp_spectra_std = tmp_spectra_std.loc[:, "1750":"2150"]
-                    tmp_wavelength = wavelength[wavelength >= 1750]
-                elif mems_to_plot == 'both' :
-                    tmp_spectra_mean = tmp_spectra_mean.loc[:, "1350":"2150"]
-                    tmp_spectra_std = tmp_spectra_std.loc[:, "1350":"2150"]
-                    tmp_wavelength = wavelength[:]
-                else:
-                    raise ValueError("mems_to_plot must have value 1 or 2 or both")
-
-                # Plot the spectra for each group
-                for idx_group in range(len(tmp_spectra_mean)):
-                    spectra_to_plot_mean = tmp_spectra_mean.iloc[idx_group, :]
-                    spectra_to_plot_std = tmp_spectra_std.iloc[idx_group, :]
-                    
-                    # Plot the average spectra per group
-                    ax.plot(tmp_wavelength, spectra_to_plot_mean, label = spectra_to_plot_mean.name)
-                    
-                    # (OPTIONAL) Add the std
-                    if plot_config['add_std']:
-                        ax.fill_between(tmp_wavelength, spectra_to_plot_mean + spectra_to_plot_std, spectra_to_plot_mean - spectra_to_plot_std,
-                                        alpha = 0.25
-                                        )
+                # Plot the average spectra per group
+                ax.plot(tmp_wavelength, spectra_to_plot_mean,
+                        label = "Lamp power {}".format(lamp_power), color = lamp_to_color[lamp_power]
+                        )
+                
+                # (OPTIONAL) Add the std
+                if plot_config['add_std']:
+                    ax.fill_between(tmp_wavelength, spectra_to_plot_mean + spectra_to_plot_std, spectra_to_plot_mean - spectra_to_plot_std,
+                                    alpha = 0.25, color = lamp_to_color[lamp_power],
+                                    )
 
                 # Add info to the plot
                 ax.legend()
@@ -128,15 +132,15 @@ for i in range(len(t_list)):
                 elif mems_to_plot == 2:
                     ax.set_ylim([-1.1 * 1e-5, 1.1 * 1e-5])
 
-            ax.set_title("Lamp power {}".format(lamp_power))
+                ax.set_title(spectra_to_plot_mean.name)
     
     fig.suptitle("{} - Day t = {}".format(plant,t))
     fig.tight_layout()
     fig.show()
 
     if plot_config['save_fig'] :
-        path_save = 'Saved Results/weekly_update_beans/3/V1_mems_{}/'.format(mems_to_plot)
+        path_save = 'Saved Results/weekly_update_beans/3/V2_mems_{}/'.format(mems_to_plot)
         os.makedirs(path_save, exist_ok = True)
 
-        path_save += '3_peak_V1_t_{}_w_{}_p_{}_der_{}_mems_{}'.format(t, w, p, deriv, mems_to_plot)
+        path_save += '3_peak_V2_t_{}_w_{}_p_{}_der_{}_mems_{}'.format(t, w, p, deriv, mems_to_plot)
         fig.savefig(path_save + ".png", format = 'png')
