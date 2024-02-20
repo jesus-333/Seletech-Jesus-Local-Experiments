@@ -1,6 +1,6 @@
 """
 Script per dei risultati per il 4 meeting.
-Cercare i picchi come ha suggerito Dag.
+Crea degli istogrammi dei samples.
 
 In questo script viene creato una figura per ogni giorno. In ogni giorno ci sono 4 plot, 1 per lamp power, dove vengono visualizzate media e std dei gruppi di piante
 """
@@ -32,12 +32,14 @@ w = 50
 p = 3
 deriv = 2
 
+normalize_hist = True
 mems_to_plot = 1
 
 plot_config = dict(
     figsize = (20, 12),
+    n_bins = 50,
     fontsize = 20,
-    add_std = True,
+    linewidth = 2,
     save_fig = True,
 )
 
@@ -83,22 +85,18 @@ for i in range(len(t_list)):
             ax = axs[j, k]
 
             if len(tmp_spectra) > 0:
-                # Get average and std per group
+                # Get average per group
                 tmp_spectra_mean = tmp_spectra.groupby("test_control").mean()
-                tmp_spectra_std = tmp_spectra.groupby("test_control").std()
                 
                 # Select mems to plot
                 if mems_to_plot == 1 :
                     tmp_spectra_mean = tmp_spectra_mean.loc[:, "1350":"1650"]
-                    tmp_spectra_std = tmp_spectra_std.loc[:, "1350":"1650"]
                     tmp_wavelength = wavelength[wavelength <= 1650]
                 elif mems_to_plot == 2 :
                     tmp_spectra_mean = tmp_spectra_mean.loc[:, "1750":"2150"]
-                    tmp_spectra_std = tmp_spectra_std.loc[:, "1750":"2150"]
                     tmp_wavelength = wavelength[wavelength >= 1750]
                 elif mems_to_plot == 'both' :
                     tmp_spectra_mean = tmp_spectra_mean.loc[:, "1350":"2150"]
-                    tmp_spectra_std = tmp_spectra_std.loc[:, "1350":"2150"]
                     tmp_wavelength = wavelength[:]
                 else:
                     raise ValueError("mems_to_plot must have value 1 or 2 or both")
@@ -106,27 +104,22 @@ for i in range(len(t_list)):
                 # Plot the spectra for each group
                 for idx_group in range(len(tmp_spectra_mean)):
                     spectra_to_plot_mean = tmp_spectra_mean.iloc[idx_group, :]
-                    spectra_to_plot_std = tmp_spectra_std.iloc[idx_group, :]
                     
                     # Plot the average spectra per group
-                    ax.plot(tmp_wavelength, spectra_to_plot_mean, label = spectra_to_plot_mean.name)
-                    
-                    # (OPTIONAL) Add the std
-                    if plot_config['add_std']:
-                        ax.fill_between(tmp_wavelength, spectra_to_plot_mean + spectra_to_plot_std, spectra_to_plot_mean - spectra_to_plot_std,
-                                        alpha = 0.25
-                                        )
+                    ax.hist(spectra_to_plot_mean, plot_config['n_bins'], density = normalize_hist,
+                            histtype = 'step', label = spectra_to_plot_mean.name, linewidth = plot_config['linewidth']
+                            )
 
                 # Add info to the plot
                 ax.legend()
                 ax.grid(True)
-                ax.set_xlabel("Wavelength [nm]")
+                ax.set_xlabel("Amplitude")
                 ax.set_xlim([tmp_wavelength[0], tmp_wavelength[-1]])
                 
-                if mems_to_plot == 1:
-                    ax.set_ylim([-1 * 1e-5, 1.5 * 1e-5])
-                elif mems_to_plot == 2:
-                    ax.set_ylim([-1.1 * 1e-5, 1.1 * 1e-5])
+                # if mems_to_plot == 1:
+                #     ax.set_ylim([-1 * 1e-5, 1.5 * 1e-5])
+                # elif mems_to_plot == 2:
+                #     ax.set_ylim([-1.1 * 1e-5, 1.1 * 1e-5])
 
             ax.set_title("Lamp power {}".format(lamp_power))
     
@@ -138,5 +131,5 @@ for i in range(len(t_list)):
         path_save = 'Saved Results/weekly_update_beans/3/V1_mems_{}/'.format(mems_to_plot)
         os.makedirs(path_save, exist_ok = True)
 
-        path_save += '3_peak_V1_t_{}_w_{}_p_{}_der_{}_mems_{}'.format(t, w, p, deriv, mems_to_plot)
+        path_save += '3_hist_V1_t_{}_w_{}_p_{}_der_{}_mems_{}'.format(t, w, p, deriv, mems_to_plot)
         fig.savefig(path_save + ".png", format = 'png')

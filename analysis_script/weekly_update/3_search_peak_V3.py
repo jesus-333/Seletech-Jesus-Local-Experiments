@@ -2,7 +2,6 @@
 Script per dei risultati per il 4 meeting.
 Cercare i picchi come ha suggerito Dag.
 
-In questo script viene creato una figura per ogni giorno. In ogni giorno ci sono 3 plot, 1 per ogni tipo di pianta, dove vengono visualizzate media e std per le varie lamp power
 In questo script viene creata una figura per ogni lamp power. Su figura ci sono 3 plot, 1 per ogni tipo di pianta, dove vengono visualizzati media e std per i vari giorni.
 """
 
@@ -140,5 +139,5 @@ for idx_lamp_power in range(len(lamp_power_list)):
         path_save = 'Saved Results/weekly_update_beans/3/V3_mems_{}/'.format(mems_to_plot)
         os.makedirs(path_save, exist_ok = True)
 
-        path_save += '3_peak_V2_lamp_{}_w_{}_p_{}_der_{}_mems_{}'.format(lamp_power, w, p, deriv, mems_to_plot)
+        path_save += '3_peak_V3_lamp_{}_w_{}_p_{}_der_{}_mems_{}'.format(lamp_power, w, p, deriv, mems_to_plot)
         fig.savefig(path_save + ".png", format = 'png')
