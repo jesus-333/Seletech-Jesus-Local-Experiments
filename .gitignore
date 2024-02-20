@@ -16,3 +16,6 @@ data/jesus_spectra_full_dataset_NOT NORMALIZED.csv
 data/jesus_spectra_full_dataset.csv
 data/jesus_ht_full_dataset.csv
 .spyproject/config/
+*.pdf
+*.png
+*.eps

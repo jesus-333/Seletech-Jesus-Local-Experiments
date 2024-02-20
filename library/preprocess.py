@@ -177,13 +177,13 @@ def R_A(data, keep_meta = True):
     Reflectance to absorbance
     """
 
-    data_id = data.iloc[:, :702].index
+    # data_id = data.iloc[:, :702].index
     # data_col = data.iloc[:, :702].columns
     mems1 = data.loc[:, "1350":"1650"]
     mems2 = data.loc[:, "1750":"2150"]
     if keep_meta : meta = data.loc[:, "device_id":]
-    ab_mems1 = np.log10(1/mems1)
-    ab_mems2 = np.log10(1/mems2)
+    ab_mems1 = np.log10(1 / mems1)
+    ab_mems2 = np.log10(1 / mems2)
     if keep_meta : data = pd.concat([ab_mems1, ab_mems2, meta], axis=1)
     else : data = pd.concat([ab_mems1, ab_mems2], axis=1)
 
@@ -282,18 +282,32 @@ def normalize_with_srs_and_xtalk(data, spectra_srs, spectra_xtalk, percentage_re
     data_mems_1 = __normalize_with_srs_and_xtalk(data_mems_1, spectra_srs_mems_1, spectra_xtalk_mems_1, percentage_reflectance_srs)
     normalized_data.loc[:, "1350":"1650"] = data_mems_1.iloc[:, :]
 
-
     data_mems_2 = data.loc[:, "1750":"2150"]
     data_mems_2 = __normalize_with_srs_and_xtalk(data_mems_2, spectra_srs_mems_2, spectra_xtalk_mems_2, percentage_reflectance_srs)
     normalized_data.loc[:, "1750":"2150"] = data_mems_2.iloc[:, :]
 
     return normalized_data
 
+
 def __normalize_with_srs_and_xtalk(data_to_normalize, spectra_srs, spectra_xtalk, percentage_reflectance_srs : float) :
     data_numpy_to_normalize = data_to_normalize.to_numpy()
 
-    data_normalized = ( ( data_numpy_to_normalize - spectra_xtalk ) / (spectra_srs - spectra_xtalk) ) * percentage_reflectance_srs
+    data_normalized = ((data_numpy_to_normalize - spectra_xtalk) / (spectra_srs - spectra_xtalk)) * percentage_reflectance_srs
 
     data_to_normalize.loc[:, :] = data_normalized
 
     return data_to_normalize
+
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+def filter_spectra_by_threshold(spectra_dataframe, threshold : int, percentage_above_threshold : float = 0.8):
+    """
+    Keep only the spectra where at least tot% of the spectra is above the threshold.
+    """
+
+    spectra_data = spectra_dataframe.loc[:, "1350":"2150"].to_numpy().squeeze()
+
+    min_n_samples = int(spectra_data.shape[1] * percentage_above_threshold)
+    idx_data_to_keep = ((spectra_data > threshold).sum(1) >= min_n_samples) # Tieni lo spettro solo se 650 delle 702 lunghezze d'onda registrate sono superiori alla threshold
+    
+    return spectra_dataframe[idx_data_to_keep], idx_data_to_keep

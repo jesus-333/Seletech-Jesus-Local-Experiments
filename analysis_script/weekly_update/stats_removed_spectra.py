@@ -1,10 +1,8 @@
 import numpy as np
-import pandas as pd
-import matplotlib.pyplot as plt
 
-from library import manage_data_beans, preprocess
+from library import manage_data_beans
 
-# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
 threshold = 1000
 
@@ -15,7 +13,7 @@ gain = 1
 plant = 'PhaseolusVulgaris'
 plant = 'ViciaFaba'
 
-# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
 def filter_spectra_by_threshold(spectra_dataframe, threshold : int):
     spectra_data = spectra_dataframe.loc[:, "1350":"2150"].to_numpy().squeeze()
@@ -25,7 +23,7 @@ def filter_spectra_by_threshold(spectra_dataframe, threshold : int):
     
     return spectra_dataframe[idx_data_to_keep], idx_data_to_keep
 
-# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
 info_to_print = "Plant {}\n".format(plant)
 specific_plant_removed_count = dict()
