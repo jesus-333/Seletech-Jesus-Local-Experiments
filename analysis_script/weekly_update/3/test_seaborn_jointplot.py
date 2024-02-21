@@ -32,7 +32,7 @@ p = 3
 deriv = 2
 
 normalize_hist = True
-mems_to_plot = 2
+mems_to_plot = 1
 
 plot_config = dict(
     figsize = (20, 12),
@@ -84,13 +84,30 @@ for i in range(len(t_list)):
 
             tmp_wavelength_1 = wavelength[idx_1]
             tmp_wavelength_2 = wavelength[idx_2]
-            tmp_wavelength = np.concatenate([tmp_wavelength_1, tmp_wavelength_2], 0)
 
             tmp_data_1 = tmp_row.loc["1350":"2150"].to_numpy()[idx_1]
             tmp_data_2 = tmp_row.loc["1350":"2150"].to_numpy()[idx_2]
-            tmp_data = np.concatenate([tmp_data_1, tmp_data_2], 0)
+
+            if mems_to_plot == 1 :
+                tmp_data = tmp_data_1
+                tmp_wavelength = tmp_wavelength_1
+            elif mems_to_plot == 2 :
+                tmp_data = tmp_data_2
+                tmp_wavelength = tmp_wavelength_2
+            elif mems_to_plot == 'both' :
+                tmp_data = np.concatenate([tmp_data_1, tmp_data_2], 0)
+                tmp_wavelength = np.concatenate([tmp_wavelength_1, tmp_wavelength_2], 0)
+            else:
+                raise ValueError("mems_to_plot must have value 1 or 2 or both")
         else :
-            tmp_data = tmp_row.loc["1350":"2150"].to_numpy()
+            if mems_to_plot == 1 :
+                tmp_data = tmp_row.loc["1350":"1650"].to_numpy()
+            elif mems_to_plot == 2 :
+                tmp_data = tmp_row.loc["1750":"2150"].to_numpy()
+            elif mems_to_plot == 'both' :
+                tmp_data = tmp_row.loc["1350":"2150"].to_numpy()
+            else:
+                raise ValueError("mems_to_plot must have value 1 or 2 or both")
             tmp_wavelength = wavelength.copy()
 
         # Create list for plant and lamp power
@@ -104,11 +121,14 @@ for i in range(len(t_list)):
         
         spectra_for_plot = pd.concat([spectra_for_plot, tmp_df], axis = 0)
 
-    sns.jointplot(data = spectra_for_plot, x = "wavelength", y = "amplitude", hue = "plant_group")
-    plt.xlim([tmp_wavelength[0], tmp_wavelength[-1]])
+    sns.jointplot(data = spectra_for_plot, x = "wavelength", y = "amplitude", hue = "plant_group",
+                  xlim = [tmp_wavelength[0], tmp_wavelength[-1]],
+                  )
     plt.grid(True)
 
-    sns.jointplot(data = spectra_for_plot, x = "wavelength", y = "amplitude", hue = "lamp")
+    sns.jointplot(data = spectra_for_plot, x = "wavelength", y = "amplitude", hue = "lamp",
+                  xlim = [tmp_wavelength[0], tmp_wavelength[-1]],
+                  )
     plt.xlim([tmp_wavelength[0], tmp_wavelength[-1]])
     plt.grid(True)
 
