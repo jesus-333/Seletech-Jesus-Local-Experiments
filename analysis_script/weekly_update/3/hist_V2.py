@@ -125,7 +125,7 @@ for i in range(len(t_list)):
 
                 ax.set_title(plant_group)
     
-    fig.suptitle("{} - Day t = {}".format(plant,t))
+    fig.suptitle("{} - Day t = {}".format(plant, t))
     fig.tight_layout()
     fig.show()
 
