@@ -32,7 +32,7 @@ w = 50
 p = 3
 deriv = 2
 
-mems_to_plot = 1
+mems_to_plot = 2
 
 plot_config = dict(
     figsize = (30, 12),

@@ -33,7 +33,7 @@ p = 3
 deriv = 2
 
 normalize_hist = True
-mems_to_plot = 1
+mems_to_plot = 2
 
 plot_config = dict(
     figsize = (20, 12),
@@ -94,17 +94,16 @@ for i in range(len(t_list)):
                     # Select mems to plot
                     if mems_to_plot == 1 :
                         spectra_to_plot = spectra_to_plot.loc[:, "1350":"1650"]
-                        tmp_wavelength = wavelength[wavelength <= 1650]
                     elif mems_to_plot == 2 :
                         spectra_to_plot = spectra_to_plot.loc[:, "1750":"2150"]
-                        tmp_wavelength = wavelength[wavelength >= 1750]
                     elif mems_to_plot == 'both' :
                         spectra_to_plot = spectra_to_plot.loc[:, "1350":"2150"]
-                        tmp_wavelength = wavelength[:]
                     else:
                         raise ValueError("mems_to_plot must have value 1 or 2 or both")
 
-                    spectra_to_plot = spectra_to_plot.to_numpy().flatten()
+                    # Convert to numpy, remove border artifacts and flat the data
+                    spectra_to_plot = spectra_to_plot.to_numpy()
+                    spectra_to_plot = spectra_to_plot[:, int(w / 2):-int(w / 2)].flatten()
                     
                     # Plot the average spectra per group
                     ax.hist(spectra_to_plot, plot_config['n_bins'], density = normalize_hist,
@@ -115,7 +114,10 @@ for i in range(len(t_list)):
                 ax.legend()
                 ax.grid(True)
                 ax.set_xlabel("Amplitude")
-                ax.set_xlim([-1 * 1e-5, 1.5 * 1e-5])
+                if mems_to_plot == 1:
+                    ax.set_xlim([-1 * 1e-5, 0.5 * 1e-5])
+                elif mems_to_plot == 2:
+                    ax.set_xlim([-1.1 * 1e-5, 1.1 * 1e-5])
                 if normalize_hist : ax.set_ylim([0, 400000])
 
             ax.set_title("Lamp power {}".format(lamp_power))
