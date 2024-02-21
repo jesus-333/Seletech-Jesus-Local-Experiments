@@ -85,41 +85,38 @@ for i in range(len(t_list)):
             ax = axs[j, k]
 
             if len(tmp_spectra) > 0:
-                # Get average per group
-                tmp_spectra_mean = tmp_spectra.groupby("test_control").mean()
                 
-                # Select mems to plot
-                if mems_to_plot == 1 :
-                    tmp_spectra_mean = tmp_spectra_mean.loc[:, "1350":"1650"]
-                    tmp_wavelength = wavelength[wavelength <= 1650]
-                elif mems_to_plot == 2 :
-                    tmp_spectra_mean = tmp_spectra_mean.loc[:, "1750":"2150"]
-                    tmp_wavelength = wavelength[wavelength >= 1750]
-                elif mems_to_plot == 'both' :
-                    tmp_spectra_mean = tmp_spectra_mean.loc[:, "1350":"2150"]
-                    tmp_wavelength = wavelength[:]
-                else:
-                    raise ValueError("mems_to_plot must have value 1 or 2 or both")
-
                 # Plot the spectra for each group
-                for idx_group in range(len(tmp_spectra_mean)):
-                    spectra_to_plot_mean = tmp_spectra_mean.iloc[idx_group, :]
+                for plant_group in set(tmp_spectra['test_control']):
+
+                    spectra_to_plot = tmp_spectra[tmp_spectra['test_control'] == plant_group]
+
+                    # Select mems to plot
+                    if mems_to_plot == 1 :
+                        spectra_to_plot = spectra_to_plot.loc[:, "1350":"1650"]
+                        tmp_wavelength = wavelength[wavelength <= 1650]
+                    elif mems_to_plot == 2 :
+                        spectra_to_plot = spectra_to_plot.loc[:, "1750":"2150"]
+                        tmp_wavelength = wavelength[wavelength >= 1750]
+                    elif mems_to_plot == 'both' :
+                        spectra_to_plot = spectra_to_plot.loc[:, "1350":"2150"]
+                        tmp_wavelength = wavelength[:]
+                    else:
+                        raise ValueError("mems_to_plot must have value 1 or 2 or both")
+
+                    spectra_to_plot = spectra_to_plot.to_numpy().flatten()
                     
                     # Plot the average spectra per group
-                    ax.hist(spectra_to_plot_mean, plot_config['n_bins'], density = normalize_hist,
-                            histtype = 'step', label = spectra_to_plot_mean.name, linewidth = plot_config['linewidth']
+                    ax.hist(spectra_to_plot, plot_config['n_bins'], density = normalize_hist,
+                            histtype = 'step', label = plant_group, linewidth = plot_config['linewidth']
                             )
 
                 # Add info to the plot
                 ax.legend()
                 ax.grid(True)
                 ax.set_xlabel("Amplitude")
-                ax.set_xlim([tmp_wavelength[0], tmp_wavelength[-1]])
-                
-                # if mems_to_plot == 1:
-                #     ax.set_ylim([-1 * 1e-5, 1.5 * 1e-5])
-                # elif mems_to_plot == 2:
-                #     ax.set_ylim([-1.1 * 1e-5, 1.1 * 1e-5])
+                ax.set_xlim([-1 * 1e-5, 1.5 * 1e-5])
+                if normalize_hist : ax.set_ylim([0, 400000])
 
             ax.set_title("Lamp power {}".format(lamp_power))
     

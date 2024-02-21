@@ -32,7 +32,7 @@ w = 50
 p = 3
 deriv = 2
 
-mems_to_plot = 1
+mems_to_plot = 2
 
 plot_config = dict(
     figsize = (20, 12),
@@ -84,8 +84,8 @@ for i in range(len(t_list)):
 
             if len(tmp_spectra) > 0:
                 # Get average and std per group
-                tmp_spectra_mean = tmp_spectra.groupby("test_control").mean()
-                tmp_spectra_std = tmp_spectra.groupby("test_control").std()
+                tmp_spectra_mean = tmp_spectra.groupby("test_control").mean(numeric_only = True)
+                tmp_spectra_std = tmp_spectra.groupby("test_control").std(numeric_only = True)
                 
                 # Select mems to plot
                 if mems_to_plot == 1 :
@@ -124,7 +124,8 @@ for i in range(len(t_list)):
                 ax.set_xlim([tmp_wavelength[0], tmp_wavelength[-1]])
                 
                 if mems_to_plot == 1:
-                    ax.set_ylim([-1 * 1e-5, 1.5 * 1e-5])
+                    # ax.set_ylim([-1 * 1e-5, 1.5 * 1e-5])
+                    ax.set_ylim([-0.85 * 1e-5, 0.3 * 1e-5])
                 elif mems_to_plot == 2:
                     ax.set_ylim([-1.1 * 1e-5, 1.1 * 1e-5])
 
