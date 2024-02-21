@@ -7,7 +7,7 @@ from library import manage_data_beans, preprocess
 
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
 
-threshold = 1000
+threshold = 0
 
 remove_mean = False
 
