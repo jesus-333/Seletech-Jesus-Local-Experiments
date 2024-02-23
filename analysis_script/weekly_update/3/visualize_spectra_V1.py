@@ -37,6 +37,7 @@ mems_to_plot = 2
 plot_config = dict(
     figsize = (20, 12),
     fontsize = 20,
+    remove_border_artifact = True,
     add_std = True,
     save_fig = True,
 )
