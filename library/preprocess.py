@@ -10,7 +10,6 @@ from sklearn.preprocessing import StandardScaler, Normalizer, MinMaxScaler, Robu
 from scipy.signal import savgol_filter
 import pandas as pd
 
-from . import config
 from . import manage_data_beans
 
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -64,7 +63,7 @@ def normalize_with_values_first_column(data, divide_mems : bool = False):
     If divide_mems is True compute the normalization separately for each sensors
     """
 
-    if divide_mems == True:
+    if divide_mems :
         data_mems_1 = data.loc[:, "1350":"1650"]
         data_mems_1 = __normalize_with_values_first_column(data_mems_1)
         data.loc[:, "1350":"1650"] = data_mems_1.iloc[:, :]
@@ -98,17 +97,17 @@ def normalize_standardization(data, divide_mems : bool = False, remove_mean = Tr
     If divide_mems is True compute the normalization separately for each sensors
     """
 
-    if divide_mems == True:
+    if divide_mems :
         data_mems_1 = data.loc[:, "1350":"1650"]
-        data_mems_1 =  __normalize_standardization(data_mems_1, remove_mean, divide_by_std)
+        data_mems_1 = __normalize_standardization(data_mems_1, remove_mean, divide_by_std)
         data.loc[:, "1350":"1650"] = data_mems_1.iloc[:, :]
 
         data_mems_2 = data.loc[:, "1750":"2150"]
-        data_mems_2 =  __normalize_standardization(data_mems_2, remove_mean, divide_by_std)
+        data_mems_2 = __normalize_standardization(data_mems_2, remove_mean, divide_by_std)
         data.loc[:, "1750":"2150"] = data_mems_2
     else:
         data_both_mems = data.loc[:, "1350":"2150"]
-        data_both_mems =  __normalize_standardization(data_both_mems, remove_mean, divide_by_std)
+        data_both_mems = __normalize_standardization(data_both_mems, remove_mean, divide_by_std)
         data.loc[:, "1350":"2150"] = data_both_mems
 
     return data
