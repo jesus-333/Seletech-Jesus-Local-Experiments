@@ -27,6 +27,7 @@ percentage_above_threshold = 0.8
 
 # Parameter for preprocess
 compute_absorbance = True
+use_SNV = True
 use_sg_filter = True
 w = 50
 p = 3
@@ -64,6 +65,7 @@ for i in range(len(t_list)):
     # Preprocess
     meta_data = spectra_data.loc[:, "timestamp":"type"]
     if compute_absorbance : spectra_data = preprocess.R_A(spectra_data, keep_meta = False)
+    if use_SNV : spectra_data = preprocess.normalize_standardization(spectra_data, divide_mems = True)
     if use_sg_filter : spectra_data = preprocess.sg(spectra_data, w, p, deriv, keep_meta = False)
     if compute_absorbance or use_sg_filter: # Since during preprocess the metadata are removed here are restored
         spectra_data = pd.concat([meta_data, spectra_data], axis = 1)

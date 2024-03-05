@@ -8,6 +8,7 @@ Confronta il gruppo di controllo a t0 con il gruppo 300ml a t5
 import pandas as pd
 import matplotlib.pyplot as plt
 import os
+import numpy as np
 
 from library import manage_data_beans, preprocess
 
@@ -24,6 +25,7 @@ percentage_above_threshold = 0.8
 
 # Parameter for preprocess
 compute_absorbance = True
+use_SNV = True
 use_sg_filter = True
 w = 50
 p = 3
@@ -43,6 +45,7 @@ plot_config = dict(
 plt.rcParams.update({'font.size': plot_config['fontsize']})
 
 t_list = [0, 5]
+linestyle_list = ['solid', 'dashed']
 color_list = ['green', 'red']
 
 if plot_config['split_plot']:
@@ -66,6 +69,7 @@ for i in range(len(t_list)):
     # Preprocess
     meta_data = spectra_data.loc[:, "timestamp":"type"]
     if compute_absorbance : spectra_data = preprocess.R_A(spectra_data, keep_meta = False)
+    if use_SNV : spectra_data = preprocess.normalize_standardization(spectra_data, divide_mems = True)
     if use_sg_filter : spectra_data = preprocess.sg(spectra_data, w, p, deriv, keep_meta = False)
     if compute_absorbance or use_sg_filter: # Since during preprocess the metadata are removed here are restored
         spectra_data = pd.concat([meta_data, spectra_data], axis = 1)
@@ -81,11 +85,19 @@ for i in range(len(t_list)):
     
     # Select mems to plot
     if mems_to_plot == 1 :
-        spectra_data = spectra_data.loc[:, "1350":"1650"].to_numpy()
-        tmp_wavelength = wavelength[wavelength <= 1650]
+        # Originale
+        # spectra_data = spectra_data.loc[:, "1350":"1650"].to_numpy()
+        # tmp_wavelength = wavelength[np.logical_and(wavelength >= 1350, wavelength <= 1650)]
+
+        spectra_data = spectra_data.loc[:, "1400":"1600"].to_numpy()
+        tmp_wavelength = wavelength[np.logical_and(wavelength >= 1400, wavelength <= 1600)]
     elif mems_to_plot == 2 :
-        spectra_data = spectra_data.loc[:, "1750":"2150"].to_numpy()
-        tmp_wavelength = wavelength[wavelength >= 1750]
+        # Originale
+        # spectra_data = spectra_data.loc[:, "1750":"2150"].to_numpy()
+        # tmp_wavelength = wavelength[wavelength >= 1750]
+
+        spectra_data = spectra_data.loc[:, "1800":"2100"].to_numpy()
+        tmp_wavelength = wavelength[np.logical_and(wavelength >= 1800, wavelength <= 2100)]
     elif mems_to_plot == 'both' :
         spectra_data = spectra_data.loc[:, "1350":"2150"].to_numpy()
         tmp_wavelength = wavelength[:]
@@ -97,7 +109,7 @@ for i in range(len(t_list)):
 
     if plot_config['split_plot']: ax = axs[i]
 
-    ax.plot(tmp_wavelength, specta_mean, label = string_group, color = color_list[i])
+    ax.plot(tmp_wavelength, specta_mean, label = string_group, color = color_list[i], linestyle = linestyle_list[i])
     ax.fill_between(tmp_wavelength, specta_mean - specta_std, specta_mean + specta_std,
                     color = color_list[i], alpha = 0.25
                     )
@@ -108,9 +120,15 @@ for i in range(len(t_list)):
     ax.set_xlim([tmp_wavelength[0], tmp_wavelength[-1]])
 
     if mems_to_plot == 1:
-        pass
+        if use_SNV :
+            ax.set_ylim([-0.32 * 1e-3, 0.12 * 1e-3])
+        else:
+            ax.set_ylim([-0.6 * 1e-5, 0.3 * 1e-5])
     elif mems_to_plot == 2:
-        ax.set_ylim([-1.1 * 1e-5, 1.1 * 1e-5])
+        if use_SNV :
+            pass
+        else:
+            ax.set_ylim([-1.1 * 1e-5, 1.1 * 1e-5])
 
 fig.tight_layout()
 fig.show()

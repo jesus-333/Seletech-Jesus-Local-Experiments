@@ -25,12 +25,13 @@ percentage_above_threshold = 0.8
 
 # Parameter for preprocess
 compute_absorbance = True
+use_SNV = True
 use_sg_filter = True
 w = 50
 p = 3
 deriv = 2
 
-mems_to_plot = 1
+mems_to_plot = 2
 
 distribution_type = 1 # Use matplotlib hist with density = True. It is equivalent to have a continuos pdf
 distribution_type = 2 # Use numpy hist and divided by the number of samples. It is equivalent to have a discrete pdf
@@ -68,6 +69,7 @@ for i in range(len(t_list)):
     # Preprocess
     meta_data = spectra_data.loc[:, "timestamp":"type"]
     if compute_absorbance : spectra_data = preprocess.R_A(spectra_data, keep_meta = False)
+    if use_SNV : spectra_data = preprocess.normalize_standardization(spectra_data, divide_mems = True)
     if use_sg_filter : spectra_data = preprocess.sg(spectra_data, w, p, deriv, keep_meta = False)
     if compute_absorbance or use_sg_filter: # Since during preprocess the metadata are removed here are restored
         spectra_data = pd.concat([meta_data, spectra_data], axis = 1)
@@ -83,11 +85,19 @@ for i in range(len(t_list)):
 
     # Select mems to plot
     if mems_to_plot == 1 :
-        spectra_data = spectra_data.loc[:, "1350":"1650"].to_numpy()
-        tmp_wavelength = wavelength[wavelength <= 1650]
+        # Originale
+        # spectra_data = spectra_data.loc[:, "1350":"1650"].to_numpy()
+        # tmp_wavelength = wavelength[np.logical_and(wavelength >= 1350, wavelength <= 1650)]
+
+        spectra_data = spectra_data.loc[:, "1400":"1600"].to_numpy()
+        tmp_wavelength = wavelength[np.logical_and(wavelength >= 1400, wavelength <= 1600)]
     elif mems_to_plot == 2 :
-        spectra_data = spectra_data.loc[:, "1750":"2150"].to_numpy()
-        tmp_wavelength = wavelength[wavelength >= 1750]
+        # Originale
+        # spectra_data = spectra_data.loc[:, "1750":"2150"].to_numpy()
+        # tmp_wavelength = wavelength[wavelength >= 1750]
+
+        spectra_data = spectra_data.loc[:, "1800":"2100"].to_numpy()
+        tmp_wavelength = wavelength[np.logical_and(wavelength >= 1800, wavelength <= 2100)]
     else:
         raise ValueError("mems_to_plot must have value 1 or 2")
 
@@ -114,8 +124,8 @@ for i in range(len(t_list)):
                 )
 
         ax.fill_between(bins_position, p_x,
-                color = color_list[i], alpha = 0.4, step = 'pre'
-                )
+                        color = color_list[i], alpha = 0.4, step = 'pre'
+                        )
         ax.set_ylabel("Discrete PDF")
     else:
         raise ValueError("distribution_type must have value 1 or 2")

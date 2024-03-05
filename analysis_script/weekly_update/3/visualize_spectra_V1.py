@@ -16,7 +16,7 @@ from library import manage_data_beans, preprocess
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
 t_list = [0, 1, 2, 3, 4, 5, 6]
-# t_list = [0]
+t_list = [0, 5]
 
 # plant = 'PhaseolusVulgaris'
 plant = 'ViciaFaba'
@@ -27,12 +27,13 @@ percentage_above_threshold = 0.8
 
 # Parameter for preprocess
 compute_absorbance = True
+use_SNV = True
 use_sg_filter = True
 w = 50
 p = 3
 deriv = 2
 
-mems_to_plot = 1
+mems_to_plot = 2
 
 plot_config = dict(
     figsize = (20, 12),
@@ -63,6 +64,7 @@ for i in range(len(t_list)):
     # Preprocess
     meta_data = spectra_data.loc[:, "timestamp":"type"]
     if compute_absorbance : spectra_data = preprocess.R_A(spectra_data, keep_meta = False)
+    if use_SNV : spectra_data = preprocess.normalize_standardization(spectra_data, divide_mems = True)
     if use_sg_filter : spectra_data = preprocess.sg(spectra_data, w, p, deriv, keep_meta = False)
     if compute_absorbance or use_sg_filter: # Since during preprocess the metadata are removed here are restored
         spectra_data = pd.concat([meta_data, spectra_data], axis = 1)
@@ -132,10 +134,15 @@ for i in range(len(t_list)):
                 ax.set_xlim([tmp_wavelength_to_plot[0], tmp_wavelength_to_plot[-1]])
                 
                 if mems_to_plot == 1:
-                    # ax.set_ylim([-1 * 1e-5, 1.5 * 1e-5])
-                    ax.set_ylim([-0.85 * 1e-5, 0.3 * 1e-5])
+                    if use_SNV :
+                        ax.set_ylim([-0.42 * 1e-3, 0.12 * 1e-3])
+                    else:
+                        ax.set_ylim([-0.6 * 1e-5, 0.3 * 1e-5])
                 elif mems_to_plot == 2:
-                    ax.set_ylim([-1.1 * 1e-5, 1.1 * 1e-5])
+                    if use_SNV :
+                        pass
+                    else:
+                        ax.set_ylim([-1.1 * 1e-5, 1.1 * 1e-5])
 
             ax.set_title("Lamp power {}".format(lamp_power))
     

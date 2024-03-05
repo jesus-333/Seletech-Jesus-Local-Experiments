@@ -26,6 +26,7 @@ percentage_above_threshold = 0.8
 
 # Parameter for preprocess
 compute_absorbance = True
+use_SNV = True
 use_sg_filter = True
 w = 50
 p = 3
@@ -46,6 +47,7 @@ plt.rcParams.update({'font.size': plot_config['fontsize']})
 
 t_list = [0, 5]
 color_list_spectra = ['green', 'red']
+linestyle_list = ['solid', 'dashed']
 color_list_fit = ['darkgreen', 'darkred']
 
 if plot_config['split_plot']:
@@ -69,6 +71,7 @@ for i in range(len(t_list)):
     # Preprocess
     meta_data = spectra_data.loc[:, "timestamp":"type"]
     if compute_absorbance : spectra_data = preprocess.R_A(spectra_data, keep_meta = False)
+    if use_SNV : spectra_data = preprocess.normalize_standardization(spectra_data, divide_mems = True)
     if use_sg_filter : spectra_data = preprocess.sg(spectra_data, w, p, deriv, keep_meta = False)
     if compute_absorbance or use_sg_filter: # Since during preprocess the metadata are removed here are restored
         spectra_data = pd.concat([meta_data, spectra_data], axis = 1)
@@ -105,7 +108,7 @@ for i in range(len(t_list)):
     if plot_config['split_plot']: ax = axs[i]
     
     # Plot average and std
-    ax.plot(tmp_wavelength, specta_mean, label = string_group, color = color_list_spectra[i])
+    ax.plot(tmp_wavelength, specta_mean, label = string_group, color = color_list_spectra[i], linestyle = linestyle_list[i])
     ax.fill_between(tmp_wavelength, specta_mean - specta_std, specta_mean + specta_std,
                     color = color_list_spectra[i], alpha = 0.25
                     )
@@ -122,7 +125,10 @@ for i in range(len(t_list)):
     ax.set_xlim([tmp_wavelength[0], tmp_wavelength[-1]])
 
     if mems_to_plot == 1:
-        ax.set_ylim([-0.6 * 1e-5, 0.3 * 1e-5])
+        if use_SNV :
+            ax.set_ylim([-0.32 * 1e-3, 0.12 * 1e-3])
+        else:
+            ax.set_ylim([-0.6 * 1e-5, 0.3 * 1e-5])
     elif mems_to_plot == 2:
         ax.set_ylim([-1.1 * 1e-5, 1.1 * 1e-5])
 
