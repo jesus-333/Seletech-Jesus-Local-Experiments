@@ -100,6 +100,8 @@ for i in range(len(t_list)):
     a = linear_reg.coef_
     b = linear_reg.intercept_
 
+    r_square = linear_reg.score(tmp_wavelength.reshape(-1, 1), specta_mean)
+
     if plot_config['split_plot']: ax = axs[i]
     
     # Plot average and std
@@ -109,7 +111,7 @@ for i in range(len(t_list)):
                     )
 
     # Plot linear fit
-    ax.plot(tmp_wavelength, tmp_wavelength * a + b, label = 'Linear Fit {}'.format(string_group),
+    ax.plot(tmp_wavelength, tmp_wavelength * a + b, label = 'Linear Fit {} - $R^2 = {:.2f}$'.format(string_group, r_square),
             color = color_list_fit[i], linewidth = 2
             )
 

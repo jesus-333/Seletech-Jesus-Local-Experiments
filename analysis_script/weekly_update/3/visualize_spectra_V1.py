@@ -32,7 +32,7 @@ w = 50
 p = 3
 deriv = 2
 
-mems_to_plot = 2
+mems_to_plot = 1
 
 plot_config = dict(
     figsize = (20, 12),
@@ -108,13 +108,20 @@ for i in range(len(t_list)):
                 for idx_group in range(len(tmp_spectra_mean)):
                     spectra_to_plot_mean = tmp_spectra_mean.iloc[idx_group, :]
                     spectra_to_plot_std = tmp_spectra_std.iloc[idx_group, :]
+
+                    if plot_config['remove_border_artifact'] :
+                        spectra_to_plot_mean = spectra_to_plot_mean[int(w / 2):-int(w / 2)]
+                        spectra_to_plot_std = spectra_to_plot_std[int(w / 2):-int(w / 2)]
+                        tmp_wavelength_to_plot = tmp_wavelength[int(w / 2):-int(w / 2)]
+                    else:
+                        tmp_wavelength_to_plot = tmp_wavelength
                     
                     # Plot the average spectra per group
-                    ax.plot(tmp_wavelength, spectra_to_plot_mean, label = spectra_to_plot_mean.name)
+                    ax.plot(tmp_wavelength_to_plot, spectra_to_plot_mean, label = spectra_to_plot_mean.name)
                     
                     # (OPTIONAL) Add the std
                     if plot_config['add_std']:
-                        ax.fill_between(tmp_wavelength, spectra_to_plot_mean + spectra_to_plot_std, spectra_to_plot_mean - spectra_to_plot_std,
+                        ax.fill_between(tmp_wavelength_to_plot, spectra_to_plot_mean + spectra_to_plot_std, spectra_to_plot_mean - spectra_to_plot_std,
                                         alpha = 0.25
                                         )
 
@@ -122,7 +129,7 @@ for i in range(len(t_list)):
                 ax.legend()
                 ax.grid(True)
                 ax.set_xlabel("Wavelength [nm]")
-                ax.set_xlim([tmp_wavelength[0], tmp_wavelength[-1]])
+                ax.set_xlim([tmp_wavelength_to_plot[0], tmp_wavelength_to_plot[-1]])
                 
                 if mems_to_plot == 1:
                     # ax.set_ylim([-1 * 1e-5, 1.5 * 1e-5])
