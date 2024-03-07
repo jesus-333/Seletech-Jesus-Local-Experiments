@@ -1,6 +1,6 @@
 """
 Script per dei risultati per il 4 meeting.
-Confronta il gruppo di controllo a t0 con il gruppo 300ml a t5
+Fa il plot della media dei vari gruppi per una specifica lamp power e giorno
 """
 
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -19,6 +19,9 @@ lamp_power = 80
 # plant = 'PhaseolusVulgaris'
 plant = 'ViciaFaba'
 
+group_list = ['test_300', 'test_150', 'control']
+group_list = ['test_150', 'control']
+
 # Parameter to remove spectra with amplitude to low
 min_amplitude = 1000
 percentage_above_threshold = 0.8
@@ -31,30 +34,27 @@ w = 50
 p = 3
 deriv = 2
 
+t = 6
 mems_to_plot = 1
 
 plot_config = dict(
     figsize = (20, 12),
     fontsize = 20,
-    split_plot = False,
+    add_title = False,
     save_fig = True,
+    transparent_background = False
 )
 
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
+group_color = {'test_300' : 'red', 'control' : 'green', 'test_150' : 'blue'}
+group_linestyle = {'test_300' : 'dashed', 'control' : 'solid', 'test_150' : 'dashdot'}
+group_linewidth = {'test_300' : 4, 'control' : 1, 'test_150' : 2}
+
 plt.rcParams.update({'font.size': plot_config['fontsize']})
+fig, ax = plt.subplots(1, 1, figsize = plot_config['figsize'])
 
-t_list = [0, 5]
-linestyle_list = ['solid', 'dashed']
-color_list = ['green', 'red']
-
-if plot_config['split_plot']:
-    fig, axs = plt.subplots(1, 2, figsize = plot_config['figsize'])
-else:
-    fig, ax = plt.subplots(1, 1, figsize = plot_config['figsize'])
-
-for i in range(len(t_list)):
-    t = t_list[i]
+for group in group_list:
 
     # Load data
     path_spectra = "data/beans/t{}/csv/beans_avg.csv".format(t)
@@ -76,13 +76,8 @@ for i in range(len(t_list)):
     else:
         raise ValueError("At least 1 between compute_absorbance and use_sg_filter must be true")
 
-    if t == 0:
-        spectra_data = spectra_data[spectra_data['test_control'] == 'control']
-        string_group = 'control (t0)'
-    elif t == 5:
-        spectra_data = spectra_data[spectra_data['test_control'] == 'test_300']
-        string_group = 'test 300 (t5)'
-    
+    spectra_data = spectra_data[spectra_data['test_control'] == group]
+
     # Select mems to plot
     if mems_to_plot == 1 :
         # Originale
@@ -107,15 +102,16 @@ for i in range(len(t_list)):
     specta_mean = spectra_data.mean(0)
     specta_std = spectra_data.std(0)
 
-    if plot_config['split_plot']: ax = axs[i]
-
-    ax.plot(tmp_wavelength, specta_mean, label = string_group, color = color_list[i], linestyle = linestyle_list[i])
+    ax.plot(tmp_wavelength, specta_mean, label = "{} AVG".format(group),
+            color = group_color[group], linestyle = group_linestyle[group], linewidth = group_linewidth[group]
+            )
     ax.fill_between(tmp_wavelength, specta_mean - specta_std, specta_mean + specta_std,
-                    color = color_list[i], alpha = 0.25
+                    color = group_color[group], alpha = 0.25,
                     )
 
     ax.grid(True)
     ax.legend()
+    if plot_config['add_title'] : ax.set_title("Lamp {} - t{}".format(lamp_power, t))
     ax.set_xlabel("Wavelength [nm]")
     ax.set_xlim([tmp_wavelength[0], tmp_wavelength[-1]])
 
@@ -134,11 +130,8 @@ fig.tight_layout()
 fig.show()
 
 if plot_config['save_fig'] :
-    path_save = 'Saved Results/weekly_update_beans/3/t0_vs_t5/'
+    path_save = 'Saved Results/weekly_update_beans/3/average_group/'
     os.makedirs(path_save, exist_ok = True)
 
-    if plot_config['split_plot']:
-        path_save += '3_t0_vs_t5_w_{}_p_{}_der_{}_mems_{}_split_plot'.format(w, p, deriv, mems_to_plot)
-    else:
-        path_save += '3_t0_vs_t5_w_{}_p_{}_der_{}_mems_{}_same_plot'.format(w, p, deriv, mems_to_plot)
-    fig.savefig(path_save + ".png", format = 'png')
+    path_save += '3_average_t{}_w_{}_p_{}_der_{}_mems_{}_same_plot'.format(t, w, p, deriv, mems_to_plot)
+    fig.savefig(path_save + ".png", format = 'png', transparent = plot_config['transparent_background'])
