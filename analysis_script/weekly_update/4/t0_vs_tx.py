@@ -15,10 +15,10 @@ from library import manage_data_beans, preprocess
 
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-lamp_power = 80
-
 # plant = 'PhaseolusVulgaris'
 plant = 'ViciaFaba'
+
+lamp_power = 80
 
 t_comparison = 5
 
