@@ -11,7 +11,6 @@ data/\[2021-08-05_to_11-26\]All_PlantHTSensor.csv.hnt
 artifacts/
 wandb/
 data/jesus_ht_timestamp.csv
-*.pyc
 support/__pycache__/
 TMP/
 TMP_File/

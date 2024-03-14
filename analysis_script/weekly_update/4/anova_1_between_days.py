@@ -1,11 +1,11 @@
 """
-Compute the t-test between a range of wavelength
+Compute the anova between spectra of different groups/days
 """
 
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
 import pandas as pd
-from scipy.stats import ttest_ind
+from scipy.stats import f_oneway
 import numpy as np
 
 from library import manage_data_beans, preprocess
@@ -98,8 +98,8 @@ for i_1 in range(len(t_list)):
                 group_2 = group_2.mean(0)
                 
                 # Compute t-test
-                t_test_output = ttest_ind(group_1, group_2, equal_var = False)
-                t_statistics, p_value = t_test_output.statistic, t_test_output.pvalue
+                anova_output = f_oneway(group_1, group_2)
+                f_statistics, p_value = anova_output.statistic, anova_output.pvalue
                 
                 # Save results
                 p_value_array[idx_1, idx_2] = p_value
