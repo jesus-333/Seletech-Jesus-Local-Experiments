@@ -165,7 +165,7 @@ for plant_group in plant_group_list :
 
 ax.set_xlabel("Time point")
 ax.set_ylabel("Amplitude")
-ax.set_title("Wavelength {} evolution - {}".format(wavelength_to_plot, plant_to_examine))
+ax.set_title("Wavelength {} ± {} evolution - {}".format(wavelength_to_plot, average_range, plant_to_examine))
 ax.legend()
 ax.grid()
 

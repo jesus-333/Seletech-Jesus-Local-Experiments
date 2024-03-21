@@ -146,7 +146,7 @@ fig.tight_layout()
 fig.show()
 
 if plot_config['save_fig'] :
-    path_save = 'Saved Results/weekly_update_beans/3/t0_vs_tx/'
+    path_save = 'Saved Results/weekly_update_beans/4/t0_vs_tx/'
     os.makedirs(path_save, exist_ok = True)
 
     if plot_config['split_plot']:
