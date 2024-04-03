@@ -16,8 +16,8 @@ from library import manage_data_beans, preprocess
 
 lamp_power = 80
 
-# plant = 'PhaseolusVulgaris'
-plant = 'ViciaFaba'
+plant = 'PhaseolusVulgaris'
+# plant = 'ViciaFaba'
 
 group_list = ['test_300', 'test_150', 'control']
 group_list = ['test_150', 'control']
@@ -30,7 +30,7 @@ percentage_above_threshold = 0.8
 compute_absorbance = True
 use_SNV = True
 use_sg_filter = True
-w = 50
+w = 25
 p = 3
 deriv = 2
 

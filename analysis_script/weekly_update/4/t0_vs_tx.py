@@ -15,8 +15,8 @@ from library import manage_data_beans, preprocess
 
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-# plant = 'PhaseolusVulgaris'
-plant = 'ViciaFaba'
+plant = 'PhaseolusVulgaris'
+# plant = 'ViciaFaba'
 
 lamp_power = 80
 
@@ -30,7 +30,7 @@ percentage_above_threshold = 0.8
 compute_absorbance = True
 use_SNV = True
 use_sg_filter = True
-w = 50
+w = 30
 p = 3
 deriv = 2
 
@@ -88,8 +88,12 @@ for i in range(len(t_list)):
         group = 'control'
         string_group = 'control (t0)'
     elif t == t_comparison:
-        group = 'test_300'
-        string_group = 'test 300 (t{})'.format(t_comparison)
+        if plant == 'ViciaFaba' :
+            group = 'test_300'
+            string_group = 'test 300 (t{})'.format(t_comparison)
+        else :
+            group = 'test_150'
+            string_group = 'test 150 (t{})'.format(t_comparison)
     spectra_data = spectra_data[spectra_data['test_control'] == group]
 
     # Select mems to plot

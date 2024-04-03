@@ -21,7 +21,7 @@ from library import preprocess
 #%% Settings
 
 plant_to_examine = 'PhaseolusVulgaris'
-plant_to_examine = 'ViciaFaba'
+# plant_to_examine = 'ViciaFaba'
 lamp_power = 80
 
 # Parameter to remove spectra with amplitude to low
@@ -42,13 +42,14 @@ plot_config = dict(
     figsize = (12, 8),
     fontsize = 15,
     use_real_distance = True,
-    save_fig = True
+    ylim = [1600, 2300],
+    save_fig = True,
 )
 
 use_shaded_area = False
 
 wavelength_to_plot = 1530
-# wavelength_to_plot = 1360
+wavelength_to_plot = 1575
 
 average_range = 10 # N. of wavelength to use on left and right to compute the average
 
@@ -60,7 +61,7 @@ t_day_elapsed = [0, 1, 2, 3, 8, 15, 22] # Remember that the data are taken after
 if plant_to_examine == 'PhaseolusVulgaris': plant_group_list = ['control', 'test_150',]
 else : 
     plant_group_list = ['control', 'test_150', 'test_300']
-    plant_group_list = ['control', 'test_300']
+    # plant_group_list = ['control', 'test_300']
 
 wavelength_mean_per_group = { 'control' : [], 'test_150' : [], 'test_300' : [] }
 wavelength_std_per_group = { 'control' : [], 'test_150' : [], 'test_300' : [] }
@@ -166,6 +167,7 @@ for plant_group in plant_group_list :
 ax.set_xlabel("Time point")
 ax.set_ylabel("Amplitude")
 ax.set_title("Wavelength {} ± {} evolution - {}".format(wavelength_to_plot, average_range, plant_to_examine))
+if 'ylim' in plot_config : ax.set_ylim(plot_config['ylim'])
 ax.legend()
 ax.grid()
 
