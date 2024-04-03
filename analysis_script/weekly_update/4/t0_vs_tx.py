@@ -20,7 +20,7 @@ plant = 'PhaseolusVulgaris'
 
 lamp_power = 80
 
-t_comparison = 5
+t_comparison = 6
 
 # Parameter to remove spectra with amplitude to low
 min_amplitude = 1000
@@ -34,7 +34,7 @@ w = 30
 p = 3
 deriv = 2
 
-mems_to_plot = 1
+mems_to_plot = 2
 
 plot_config = dict(
     figsize = (20, 12),
@@ -102,20 +102,24 @@ for i in range(len(t_list)):
         # spectra_data = spectra_data.loc[:, "1350":"1650"].to_numpy()
         # tmp_wavelength = wavelength[np.logical_and(wavelength >= 1350, wavelength <= 1650)]
 
-        spectra_data = spectra_data.loc[:, "1400":"1600"].to_numpy()
-        tmp_wavelength = wavelength[np.logical_and(wavelength >= 1400, wavelength <= 1600)]
+        tmp_wave_1 = int(1350 + w / 2)
+        tmp_wave_2 = int(1650 - w / 2)
     elif mems_to_plot == 2 :
         # Originale
         # spectra_data = spectra_data.loc[:, "1750":"2150"].to_numpy()
         # tmp_wavelength = wavelength[wavelength >= 1750]
 
-        spectra_data = spectra_data.loc[:, "1800":"2100"].to_numpy()
-        tmp_wavelength = wavelength[np.logical_and(wavelength >= 1800, wavelength <= 2100)]
+        tmp_wave_1 = int(1750 + w / 2)
+        tmp_wave_2 = int(2150 - w / 2)
     elif mems_to_plot == 'both' :
-        spectra_data = spectra_data.loc[:, "1350":"2150"].to_numpy()
-        tmp_wavelength = wavelength[:]
+        tmp_wave_1 = 1350
+        tmp_wave_2 = 2150
     else:
         raise ValueError("mems_to_plot must have value 1 or 2 or both")
+
+
+    spectra_data = spectra_data.loc[:, str(tmp_wave_1):str(tmp_wave_2)].to_numpy()
+    tmp_wavelength = wavelength[np.logical_and(wavelength >= tmp_wave_1, wavelength <= tmp_wave_2)]
 
     specta_mean = spectra_data.mean(0)
     specta_std = spectra_data.std(0)
@@ -145,7 +149,10 @@ for i in range(len(t_list)):
             ax.set_ylim([-0.6 * 1e-5, 0.3 * 1e-5])
     elif mems_to_plot == 2:
         if use_SNV :
-            pass
+            if plant == 'ViciaFaba' :
+                pass
+            else :
+                ax.set_ylim([-1.5 * 1e-3, 1.5 * 1e-3])
         else:
             ax.set_ylim([-1.1 * 1e-5, 1.1 * 1e-5])
 

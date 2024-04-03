@@ -22,7 +22,7 @@ from library import preprocess
 #%% Settings
 
 plant_to_examine = 'PhaseolusVulgaris'
-# plant_to_examine = 'ViciaFaba'
+plant_to_examine = 'ViciaFaba'
 lamp_power = 80
 
 # Parameter to remove spectra with amplitude to low
@@ -30,9 +30,9 @@ min_amplitude = 1000
 percentage_above_threshold = 0.8
 
 # Parameter for preprocess
-compute_absorbance =True
-use_SNV =True 
-use_sg_filter =True 
+compute_absorbance = True
+use_SNV = True
+use_sg_filter = True
 w = 30
 p = 3
 deriv = 2
@@ -59,10 +59,14 @@ average_range = 10 # N. of wavelength to use on left and right to compute the av
 t_list = [0, 1, 2, 3, 4, 5, 6]
 t_day_elapsed = [0, 1, 2, 3, 8, 15, 22] # Remember that the data are taken after different interval of time
 
+
+# t_list = [0, 1, 2, 3, 4, 5, ]
+# t_day_elapsed = [0, 1, 2, 3, 8, 15,] # Remember that the data are taken after different interval of time
+
 if plant_to_examine == 'PhaseolusVulgaris': plant_group_list = ['control', 'test_150',]
 else : 
     plant_group_list = ['control', 'test_150', 'test_300']
-    plant_group_list = ['control', 'test_300']
+    # plant_group_list = ['control', 'test_300']
 
 wavelength_mean_per_group = { 'control' : [], 'test_150' : [], 'test_300' : [] }
 wavelength_std_per_group = { 'control' : [], 'test_150' : [], 'test_300' : [] }
@@ -104,7 +108,7 @@ for i in range(len(t_list)):
         data_beans_group = spectra_data[spectra_data['test_control'] == plant_group]
 
         # Get wavelength
-        wavelength_mean_1 = data_beans_group.loc[:, str(wavelength_to_plot - average_range):str(wavelength_to_plot + average_range)].mean()
+        wavelength_mean_1 = data_beans_group.loc[:, str(wavelength_to_plot - average_range):str(wavelength_to_plot + average_range)].mean(0)
         wavelength_std_1 = data_beans_group.loc[:, str(wavelength_to_plot - average_range):str(wavelength_to_plot + average_range)].std()
 
         # Compute mean and std
@@ -121,18 +125,20 @@ for i in range(len(t_list)):
         for k in range(len(plant_group_list)) :
             # Get data for the other groups
             data_beans_group_2 = spectra_data[spectra_data['test_control'] == plant_group_list[k]]
-            wavelength_mean_2 = data_beans_group_2.loc[:, str(wavelength_to_plot - average_range):str(wavelength_to_plot + average_range)].mean()
+            wavelength_mean_2 = data_beans_group_2.loc[:, str(wavelength_to_plot - average_range):str(wavelength_to_plot + average_range)].mean(0)
             wavelength_std_2 = data_beans_group_2.loc[:, str(wavelength_to_plot - average_range):str(wavelength_to_plot + average_range)].std()
 
             # Compute t-test
+            # print(plant_group_list[j],wavelength_mean_1)
+            # print(plant_group_list[k],wavelength_mean_2, "\n")
             t_test_output = ttest_ind(wavelength_mean_1.to_numpy(), wavelength_mean_2.to_numpy(), equal_var = False)
             t_statistics, p_value = t_test_output.statistic, t_test_output.pvalue
 
             p_value_array[i, j, k] = p_value
 
 # Removed unused variables
-del wavelength_mean_1, wavelength_std_1
-del data_beans_group_2, wavelength_mean_2, wavelength_std_2
+# del wavelength_mean_1, wavelength_std_1
+# del data_beans_group_2, wavelength_mean_2, wavelength_std_2
 
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 #%% Normalize time series
@@ -191,7 +197,8 @@ for plant_group in plant_group_list :
 
 ax.set_xlabel("Time point")
 ax.set_ylabel("Amplitude")
-ax.set_title("Wavelength {} ± {} evolution - {}".format(wavelength_to_plot, average_range, plant_to_examine))
+# ax.set_title("Wavelength {} ± {} evolution - {}".format(wavelength_to_plot, average_range, plant_to_examine))
+ax.set_title("Band of interest {}nm - {}nm ({})".format(wavelength_to_plot - average_range, wavelength_to_plot + average_range, plant_to_examine))
 if 'ylim' in plot_config : ax.set_ylim(plot_config['ylim'])
 ax.legend()
 ax.grid()
