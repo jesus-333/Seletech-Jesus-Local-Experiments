@@ -137,7 +137,10 @@ for i in range(len(t_list)):
 
     if mems_to_plot == 1:
         if use_SNV :
-            ax.set_ylim([-0.32 * 1e-3, 0.12 * 1e-3])
+            if plant == 'ViciaFaba' :
+                ax.set_ylim([-0.32 * 1e-3, 0.12 * 1e-3])
+            else :
+                ax.set_ylim([-0.42 * 1e-3, 0.2 * 1e-3])
         else:
             ax.set_ylim([-0.6 * 1e-5, 0.3 * 1e-5])
     elif mems_to_plot == 2:
