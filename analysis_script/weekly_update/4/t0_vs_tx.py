@@ -16,11 +16,11 @@ from library import manage_data_beans, preprocess
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
 plant = 'PhaseolusVulgaris'
-# plant = 'ViciaFaba'
+plant = 'ViciaFaba'
 
 lamp_power = 80
 
-t_comparison = 6
+t_comparison = 1
 
 # Parameter to remove spectra with amplitude to low
 min_amplitude = 1000
@@ -30,11 +30,11 @@ percentage_above_threshold = 0.8
 compute_absorbance = True
 use_SNV = True
 use_sg_filter = True
-w = 30
+w = 15
 p = 3
 deriv = 2
 
-mems_to_plot = 2
+mems_to_plot = 1
 
 plot_config = dict(
     figsize = (20, 12),
@@ -142,9 +142,12 @@ for i in range(len(t_list)):
     if mems_to_plot == 1:
         if use_SNV :
             if plant == 'ViciaFaba' :
-                ax.set_ylim([-0.32 * 1e-3, 0.12 * 1e-3])
+                if w <= 20 :
+                    ax.set_ylim([-1 * 1e-3, 0.8 * 1e-3])
+                if w == 50 :
+                    ax.set_ylim([-0.32 * 1e-3, 0.12 * 1e-3])
             else :
-                ax.set_ylim([-0.42 * 1e-3, 0.2 * 1e-3])
+                ax.set_ylim([-0.45 * 1e-3, 0.3 * 1e-3])
         else:
             ax.set_ylim([-0.6 * 1e-5, 0.3 * 1e-5])
     elif mems_to_plot == 2:

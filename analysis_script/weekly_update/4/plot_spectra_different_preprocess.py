@@ -8,12 +8,12 @@ from library import manage_data_beans, preprocess
 
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-# plant = 'PhaseolusVulgaris'
-plant = 'ViciaFaba'
+plant = 'PhaseolusVulgaris'
+# plant = 'ViciaFaba'
 
-t = 2
+t = 0
 lamp_power = 80
-group = 'test_300'
+group = 'test_150'
 
 # Parameter to remove spectra with amplitude to low
 min_amplitude = 1000
@@ -21,6 +21,7 @@ percentage_above_threshold = 0.8
 
 # Parameter for preprocess
 w_list = [20, 30, 40, 50, 35]
+w_list = [10]
 p_list = [3]
 deriv_list = [2]
 
@@ -104,8 +105,11 @@ for w in w_list :
                 ax.set_ylabel("Amplitude")
                 ax.set_xlabel("Wavelength [nm]")
 
-                ax.set_xlim([1370, 1625])
-                ax.set_ylim([-0.0007, 0.00025])
+                # ax.set_xlim([1370, 1625])
+                # if plant == 'ViciaFaba' : 
+                #     ax.set_ylim([-0.0007, 0.00025])
+                # else : 
+                #     ax.set_ylim([-0.0007, 0.00025])
 
                 ax.set_title("w = {}, p = {}, der = {}".format(w, p, deriv))
 

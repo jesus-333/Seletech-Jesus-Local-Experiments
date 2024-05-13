@@ -34,7 +34,7 @@ w = 30
 p = 3
 deriv = 2
 
-mems_to_plot = 2
+mems_to_plot = 1
 
 plot_config = dict(
     figsize = (20, 12),
@@ -128,7 +128,7 @@ if mems_to_plot == 1:
         if plant == 'ViciaFaba' :
             ax.set_ylim([-0.32 * 1e-3, 0.12 * 1e-3])
         else :
-            ax.set_ylim([-0.42 * 1e-3, 0.2 * 1e-3])
+            ax.set_ylim([-0.45 * 1e-3, 0.3 * 1e-3])
     else:
         ax.set_ylim([-0.6 * 1e-5, 0.3 * 1e-5])
 elif mems_to_plot == 2:
@@ -147,7 +147,7 @@ if plot_config['save_fig'] :
     path_save = 'Saved Results/weekly_update_beans/4/average_spectra/'
     os.makedirs(path_save, exist_ok = True)
 
-    path_save += 't{}_{}_lamp_{}'.format(t, group, lamp_power)
+    path_save += 't{}_{}_lamp_{}_mems_{}'.format(t, group, lamp_power, mems_to_plot)
     if compute_absorbance : path_save += '_RA'
     if use_SNV : path_save += '_SNV'
     if use_sg_filter : path_save += '_w_{}_p_{}_der_{}'.format(w, p, deriv)
