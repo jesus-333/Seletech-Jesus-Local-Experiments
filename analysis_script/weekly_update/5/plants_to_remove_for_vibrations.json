@@ -1,0 +1,35 @@
+{
+	"0" : {
+		"ViciaFaba" : [
+			"CON1",
+			"NACL150_1",
+			"NACL150_2",
+			"NACL150_3",
+			"NACL150_4",
+			"NACL150_5",
+			"NACL300_1"
+		]
+	},
+
+	"1" : {
+		"ViciaFaba" : [
+			"CON3",
+			"CON4",
+			"CON5",
+			"NACL150_1",
+			"NACL150_2",
+			"NACL150_3",
+			"NACL150_4",
+			"NACL150_5"
+		]
+	},
+
+	"3" : {
+		"ViciaFaba" : [
+			"CON1",
+			"CON2",
+			"NACL300_4",
+			"NACL300_5"
+		]
+	}
+}
