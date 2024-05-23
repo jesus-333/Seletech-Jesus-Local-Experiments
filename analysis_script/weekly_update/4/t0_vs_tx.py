@@ -30,7 +30,7 @@ percentage_above_threshold = 0.8
 compute_absorbance = True
 use_SNV = True
 use_sg_filter = True
-w = 10
+w = 20
 p = 3
 deriv = 2
 
@@ -39,6 +39,8 @@ mems_to_plot = 1
 plot_config = dict(
     figsize = (20, 12),
     fontsize = 20,
+    xlim = [1400, 1600],
+    # xlim = None
     split_plot = False,
     save_fig = True,
 )
@@ -137,7 +139,8 @@ for i in range(len(t_list)):
     ax.grid(True)
     ax.legend()
     ax.set_xlabel("Wavelength [nm]")
-    ax.set_xlim([tmp_wavelength[0], tmp_wavelength[-1]])
+    if plot_config['xlim'] is not None : ax.set_xlim([plot_config['xlim'][0], plot_config['xlim'][1]])
+    else : ax.set_xlim([tmp_wavelength[0], tmp_wavelength[-1]])
 
     if mems_to_plot == 1:
         if use_SNV :

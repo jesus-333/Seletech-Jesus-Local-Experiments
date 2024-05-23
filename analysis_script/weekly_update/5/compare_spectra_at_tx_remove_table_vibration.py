@@ -23,7 +23,7 @@ lamp_power = 80
 t_to_compare = 1
 
 # Notes
-# For ViciaFaba NACL300_1 and NACL300_5 are the plants that contribute the most to the amplitude in the std
+# (t = 1) For ViciaFaba NACL300_1 and NACL300_5 are the plants that contribute the most to the amplitude in the std
 
 # Parameter for preprocess
 compute_absorbance = False
@@ -38,6 +38,7 @@ mems_to_plot = 1
 plot_config = dict(
     figsize = (12, 8),
     fontsize = 20,
+    ylim = [1600, 2450],
     save_fig = True,
 )
 
@@ -131,8 +132,9 @@ ax.grid(True)
 ax.legend()
 ax.set_xlabel("Wavelength [nm]")
 ax.set_xlim([tmp_wavelength[1], tmp_wavelength[-1]])
+if 'ylim' in plot_config : ax.set_ylim(plot_config['ylim'][0], plot_config['ylim'][1])
 
-title = '{} - lamp {}'.format(plant, lamp_power)
+title = '{} - lamp {} - t{}'.format(plant, lamp_power, t_to_compare)
 if use_sg_filter : title += ' - w {} - p {} - der {}'.format(w, p, deriv)
 ax.set_title(title)
 

@@ -18,7 +18,7 @@ plant = 'ViciaFaba'
 
 lamp_power = 80
 
-t_to_compare = 0
+t_to_compare = 5
 
 # Parameter for preprocess
 compute_absorbance = False
@@ -28,11 +28,12 @@ w = 30
 p = 3
 deriv = 2
 
-mems_to_plot = 1
+mems_to_plot = 2
 
 plot_config = dict(
     figsize = (12, 8),
     fontsize = 20,
+    # ylim = [2150, 2950],
     save_fig = True,
 )
 
@@ -113,8 +114,9 @@ ax.grid(True)
 ax.legend()
 ax.set_xlabel("Wavelength [nm]")
 ax.set_xlim([tmp_wavelength[1], tmp_wavelength[-1]])
+if 'ylim' in plot_config : ax.set_ylim(plot_config['ylim'][0], plot_config['ylim'][1])
 
-title = '{} - lamp {}'.format(plant, lamp_power)
+title = '{} - lamp {} - t{}'.format(plant, lamp_power, t_to_compare)
 if use_sg_filter : title += ' - w {} - p {} - der {}'.format(w, p, deriv)
 ax.set_title(title)
 
