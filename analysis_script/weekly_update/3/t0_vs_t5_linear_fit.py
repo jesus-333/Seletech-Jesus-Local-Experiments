@@ -144,3 +144,5 @@ if plot_config['save_fig'] :
     else:
         path_save += '3_t0_vs_t5_linear_fit_w_{}_p_{}_der_{}_mems_{}_same_plot'.format(w, p, deriv, mems_to_plot)
     fig.savefig(path_save + ".png", format = 'png')
+
+    print("Figure saved in: {}".format(path_save))

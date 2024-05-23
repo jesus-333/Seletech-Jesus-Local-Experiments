@@ -2,7 +2,7 @@
 Compare the spectra at tX between different groups to search differences caused by the instruments
 """
 
-
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
 
 import pandas as pd
 import matplotlib.pyplot as plt
@@ -21,14 +21,14 @@ lamp_power = 80
 t_to_compare = 5
 
 # Parameter for preprocess
-compute_absorbance = False
 use_SNV = False
-use_sg_filter = False
+compute_absorbance = True
+use_sg_filter = True
 w = 30
 p = 3
 deriv = 2
 
-mems_to_plot = 2
+mems_to_plot = 1
 
 plot_config = dict(
     figsize = (12, 8),
