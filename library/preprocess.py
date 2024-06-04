@@ -43,6 +43,10 @@ def normalize_sklearn_scaler(data, scaler_type : int):
 
     normalize_data = scaler.fit_transform(data)
 
+    if(type(data) == pd.DataFrame) :
+        data.iloc[:, :] = normalize_data
+        return data
+
     return normalize_data
 
 def derivate(data, n_order : int):
@@ -112,7 +116,11 @@ def normalize_standardization(data, divide_mems : bool = False, remove_mean = Tr
 
     return data
 
-def __normalize_standardization(data, remove_mean, divide_by_std):
+def __normalize_standardization(data) :
+    scaler = StandardScaler()
+    return scaler.fit_transform(data)
+
+def __normalize_standardization_OLD(data, remove_mean, divide_by_std):
     """
     Normalize EACH spectra trough standardization. This mean that each spectra will have mean 0 and std 1.
     N.b. If we take the same wavelength but with different spectra the std between wavelength can still be very high respect the mean between wavelength.
