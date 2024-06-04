@@ -136,5 +136,3 @@ for i in range(len(group_list)) :
 fig.suptitle('Difference between Plant {} and Plant {}'.format(plant_list[0][-1], plant_list[1][-1]))
 fig.tight_layout()
 fig.show()
-
-

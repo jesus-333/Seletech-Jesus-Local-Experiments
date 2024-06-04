@@ -5,7 +5,7 @@ import os
 
 from library import manage_data_beans, preprocess
 
-# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 path_calib = 'data/Orange/fruit_orange_calib.csv'
 path_NON_calib = 'data/Orange/fruit_orange.csv'
 
@@ -33,7 +33,7 @@ plot_config = dict(
     save_fig = False
 )
 
-# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
 plt.rcParams.update({'font.size': plot_config['fontsize']})
 
