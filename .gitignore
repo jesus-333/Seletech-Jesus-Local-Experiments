@@ -1,22 +1,23 @@
 *.pdf
 *.png
 *.eps
-data/readme..txt
+*.pyc
+*.pkl
+.spyproject/config/
+data/readme.txt
 data/day_list.csv
 data/\[2021-08-05_to_11-26\]PlantTest_Notes.csv
 data/\[2021-08-05_to_11-26\]All_PlantSpectra.csv
 data/\[2021-08-05_to_11-26\]All_PlantMiFlowerCareSensor.csv.fcs
 data/\[2021-08-05_to_11-26\]All_PlantHTSensor.csv.hnt
-*.pyc
-artifacts/
-wandb/
 data/jesus_ht_timestamp.csv
-support/__pycache__/
-TMP/
-TMP_File/
 data/jesus_spectra_full_dataset_NOT NORMALIZED.csv
 data/jesus_spectra_full_dataset.csv
 data/jesus_ht_full_dataset.csv
-.spyproject/config/
+artifacts/
+wandb/
+support/__pycache__/
+TMP/
+TMP_File/
 Saved Results/beans_spectra/
 Saved Results/beans_spectra
