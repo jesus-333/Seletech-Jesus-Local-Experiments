@@ -1,0 +1,35 @@
+{
+	"model_config" : {
+		"config_body" : {
+			"input_size_mems_1" : -1,
+			"input_size_mems_2" : -1,
+			"hidden_size" : [
+				512,
+				128,
+				32
+			]
+
+		},
+		"config_heads" : {
+			"n_heads" : 3,
+			"head_source" : [
+				"orange",
+				"beans",
+				"potos"
+			],
+			"output_size" : [
+				4,
+				2,
+				2
+			]
+		}
+	}, 
+
+	"training_config" : {
+		"source_path_list" : [
+			"data/merged_dataset/beans.csv",
+			"data/merged_dataset/orange.csv",
+			"data/merged_dataset/potos.csv"
+		]
+	}
+}

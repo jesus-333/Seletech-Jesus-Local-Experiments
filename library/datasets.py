@@ -36,15 +36,17 @@ class NIRS_dataset_merged(torch.utils.data.Dataset):
         self.wavelengths_1 = np.arange(int(wave_1_mems_1), int(wave_2_mems_1) + 1)
         self.wavelengths_2 = np.arange(int(wave_1_mems_2), int(wave_2_mems_2) + 1)
 
+        self.convert_to_torch_tensor()
+
     def __len__(self):
-        return len(self.data)
+        return self.data_mems_1.shape[0]
 
     def __getitem__(self, idx):
-        self.data_mems_1[idx], self.data_mems_2[idx], self.label[idx], self.label_text[idx], self.source[idx]
+        return self.data_mems_1[idx], self.data_mems_2[idx], self.label[idx], self.label_text[idx], self.source[idx]
 
     def compute_parameter_preprocess(self, merge_dataframe : pd.DataFrame, return_as_string : bool = True) :
-        starting_wavelength_dataframe = int(merge_dataframe.columns[0])
-        w = starting_wavelength_dataframe - 1350
+        starting_wavelength_dataframe = int(merge_dataframe.columns[1])
+        w = (starting_wavelength_dataframe - 1350) * 2
         tmp_wave_1_mems_1 = int(1350 + w / 2)
         tmp_wave_2_mems_1 = int(1650 - w / 2)
         tmp_wave_1_mems_2 = int(1750 + w / 2)
@@ -59,5 +61,3 @@ class NIRS_dataset_merged(torch.utils.data.Dataset):
         self.data_mems_1 = torch.from_numpy(self.data_mems_1)
         self.data_mems_2 = torch.from_numpy(self.data_mems_2)
         self.label = torch.from_numpy(self.label)
-        self.label_text = torch.from_numpy(self.label_text)
-        self.source = torch.from_numpy(self.source)

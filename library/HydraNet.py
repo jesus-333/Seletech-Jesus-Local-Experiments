@@ -14,8 +14,9 @@ class hydra_net_v1(nn.Module) :
         """
         Create a HydraNet model with n heads and a common body.
         """
+        super().__init__()
 
-        activation = nn.Elu()
+        activation = nn.ELU()
         
         # Input layer for the two mems
         self.input_mems_1 = nn.Sequential(
@@ -42,7 +43,7 @@ class hydra_net_v1(nn.Module) :
         for i in range(config_heads['n_heads']) :
             self.heads.append(
                 nn.Sequential(
-                    nn.Linear(config_body['hidden_size'][-1], config_heads['hidden_size'][0]),
+                    nn.Linear(config_body['hidden_size'][-1], config_heads['output_size'][i]),
                     nn.Softmax(dim = 1)
                 )
             )
