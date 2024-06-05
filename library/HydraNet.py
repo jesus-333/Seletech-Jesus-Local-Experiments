@@ -20,11 +20,11 @@ class hydra_net_v1(nn.Module) :
         
         # Input layer for the two mems
         self.input_mems_1 = nn.Sequential(
-            nn.Linear(config_body['input_size_mems_1'], config_body['hidden_size'][0]),
+            nn.Linear(config_body['input_size_mems_1'], int(config_body['hidden_size'][0] / 2)),
             activation
         )
         self.input_mems_2 = nn.Sequential(
-            nn.Linear(config_body['input_size_mems_2'], config_body['hidden_size'][0]),
+            nn.Linear(config_body['input_size_mems_2'], int(config_body['hidden_size'][0] / 2)),
             activation
         )
         
@@ -54,7 +54,15 @@ class hydra_net_v1(nn.Module) :
     def forward(self, x_mems_1, x_mems_2, source_array) :
         x_mems_1 = self.input_mems_1(x_mems_1)
         x_mems_2 = self.input_mems_2(x_mems_2)
-        x = torch.cat([x_mems_1, x_mems_2], dim = 1)
+        x = torch.cat([x_mems_1, x_mems_2], dim = 1).float()
         x = self.body(x)
-        return x_mems_1, x_mems_2
+        
+        heads_output = []
+        for i in range(len(self.heads_source)) :
+            source = self.heads_source[i]
+            idx_source = source_array == source
+            x_source = x[idx_source]
+            heads_output.append(self.heads[i](x_source))
+
+        return heads_output
 

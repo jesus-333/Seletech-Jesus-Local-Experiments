@@ -58,6 +58,20 @@ class NIRS_dataset_merged(torch.utils.data.Dataset):
             return tmp_wave_1_mems_1, tmp_wave_2_mems_1, tmp_wave_1_mems_2, tmp_wave_2_mems_2
     
     def convert_to_torch_tensor(self) :
-        self.data_mems_1 = torch.from_numpy(self.data_mems_1)
-        self.data_mems_2 = torch.from_numpy(self.data_mems_2)
-        self.label = torch.from_numpy(self.label)
+        self.data_mems_1 = torch.from_numpy(self.data_mems_1).float()
+        self.data_mems_2 = torch.from_numpy(self.data_mems_2).float()
+        self.label = torch.from_numpy(self.label).long()
+
+
+def get_idx_to_split_data(n_elements : int, percentage_split : float, seed = -1):
+    """
+    Get to list of indices to split an array of data.
+    """
+    # Use of the seed for reproducibility
+    np.random.seed(seed)
+
+    # Create idx vector
+    idx = np.random.permutation(n_elements)
+    size_1 = int(n_elements * percentage_split)
+    
+    return idx[0:size_1], idx[size_1:]

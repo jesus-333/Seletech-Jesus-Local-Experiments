@@ -4,8 +4,8 @@
 			"input_size_mems_1" : -1,
 			"input_size_mems_2" : -1,
 			"hidden_size" : [
-				512,
 				128,
+				64,
 				32
 			]
 
@@ -30,6 +30,9 @@
 			"data/merged_dataset/beans.csv",
 			"data/merged_dataset/orange.csv",
 			"data/merged_dataset/potos.csv"
-		]
+		],
+		"percentage_split_train_test" : 0.7,
+		"percentage_split_train_validation" : 0.9,
+		"seed" : 42
 	}
 }
