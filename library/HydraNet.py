@@ -10,6 +10,8 @@ import numpy as np
 import pprint
 from sklearn.metrics import accuracy_score
 
+from . import metrics
+
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
 
 class hydra_net_v1(nn.Module) :
@@ -85,15 +87,18 @@ class hydra_net_v1(nn.Module) :
 
         return labels_per_head_list
     
-    def compute_accuracy_batch(self, x_mems_1, x_mems_2, source_array, true_labels) :
+    def compute_metrics_batch(self, x_mems_1, x_mems_2, source_array, true_labels) :
+        """
+        Compute accuracy, cohen_kappa, sensitivity, specificity, f1 and confusion matrix for each head
+        """
         labels_per_head_list = self.classify(x_mems_1, x_mems_2, source_array, return_as_index = True)
-        accuracy_per_head_list = []
+        metrics_per_head_list = []
         for i in range(len(labels_per_head_list)):
-            predicted_labels_per_head = labels_per_head_list[i]
+            predicted_labels_head = labels_per_head_list[i]
             true_labels_head = true_labels[source_array == self.head_sources[i]]
-            accuracy_per_head_list.append(accuracy_score(true_labels_head.cpu().numpy(), predicted_labels_per_head .cpu().numpy()))
+            metrics_per_head_list = metrics.compute_metrics_from_labels(true_labels_head, predicted_labels_head)
 
-        return accuracy_per_head_list
+        return metrics_per_head_list
 
 def train_epoch(model, loss_function, optimizer, train_loader, train_config, log_dict = None):
     # Set the model in training mode

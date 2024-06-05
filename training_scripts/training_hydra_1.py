@@ -4,6 +4,7 @@ import json
 import torch
 import wandb
 import os
+import pprint
 
 from library import datasets, HydraNet
 
@@ -49,17 +50,18 @@ def add_file_to_artifact(artifact, file_name):
     artifact.add_file(file_name)
     wandb.save(file_name)
 
-def compute_and_save_accuracy(model, loader, train_config, log_dict, data_type : str) :
+def compute_and_save_metrics(model, loader, train_config, log_dict, data_type : str) :
     # Get the dataset
     dataset = loader.dataset
     x_mems_1, x_mems_2, true_labels, labels_text, source_array = dataset[:]
 
     # Compute the Accuracy
     x_mems_1, x_mems_2 = x_mems_1.to(train_config['device']), x_mems_2.to(train_config['device'])
-    accuracy_per_head_list = model.compute_accuracy_batch(x_mems_1, x_mems_2, source_array, true_labels)
+    metrics_per_head_list = model.compute_metrics_batch(x_mems_1, x_mems_2, source_array, true_labels)
 
-    for i in range(len(accuracy_per_head_list)):
-        log_dict['Accuracy head {} ({})'.format(model.head_sources[i], data_type)] = accuracy_per_head_list[i]
+    for i in range(len(metrics_per_head_list )):
+        for metric in metrics_per_head_list : 
+            log_dict['{} head {} ({})'.format(metric, model.head_sources[i], data_type)] = metrics_per_head_list[i][metric]
 
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
@@ -128,8 +130,8 @@ with wandb.init(project = 'Seletech-Jesus-Local-Experiments-Merge-Data', config 
 
         # Save the metrics in the log
         if train_config['measure_metrics_during_training']:
-            compute_and_save_accuracy(model, train_loader, train_config, log_dict, 'TRAIN')
-            compute_and_save_accuracy(model, validation_loader, train_config, log_dict, 'VALIDATION')
+            compute_and_save_metrics(model, train_loader, train_config, log_dict, 'TRAIN')
+            compute_and_save_metrics(model, validation_loader, train_config, log_dict, 'VALIDATION')
 
         # (OPTIONAL) Update learning rate (if a scheduler is provided)
         if lr_scheduler is not None:
@@ -141,14 +143,15 @@ with wandb.init(project = 'Seletech-Jesus-Local-Experiments-Merge-Data', config 
 
         # (OPTIONAL) Print loss
         if train_config['print_var']:
-            print("Epoch:{}".format(epoch))
-            print("\t Train loss        = {}".format(train_loss.detach().cpu().float()))
-            print("\t Validation loss   = {}".format(validation_loss.detach().cpu().float()))
-
-            if lr_scheduler is not None: print("\t Learning rate     = {}".format(optimizer.param_groups[0]['lr']))
-            if train_config['measure_metrics_during_training']:
-                for el in log_dict : 
-                    if 'Accuracy' in el : print("\t {} = {}".format(el, log_dict[el]))
+            pprint.pprint(log_dict)
+            # print("Epoch:{}".format(epoch))
+            # print("\t Train loss        = {}".format(train_loss.detach().cpu().float()))
+            # print("\t Validation loss   = {}".format(validation_loss.detach().cpu().float()))
+            #
+            # if lr_scheduler is not None: print("\t Learning rate     = {}".format(optimizer.param_groups[0]['lr']))
+            # if train_config['measure_metrics_during_training']:
+            #     for el in log_dict :
+            #         if 'Accuracy' in el : print("\t {} = {}".format(el, log_dict[el]))
 
         # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
         # Log data on wandb
@@ -157,7 +160,6 @@ with wandb.init(project = 'Seletech-Jesus-Local-Experiments-Merge-Data', config 
         log_dict['train_loss'] = train_loss
         log_dict['validation_loss'] = validation_loss
     
-        
         # Add the model to the artifact
         if (epoch + 1) % train_config['epoch_to_save_model'] == 0:
             add_file_to_artifact(model_artifact, '{}/{}'.format(train_config['path_to_save_model'], "model_{}.pth".format(epoch + 1)))
