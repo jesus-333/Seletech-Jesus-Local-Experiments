@@ -8,8 +8,6 @@ Functions to extract data based on timestamp
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
 #%% Imports
 
-import torch
-from torch import nn
 import numpy as np
 import pandas as pd
 from datetime import datetime
