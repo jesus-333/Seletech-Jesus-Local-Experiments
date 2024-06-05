@@ -1,5 +1,5 @@
 """
-Count the data from each source
+Count the data from each source before extracting a subsample from each source for the merging
 
 """
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -

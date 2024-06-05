@@ -12,7 +12,7 @@
 		},
 		"config_heads" : {
 			"n_heads" : 3,
-			"head_source" : [
+			"head_sources" : [
 				"orange",
 				"beans",
 				"potos"
@@ -31,7 +31,7 @@
 			"data/merged_dataset/orange.csv",
 			"data/merged_dataset/potos.csv"
 		],
-		"percentage_split_train_test" : 0.7,
+		"percentage_split_train_test" : 0.8,
 		"percentage_split_train_validation" : 0.9,
 		"seed" : 42
 	}

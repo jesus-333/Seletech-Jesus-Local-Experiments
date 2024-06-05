@@ -4,7 +4,7 @@ Test the dataset and the model for the training with merged data
 
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 import json
-import torch 
+import torch
 
 from library import datasets, HydraNet
 
@@ -34,3 +34,7 @@ model = HydraNet.hydra_net_v1(config['model_config']['config_body'], config['mod
 # Test forward pass
 x_mems_1, x_mems_2, labels, labels_text, source_array = train_dataset[259:297]
 out = model(x_mems_1, x_mems_2, source_array)
+
+print("Train dataset size      : ", len(train_dataset))
+print("Validation dataset size : ", len(validation_dataset))
+print("Test dataset size       : ", len(test_dataset))

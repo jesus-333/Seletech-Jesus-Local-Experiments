@@ -31,6 +31,24 @@ def extract_spectra(data : pd.DataFrame, rows_to_return : int = -1) :
 
     return data, wavelength, idx
 
+def extract_spectra_specific_label(data : pd.DataFrame, label_to_extract : int, labels_array : np.ndarray, rows_to_return : int = -1) :
+    """
+    Extract all the spectra for a specifi label.
+    If rows_to_return is specified the function will return that number of spectra.
+    """
+    
+    idx_label = labels_array == label_to_extract
+    data = data.loc[idx_label, :]
+
+    if rows_to_return > 0 :
+        idx = np.arange(data.shape[0])
+        idx = np.random.choice(idx, rows_to_return, replace = False)
+        data = data.iloc[idx]
+
+    label_array = np.ones(data.shape[0]) * label_to_extract
+
+    return data, label_array
+
 def create_new_dataframe_from_single_source(spectra_data, labels : np.ndarray, numerical_labels_to_text : dict, source_origin : str, preprocess_config : dict):
     """
     Given the spectra and the labels from a specific source creaste a Pandas DataFrame that will be merged with the dataset from the other sources.
@@ -159,20 +177,32 @@ def create_label_for_orange(data_orange : pd.DataFrame) :
 
     return labels_array, numerical_labels_to_text
 
+
 def create_new_dataframe_orange(data_orange : pd.DataFrame, preprocess_config : dict, rows_to_return : int = -1) :
     """
     Create a new dataframe with the beans data that will be merged with the data from the other sources.
     """
     
     # Get labels for the beans
-    labels_array, numerical_labels_to_text = create_label_for_orange(data_orange)
+    labels_array_full, numerical_labels_to_text = create_label_for_orange(data_orange)
     
     # Convert the data to numpy array and kept only the spectra
     spectra_data, wavelength, idx_spectra = extract_spectra(data_orange, rows_to_return)
-
-    # Get the labels of the selected spectra
-    labels_array = labels_array[idx_spectra]
     
+    # Get spectra for each label
+    spectra_data = pd.DataFrame()
+    labels_array = []
+    for label in set(labels_array_full) :
+        # Get the spectra and the label for the specific label
+        tmp_dataset, tmp_label = extract_spectra_specific_label(data_orange, label, labels_array_full, int(rows_to_return / len(set(labels_array_full))))
+
+        # Cocatenate the data
+        spectra_data = pd.concat([spectra_data, tmp_dataset], axis = 0)
+        labels_array += list(tmp_label)
+
+    # Covert labels to numpy array
+    labels_array = np.array(labels_array)
+
     # Create the new dataframe
     new_dataframe = create_new_dataframe_from_single_source(spectra_data, labels_array, numerical_labels_to_text, 'orange', preprocess_config)
 

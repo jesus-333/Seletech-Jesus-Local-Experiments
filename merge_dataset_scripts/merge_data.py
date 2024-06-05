@@ -28,8 +28,7 @@ t_list_beans = [0, 1, 2]
 labels_type_beans = 1
 path_save_beans = 'data/merged_dataset/beans.csv'
 
-path_orange_calib = 'data/Orange/fruit_orange_calib.csv'
-path_orange_calib = 'data/Orange/fruit_orange.csv'
+path_orange = 'data/Orange/fruit_orange.csv'
 path_save_orange = 'data/merged_dataset/orange.csv'
 
 path_potos_spectra = 'data/[2021-08-05_to_11-26]All_PlantSpectra.csv'
@@ -51,7 +50,7 @@ print("Beans END\n")
 
 # Get data orange
 print("Orange START")
-data_orange = pd.read_csv(path_orange_calib)
+data_orange = pd.read_csv(path_orange)
 data_orange = merge_data_utils.create_new_dataframe_orange(data_orange, preprocess_config, n_spectra_per_source)
 data_orange.to_csv(path_save_orange)
 print("Orange END\n")
