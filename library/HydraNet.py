@@ -47,12 +47,12 @@ class hydra_net_v1(nn.Module) :
             self.heads.append(
                 nn.Sequential(
                     nn.Linear(config_body['hidden_size'][-1], config_heads['output_size'][i]),
-                    nn.Softmax(dim = 1)
+                    nn.LogSoftmax(dim = 1)
                 )
             )
 
         # List for the type of data to use for each head
-        self.heads_source = config_heads['head_source']
+        self.head_sources = config_heads['head_sources']
     
     def forward(self, x_mems_1, x_mems_2, source_array) :
         x_mems_1 = self.input_mems_1(x_mems_1)
@@ -61,14 +61,12 @@ class hydra_net_v1(nn.Module) :
         x = self.body(x)
         
         heads_output_list = []
-        for i in range(len(self.heads_source)) :
-            source = self.heads_source[i]
+        for i in range(len(self.head_sources)) :
+            source = self.head_sources[i]
             idx_source = np.asarray(source_array) == source
             x_source = x[idx_source]
             heads_output = self.heads[i](x_source)
             heads_output_list.append(heads_output)
-            print("\t", x_source.shape)
-            print("\t", heads_output.shape, "\n")
 
         return heads_output_list
 
@@ -92,8 +90,8 @@ class hydra_net_v1(nn.Module) :
         accuracy_per_head_list = []
         for i in range(len(labels_per_head_list)):
             predicted_labels_per_head = labels_per_head_list[i]
-            true_labels_head = true_labels[source_array == self.heads_source[i]]
-            accuracy_per_head_list[i] = accuracy_score(true_labels_head.cpu().numpy(), predicted_labels_per_head .cpu().numpy())
+            true_labels_head = true_labels[source_array == self.head_sources[i]]
+            accuracy_per_head_list.append(accuracy_score(true_labels_head.cpu().numpy(), predicted_labels_per_head .cpu().numpy()))
 
         return accuracy_per_head_list
 
@@ -101,8 +99,10 @@ def train_epoch(model, loss_function, optimizer, train_loader, train_config, log
     # Set the model in training mode
     model.train()
 
-    # Variable to accumulate the loss
+    # Variables to accumulate the loss
     train_loss = 0
+    loss_per_head = {}
+    for head_sources in model.head_sources : loss_per_head[head_sources] = 0
 
     for x_mems_1, x_mems_2, true_labels, labels_text, source_array in train_loader:
         # Move data to training device
@@ -115,18 +115,19 @@ def train_epoch(model, loss_function, optimizer, train_loader, train_config, log
         optimizer.zero_grad()
         
         # Networks forward pass
-        print(x_mems_1.shape, x_mems_2.shape)
         out = model(x_mems_1, x_mems_2, source_array)
 
         # Compute the loss for each head
         batch_train_loss = 0
-        for i in range(len(model.heads_source)) :
+        for i in range(len(model.head_sources)) :
             # Get the labels for each head
             predict_labels_head = out[i]
-            true_labels_head = true_labels[source_array == model.heads_source[i]]
+            true_labels_head = true_labels[source_array == model.head_sources[i]]
 
             # Loss evaluation
-            batch_train_loss += loss_function(predict_labels_head, true_labels_head)
+            head_loss = loss_function(predict_labels_head, true_labels_head)
+            batch_train_loss += head_loss
+            loss_per_head[model.head_sources[i]] = head_loss
     
         # Backward/Optimization pass
         batch_train_loss.backward()
@@ -139,9 +140,12 @@ def train_epoch(model, loss_function, optimizer, train_loader, train_config, log
     train_loss = train_loss / len(train_loader.sampler)
 
     if log_dict is not None:
-        log_dict['train_loss'] = float(train_loss)
+        log_dict['train_loss_total'] = float(train_loss)
+        for i in range(len(model.head_sources)) : log_dict['train_loss_{}'.format(model.head_sources[i])] = float(loss_per_head[model.head_sources[i]])
+        
         print("TRAIN LOSS")
         pprint.pprint(log_dict)
+        
     
     return train_loss
 
@@ -152,6 +156,8 @@ def validation_epoch(model, loss_function, validation_loader, train_config, log_
 
     # Variable to accumulate the loss
     validation_loss = 0
+    loss_per_head = {}
+    for head_sources in model.head_sources : loss_per_head[head_sources] = 0
 
     with torch.no_grad():
 
@@ -160,19 +166,22 @@ def validation_epoch(model, loss_function, validation_loader, train_config, log_
             x_mems_1 = x_mems_1.to(train_config['device'])
             x_mems_2 = x_mems_2.to(train_config['device'])
             true_labels = true_labels.to(train_config['device'])
+            source_array = np.asarray(source_array)
 
             # Networks forward pass
             out = model(x_mems_1, x_mems_2, source_array)
 
             # Compute the loss for each head
             batch_validation_loss  = 0
-            for i in range(len(model.heads_source)) :
+            for i in range(len(model.head_sources)) :
                 # Get the labels for each head
                 predict_labels_head = out[i]
-                true_labels_head = true_labels[source_array == model.heads_source[i]]
+                true_labels_head = true_labels[source_array == model.head_sources[i]]
 
                 # Loss evaluation
-                batch_validation_loss += loss_function(predict_labels_head, true_labels_head)
+                head_loss = loss_function(predict_labels_head, true_labels_head)
+                batch_validation_loss += head_loss
+                loss_per_head[model.head_sources[i]] = head_loss
 
             # Accumulate the loss
             validation_loss += batch_validation_loss * x_mems_1.shape[0]
@@ -181,7 +190,9 @@ def validation_epoch(model, loss_function, validation_loader, train_config, log_
         validation_loss  = validation_loss  / len(validation_loader.sampler)
 
     if log_dict is not None:
-        log_dict['train_loss'] = float(validation_loss)
+        log_dict['validation_loss_total'] = float(validation_loss)
+        for i in range(len(model.head_sources)) : log_dict['validation_loss_{}'.format(model.head_sources[i])] = float(loss_per_head[model.head_sources[i]])
+        
         print("TRAIN LOSS")
         pprint.pprint(log_dict)
     

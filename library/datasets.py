@@ -11,7 +11,7 @@ import numpy as np
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
 class NIRS_dataset_merged(torch.utils.data.Dataset):
-    def __init__(self, source_path_list : list):
+    def __init__(self, source_path_list : list, idx_to_ketp = None):
         
         # Get data and merge them into a single dataframe
         merge_dataframe = pd.DataFrame()
@@ -21,6 +21,8 @@ class NIRS_dataset_merged(torch.utils.data.Dataset):
             else :
                 tmp_dataframe = pd.read_csv(path)
                 merge_dataframe = pd.concat([merge_dataframe, tmp_dataframe], axis = 0)
+                
+        if idx_to_ketp is not None : merge_dataframe = merge_dataframe.iloc[idx_to_ketp, :]
         
         # Get data for the two MEMS
         wave_1_mems_1, wave_2_mems_1, wave_1_mems_2, wave_2_mems_2 = self.compute_parameter_preprocess(merge_dataframe)

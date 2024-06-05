@@ -16,15 +16,12 @@ config = json.load(open('training_scripts/config/config_1.json', 'r'))
 # Get dataset
 full_dataset = datasets.NIRS_dataset_merged(config['training_config']['source_path_list'])
 
-# Divide the dataset in training and testing
+# Divide the dataset in training, testing and validation
 idx_train, idx_test = datasets.get_idx_to_split_data(full_dataset.data_mems_1.shape[0], config['training_config']['percentage_split_train_test'], config['training_config']['seed'])
-train_dataset = torch.utils.data.Subset(full_dataset, idx_train)
-test_dataset = torch.utils.data.Subset(full_dataset, idx_test)
-
-# Divide the training dataset in training and validation
-idx_train, idx_val = datasets.get_idx_to_split_data(len(train_dataset), config['training_config']['percentage_split_train_validation'], config['training_config']['seed'])
-train_dataset = torch.utils.data.Subset(train_dataset, idx_train)
-validation_dataset = torch.utils.data.Subset(train_dataset, idx_val)
+idx_train, idx_val = datasets.get_idx_to_split_data(len(idx_train), config['training_config']['percentage_split_train_validation'], config['training_config']['seed'])
+train_dataset = datasets.NIRS_dataset_merged(config['training_config']['source_path_list'], idx_train)
+test_dataset = datasets.NIRS_dataset_merged(config['training_config']['source_path_list'], idx_test)
+validation_dataset = datasets.NIRS_dataset_merged(config['training_config']['source_path_list'], idx_val)
 
 # Update model config and create model
 config['model_config']['config_body']['input_size_mems_1'] = full_dataset.data_mems_1.shape[1]
@@ -32,13 +29,13 @@ config['model_config']['config_body']['input_size_mems_2'] = full_dataset.data_m
 model = HydraNet.hydra_net_v1(config['model_config']['config_body'], config['model_config']['config_heads'])
 
 # Create Dataloader
-train_loader = torch.utils.data.DataLoader(train_dataset, batch_size = config['training_config']['batch_size'], shuffle = True)
+train_loader      = torch.utils.data.DataLoader(train_dataset,      batch_size = config['training_config']['batch_size'], shuffle = True)
 validation_loader = torch.utils.data.DataLoader(validation_dataset, batch_size = config['training_config']['batch_size'], shuffle = True)
-test_loader = torch.utils.data.DataLoader(test_dataset, batch_size = config['training_config']['batch_size'], shuffle = True)
+test_loader       = torch.utils.data.DataLoader(test_dataset,       batch_size = config['training_config']['batch_size'], shuffle = True)
 
 # Other configurations
 device = "cuda" if torch.cuda.is_available() else "cpu"  # device (i.e. cpu/gpu) used to train the network.
-device = "cpu"
+# device = "cpu"
 config['training_config']['device'] = device
 
 # Save the indices for the training, validation and testing in the config
@@ -62,11 +59,11 @@ def compute_and_save_accuracy(model, loader, train_config, log_dict, data_type :
     accuracy_per_head_list = model.compute_accuracy_batch(x_mems_1, x_mems_2, source_array, true_labels)
 
     for i in range(len(accuracy_per_head_list)):
-        log_dict['Accuracy head {} ({})'.format(model.heads_source[i], data_type)] = accuracy_per_head_list[i]
+        log_dict['Accuracy head {} ({})'.format(model.head_sources[i], data_type)] = accuracy_per_head_list[i]
 
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-with wandb.init(project = 'Seletech-Jesus-Local-Experiments', config = config) as run:
+with wandb.init(project = 'Seletech-Jesus-Local-Experiments-Merge-Data', config = config) as run:
 
     train_config = config['training_config']
     notes = train_config['notes']

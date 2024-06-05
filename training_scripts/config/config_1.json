@@ -12,7 +12,7 @@
 		},
 		"config_heads" : {
 			"n_heads" : 3,
-			"head_source" : [
+			"head_sources" : [
 				"orange",
 				"beans",
 				"potos"
@@ -31,19 +31,20 @@
 			"data/merged_dataset/orange.csv",
 			"data/merged_dataset/potos.csv"
 		],
-		"percentage_split_train_test" : 0.7,
+		"percentage_split_train_test" : 0.8,
 		"percentage_split_train_validation" : 0.9,
 		"seed" : 42,
 		"batch_size" : 40,
-		"epochs" : 10,
+		"epochs" : 30,
 		"lr" : 2e-3,
-		"optimizer_weight_decay" : 1e-2,
+		"optimizer_weight_decay" : 1e-3,
 		"use_scheduler" : false,
 		"measure_metrics_during_training" : true,
 		"log_freq" : 1,
 		"epoch_to_save_model" : 2,
 		"model_artifact_name" : "HydraNet_1",
 		"path_to_save_model" : "Saved Model/hydra_1/",
-		"notes" : null
+		"notes" : null,
+        "print_var" : true
 	}
 }
