@@ -47,7 +47,7 @@ def create_new_dataframe_from_single_source(spectra_data, labels : np.ndarray, n
     # Remove border artifacts caysed by the SG filter
     if preprocess_config['use_sg_filter'] :
         spectra_data, wavelength = remove_border_artifacts(spectra_data, preprocess_config['w'])
-    else : 
+    else :
         wavelength = np.hstack((np.arange(1350, 1650 + 1), np.arange(1750, 2150 + 1)))
     
     labels_text = np.array([numerical_labels_to_text[label] for label in labels])
@@ -150,12 +150,12 @@ def create_label_for_orange(data_orange : pd.DataFrame) :
     orange_section_array = data_orange['part'].to_numpy()
     labels_array = np.zeros(len(orange_section_array))
 
-    labels_array[orange_section_array == 'orange'] = 1
-    labels_array[orange_section_array == 'orangeDOWN_whiteUP'] = 2
-    labels_array[orange_section_array == 'white'] = 3
-    labels_array[orange_section_array == 'whole_orange'] = 4
+    labels_array[orange_section_array == 'orange'] = 0
+    labels_array[orange_section_array == 'orangeDOWN_whiteUP'] = 1
+    labels_array[orange_section_array == 'white'] = 2
+    labels_array[orange_section_array == 'whole_orange'] = 3
 
-    numerical_labels_to_text = {1 : 'orange', 2 : 'orangeDOWN_whiteUP', 3 : 'white', 4 : 'whole_orange'}
+    numerical_labels_to_text = {0 : 'orange', 1 : 'orangeDOWN_whiteUP', 2 : 'white', 3 : 'whole_orange'}
 
     return labels_array, numerical_labels_to_text
 

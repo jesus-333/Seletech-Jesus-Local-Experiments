@@ -11,7 +11,7 @@ from library import datasets, HydraNet
 # Setup the training
 
 # Get config
-config = json.load(open('merge_dataset_scripts/config.json', 'r'))
+config = json.load(open('training_scripts/config/config_1.json', 'r'))
 
 # Get dataset
 full_dataset = datasets.NIRS_dataset_merged(config['training_config']['source_path_list'])
@@ -31,15 +31,20 @@ config['model_config']['config_body']['input_size_mems_1'] = full_dataset.data_m
 config['model_config']['config_body']['input_size_mems_2'] = full_dataset.data_mems_2.shape[1]
 model = HydraNet.hydra_net_v1(config['model_config']['config_body'], config['model_config']['config_heads'])
 
-# Save the indices for the training, validation and testing in the config
-config['training_config']['idx_train'] = idx_train
-config['training_config']['idx_val']   = idx_val
-config['training_config']['idx_test']  = idx_test
-
 # Create Dataloader
 train_loader = torch.utils.data.DataLoader(train_dataset, batch_size = config['training_config']['batch_size'], shuffle = True)
 validation_loader = torch.utils.data.DataLoader(validation_dataset, batch_size = config['training_config']['batch_size'], shuffle = True)
 test_loader = torch.utils.data.DataLoader(test_dataset, batch_size = config['training_config']['batch_size'], shuffle = True)
+
+# Other configurations
+device = "cuda" if torch.cuda.is_available() else "cpu"  # device (i.e. cpu/gpu) used to train the network.
+device = "cpu"
+config['training_config']['device'] = device
+
+# Save the indices for the training, validation and testing in the config
+config['training_config']['idx_train'] = idx_train
+config['training_config']['idx_val']   = idx_val
+config['training_config']['idx_test']  = idx_test
 
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
@@ -100,6 +105,9 @@ with wandb.init(project = 'Seletech-Jesus-Local-Experiments', config = config) a
     # Saved the current best loss on validation set
     best_loss_val = float('inf')
 
+    # Moved model to device
+    model.to(device)
+
     for epoch in range(train_config['epochs']):
         # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
         # (MANDATORY) Advance epoch, check validation loss and save the network
@@ -121,11 +129,10 @@ with wandb.init(project = 'Seletech-Jesus-Local-Experiments', config = config) a
         # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
         # (OPTIONAL) Optional steps during the training
 
-        # (OPTIONAL) Measure the various metrics related to classification (accuracy, precision etc)
-        if train_config['measure_metrics_during_training'] and train_config['use_classifier']:
-            # Compute the various metrics
-            train_metrics_dict = metrics.compute_metrics(model, train_loader, train_config['device'])
-            validation_metrics_dict = metrics.compute_metrics(model, validation_loader, train_config['device'])
+        # Save the metrics in the log
+        if train_config['measure_metrics_during_training']:
+            compute_and_save_accuracy(model, train_loader, train_config, log_dict, 'TRAIN')
+            compute_and_save_accuracy(model, validation_loader, train_config, log_dict, 'VALIDATION')
 
         # (OPTIONAL) Update learning rate (if a scheduler is provided)
         if lr_scheduler is not None:
@@ -143,8 +150,8 @@ with wandb.init(project = 'Seletech-Jesus-Local-Experiments', config = config) a
 
             if lr_scheduler is not None: print("\t Learning rate     = {}".format(optimizer.param_groups[0]['lr']))
             if train_config['measure_metrics_during_training']:
-                print("\t Accuracy (TRAIN)  = {}".format(train_metrics_dict['accuracy']))
-                print("\t Accuracy (VALID)  = {}".format(validation_metrics_dict['accuracy']))
+                for el in log_dict : 
+                    if 'Accuracy' in el : print("\t {} = {}".format(el, log_dict[el]))
 
         # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
         # Log data on wandb
@@ -153,10 +160,6 @@ with wandb.init(project = 'Seletech-Jesus-Local-Experiments', config = config) a
         log_dict['train_loss'] = train_loss
         log_dict['validation_loss'] = validation_loss
     
-        # Save the metrics in the log
-        if train_config['measure_metrics_during_training']:
-            compute_and_save_accuracy(model, train_loader, train_config, log_dict, 'TRAIN')
-            compute_and_save_accuracy(model, validation_loader, train_config, log_dict, 'VALIDATION')
         
         # Add the model to the artifact
         if (epoch + 1) % train_config['epoch_to_save_model'] == 0:

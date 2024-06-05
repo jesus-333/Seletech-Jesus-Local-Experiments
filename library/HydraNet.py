@@ -6,6 +6,7 @@ Implementation of various neural networks for classification with the merged dat
 
 import torch
 from torch import nn
+import numpy as np
 import pprint
 from sklearn.metrics import accuracy_score
 
@@ -59,14 +60,17 @@ class hydra_net_v1(nn.Module) :
         x = torch.cat([x_mems_1, x_mems_2], dim = 1).float()
         x = self.body(x)
         
-        heads_output = []
+        heads_output_list = []
         for i in range(len(self.heads_source)) :
             source = self.heads_source[i]
-            idx_source = source_array == source
+            idx_source = np.asarray(source_array) == source
             x_source = x[idx_source]
-            heads_output.append(self.heads[i](x_source))
+            heads_output = self.heads[i](x_source)
+            heads_output_list.append(heads_output)
+            print("\t", x_source.shape)
+            print("\t", heads_output.shape, "\n")
 
-        return heads_output
+        return heads_output_list
 
     def classify(self, x_mems_1, x_mems_2, source_array, return_as_index = True):
         """
@@ -100,15 +104,18 @@ def train_epoch(model, loss_function, optimizer, train_loader, train_config, log
     # Variable to accumulate the loss
     train_loss = 0
 
-    for sample_data_batch, sample_label_batch in train_loader:
+    for x_mems_1, x_mems_2, true_labels, labels_text, source_array in train_loader:
         # Move data to training device
-        x_mems_1, x_mems_2, true_labels, labels_text, source_array = sample_data_batch.to(train_config['device'])
-        true_labels = sample_label_batch.to(train_config['device'])
+        x_mems_1 = x_mems_1.to(train_config['device'])
+        x_mems_2 = x_mems_2.to(train_config['device'])
+        true_labels = true_labels.to(train_config['device'])
+        source_array = np.asarray(source_array)
 
         # Zeros past gradients
         optimizer.zero_grad()
         
         # Networks forward pass
+        print(x_mems_1.shape, x_mems_2.shape)
         out = model(x_mems_1, x_mems_2, source_array)
 
         # Compute the loss for each head
@@ -148,10 +155,11 @@ def validation_epoch(model, loss_function, validation_loader, train_config, log_
 
     with torch.no_grad():
 
-        for sample_data_batch, sample_label_batch in validation_loader:
+        for x_mems_1, x_mems_2, true_labels, labels_text, source_array in validation_loader:
             # Move data to training device
-            x_mems_1, x_mems_2, true_labels, labels_text, source_array = sample_data_batch.to(train_config['device'])
-            true_labels = sample_label_batch.to(train_config['device'])
+            x_mems_1 = x_mems_1.to(train_config['device'])
+            x_mems_2 = x_mems_2.to(train_config['device'])
+            true_labels = true_labels.to(train_config['device'])
 
             # Networks forward pass
             out = model(x_mems_1, x_mems_2, source_array)

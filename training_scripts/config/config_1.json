@@ -35,11 +35,15 @@
 		"percentage_split_train_validation" : 0.9,
 		"seed" : 42,
 		"batch_size" : 40,
-		"epochs" : 100,
+		"epochs" : 10,
+		"lr" : 2e-3,
+		"optimizer_weight_decay" : 1e-2,
 		"use_scheduler" : false,
 		"measure_metrics_during_training" : true,
+		"log_freq" : 1,
 		"epoch_to_save_model" : 2,
 		"model_artifact_name" : "HydraNet_1",
-		"path_to_save_model" : "Saved Model/hydra_1/"
+		"path_to_save_model" : "Saved Model/hydra_1/",
+		"notes" : null
 	}
 }

@@ -58,8 +58,8 @@ print("Orange END\n")
 
 # Get potos data
 print("Potos START")
-data_potos_full, wavelength, timestamp = merge_data_utils.load_spectra_data_potos(path_potos_spectra, return_numpy = True)
-data_potos = pd.DataFrame(data_potos_full, columns = wavelength.astype(int).astype(str))
-data_potos = merge_data_utils.create_new_dataframe_potos(data_potos, timestamp, path_potos_water_timestamp, time_interval_start, time_interval_end, preprocess_config, n_spectra_per_source)
-data_potos.to_csv(path_save_potos)
+# data_potos_full, wavelength, timestamp = merge_data_utils.load_spectra_data_potos(path_potos_spectra, return_numpy = True)
+# data_potos = pd.DataFrame(data_potos_full, columns = wavelength.astype(int).astype(str))
+# data_potos = merge_data_utils.create_new_dataframe_potos(data_potos, timestamp, path_potos_water_timestamp, time_interval_start, time_interval_end, preprocess_config, n_spectra_per_source)
+# data_potos.to_csv(path_save_potos)
 print("Potos END")
