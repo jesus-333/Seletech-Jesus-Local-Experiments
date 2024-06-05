@@ -21,7 +21,7 @@ preprocess_config = dict(
     w = 30,
     p = 3,
     deriv = 2,
-    use_minmax = True,
+    use_minmax = False,
 )
 
 t_list_beans = [0, 1, 2]

@@ -10,8 +10,6 @@ import pandas as pd
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # Settings
 
-t_list_beans = [0, 1, 2]
-
 path_beans = "data/merged_dataset/beans.csv"
 path_orange = "data/merged_dataset/orange.csv"
 path_potos = "data/merged_dataset/potos.csv"
@@ -19,9 +17,9 @@ path_potos = "data/merged_dataset/potos.csv"
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # Read data
 
-data_beans  = pd.read_csv(path_beans)
-data_orange = pd.read_csv(path_orange)
-data_potos  = pd.read_csv(path_potos)
+data_beans  = pd.read_csv(path_beans, index_col = 0)
+data_orange = pd.read_csv(path_orange, index_col = 0)
+data_potos  = pd.read_csv(path_potos, index_col = 0)
 
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # Create the string to print with the information from each source
