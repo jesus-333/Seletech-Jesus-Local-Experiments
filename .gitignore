@@ -3,6 +3,7 @@
 *.eps
 *.pyc
 *.pkl
+*.pth
 .spyproject/config/
 data/readme.txt
 data/day_list.csv
