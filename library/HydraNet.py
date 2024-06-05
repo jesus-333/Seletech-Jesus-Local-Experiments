@@ -6,6 +6,8 @@ Implementation of various neural networks for classification with the merged dat
 
 import torch
 from torch import nn
+import pprint
+from sklearn.metrics import accuracy_score
 
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
 
@@ -66,3 +68,113 @@ class hydra_net_v1(nn.Module) :
 
         return heads_output
 
+    def classify(self, x_mems_1, x_mems_2, source_array, return_as_index = True):
+        """
+        Directly classify an input by returning the label (return_as_index = True) or the probability distribution on the labels (return_as_index = False)
+        """
+        
+        labels_per_head_list = self.forward(x_mems_1, x_mems_2, source_array)
+
+        if return_as_index:
+            for i in range(len(labels_per_head_list)):
+                labels_per_head = labels_per_head_list[i]
+                predict_prob = torch.squeeze(torch.exp(labels_per_head).detach())
+                labels_per_head_list[i] = torch.argmax(predict_prob, dim = 1)
+
+        return labels_per_head_list
+    
+    def compute_accuracy_batch(self, x_mems_1, x_mems_2, source_array, true_labels) :
+        labels_per_head_list = self.classify(x_mems_1, x_mems_2, source_array, return_as_index = True)
+        accuracy_per_head_list = []
+        for i in range(len(labels_per_head_list)):
+            predicted_labels_per_head = labels_per_head_list[i]
+            true_labels_head = true_labels[source_array == self.heads_source[i]]
+            accuracy_per_head_list[i] = accuracy_score(true_labels_head.cpu().numpy(), predicted_labels_per_head .cpu().numpy())
+
+        return accuracy_per_head_list
+
+def train_epoch(model, loss_function, optimizer, train_loader, train_config, log_dict = None):
+    # Set the model in training mode
+    model.train()
+
+    # Variable to accumulate the loss
+    train_loss = 0
+
+    for sample_data_batch, sample_label_batch in train_loader:
+        # Move data to training device
+        x_mems_1, x_mems_2, true_labels, labels_text, source_array = sample_data_batch.to(train_config['device'])
+        true_labels = sample_label_batch.to(train_config['device'])
+
+        # Zeros past gradients
+        optimizer.zero_grad()
+        
+        # Networks forward pass
+        out = model(x_mems_1, x_mems_2, source_array)
+
+        # Compute the loss for each head
+        batch_train_loss = 0
+        for i in range(len(model.heads_source)) :
+            # Get the labels for each head
+            predict_labels_head = out[i]
+            true_labels_head = true_labels[source_array == model.heads_source[i]]
+
+            # Loss evaluation
+            batch_train_loss += loss_function(predict_labels_head, true_labels_head)
+    
+        # Backward/Optimization pass
+        batch_train_loss.backward()
+        optimizer.step()
+
+        # Accumulate the loss
+        train_loss += batch_train_loss * x_mems_1.shape[0]
+
+    # Compute final loss
+    train_loss = train_loss / len(train_loader.sampler)
+
+    if log_dict is not None:
+        log_dict['train_loss'] = float(train_loss)
+        print("TRAIN LOSS")
+        pprint.pprint(log_dict)
+    
+    return train_loss
+
+
+def validation_epoch(model, loss_function, validation_loader, train_config, log_dict = None):
+    # Set the model in training mode
+    model.eval()
+
+    # Variable to accumulate the loss
+    validation_loss = 0
+
+    with torch.no_grad():
+
+        for sample_data_batch, sample_label_batch in validation_loader:
+            # Move data to training device
+            x_mems_1, x_mems_2, true_labels, labels_text, source_array = sample_data_batch.to(train_config['device'])
+            true_labels = sample_label_batch.to(train_config['device'])
+
+            # Networks forward pass
+            out = model(x_mems_1, x_mems_2, source_array)
+
+            # Compute the loss for each head
+            batch_validation_loss  = 0
+            for i in range(len(model.heads_source)) :
+                # Get the labels for each head
+                predict_labels_head = out[i]
+                true_labels_head = true_labels[source_array == model.heads_source[i]]
+
+                # Loss evaluation
+                batch_validation_loss += loss_function(predict_labels_head, true_labels_head)
+
+            # Accumulate the loss
+            validation_loss += batch_validation_loss * x_mems_1.shape[0]
+
+        # Compute final loss
+        validation_loss  = validation_loss  / len(validation_loader.sampler)
+
+    if log_dict is not None:
+        log_dict['train_loss'] = float(validation_loss)
+        print("TRAIN LOSS")
+        pprint.pprint(log_dict)
+    
+    return validation_loss

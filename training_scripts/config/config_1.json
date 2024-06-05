@@ -1,0 +1,45 @@
+{
+	"model_config" : {
+		"config_body" : {
+			"input_size_mems_1" : -1,
+			"input_size_mems_2" : -1,
+			"hidden_size" : [
+				128,
+				64,
+				32
+			]
+
+		},
+		"config_heads" : {
+			"n_heads" : 3,
+			"head_source" : [
+				"orange",
+				"beans",
+				"potos"
+			],
+			"output_size" : [
+				4,
+				2,
+				2
+			]
+		}
+	}, 
+
+	"training_config" : {
+		"source_path_list" : [
+			"data/merged_dataset/beans.csv",
+			"data/merged_dataset/orange.csv",
+			"data/merged_dataset/potos.csv"
+		],
+		"percentage_split_train_test" : 0.7,
+		"percentage_split_train_validation" : 0.9,
+		"seed" : 42,
+		"batch_size" : 40,
+		"epochs" : 100,
+		"use_scheduler" : false,
+		"measure_metrics_during_training" : true,
+		"epoch_to_save_model" : 2,
+		"model_artifact_name" : "HydraNet_1",
+		"path_to_save_model" : "Saved Model/hydra_1/"
+	}
+}
