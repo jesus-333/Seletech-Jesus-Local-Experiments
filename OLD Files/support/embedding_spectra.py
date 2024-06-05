@@ -114,7 +114,7 @@ class skipGramEmbedder(nn.Module):
         embed = self.embedder(x)
         
         # Variable to store the reconstructed context
-        output = torch.zeros([x.shape[0], self.window_size * 2, self.input_size]).to(x.device)        
+        output = torch.zeros([x.shape[0], self.window_size * 2, self.input_size]).to(x.device)
 
         # Reconstruct the context
         for i in range(len(self.output_layer_list)):

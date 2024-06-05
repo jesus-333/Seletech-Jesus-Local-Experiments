@@ -58,7 +58,7 @@ def load_data_and_create_dataset_colab(config, drive, logger = None):
 
     # Due to the fact that I have much more bad spectra I use them to train the network.
     good_idx, bad_idx = choose_spectra_based_on_water_V1(extended_water_timestamp, 
-                                                         time_interval_start = config.time_interval_start, 
+                                                         time_interval_start = config.time_interval_start,
                                                          time_interval_end = config.time_interval_end)
     if logger is not None: logger.debug("Spectra divided in two class based on water quantity")
     

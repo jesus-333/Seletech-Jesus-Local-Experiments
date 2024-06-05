@@ -192,7 +192,7 @@ def choose_spectra_based_on_water_V1(extended_water_timestamp, time_interval_sta
     good_idx = good_idx_tmp == 1 
     bad_idx = good_idx_tmp != 1 
     
-    return good_idx, bad_idx             
+    return good_idx, bad_idx
 
 
 def choose_spectra_based_on_water_V2(spectra_data, extended_water_timestamp, minute_windows = 8 * 60,  minute_shift = 15):
