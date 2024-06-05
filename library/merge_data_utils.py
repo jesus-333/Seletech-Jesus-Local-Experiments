@@ -51,8 +51,9 @@ def create_new_dataframe_from_single_source(spectra_data, labels : np.ndarray, n
         wavelength = np.hstack((np.arange(1350, 1650 + 1), np.arange(1750, 2150 + 1)))
     
     labels_text = np.array([numerical_labels_to_text[label] for label in labels])
-    tmp_data = np.hstack((spectra_data, labels.reshape(-1, 1), labels_text.reshape(-1, 1)))
-    new_dataframe = pd.DataFrame(tmp_data, columns = np.hstack((wavelength.astype(str), 'label', 'label_text')))
+    source_array = np.array([source_origin for label in labels])
+    tmp_data = np.hstack((spectra_data, labels.reshape(-1, 1), labels_text.reshape(-1, 1), source_array.reshape(-1, 1)))
+    new_dataframe = pd.DataFrame(tmp_data, columns = np.hstack((wavelength.astype(str), 'label', 'label_text', 'source')))
 
     return new_dataframe
 
