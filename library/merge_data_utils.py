@@ -332,7 +332,7 @@ def create_new_dataframe_potos(data_potos : pd.DataFrame, spectra_timestamp, pat
     """
     
     # Get labels for the beans
-    wet_idx, dry_idx  = create_label_for_potos(path_water_file, spectra_timestamp, time_interval_start, time_interval_end)
+    wet_idx, dry_idx = create_label_for_potos(path_water_file, spectra_timestamp, time_interval_start, time_interval_end)
     
     # Get wet spectra
     spectra_data_wet = data_potos[wet_idx]
