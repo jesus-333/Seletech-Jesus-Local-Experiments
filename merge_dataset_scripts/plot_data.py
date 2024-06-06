@@ -9,13 +9,16 @@ import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 import os
+from sklearn.preprocessing import MinMaxScaler
 
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # Settings
 
-path_beans = "data/merged_dataset/beans.csv"
-path_orange = "data/merged_dataset/orange.csv"
-path_potos = "data/merged_dataset/potos.csv"
+use_minmax = False
+
+path_beans = "data/merged_dataset/no_minmax_used_for_plot/beans.csv"
+path_orange = "data/merged_dataset/no_minmax_used_for_plot/orange.csv"
+path_potos = "data/merged_dataset/no_minmax_used_for_plot/potos.csv"
 
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # Read data
@@ -26,22 +29,27 @@ data_potos  = pd.read_csv(path_potos, index_col = 0)
 
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-def plot_average_and_std(data, title):
+def plot_average_and_std(data, title, use_minmax = False):
     """
     Plot the average for each source after extraction
     """
-
+    
+    # Get wavelength array
     starting_wavelength_dataframe = int(data.columns[0])
     w = (starting_wavelength_dataframe - 1350) * 2
     tmp_wave_1_mems_1 = int(1350 + w / 2)
     tmp_wave_2_mems_1 = int(1650 - w / 2)
     tmp_wave_1_mems_2 = int(1750 + w / 2)
     tmp_wave_2_mems_2 = int(2150 - w / 2)
-
     wavelength = np.hstack((np.arange(tmp_wave_1_mems_1, tmp_wave_2_mems_1 + 1), np.arange(tmp_wave_1_mems_2, tmp_wave_2_mems_2 + 1)))
     
     # Get label
     labels_list = list(set(data["label_text"]))
+
+    # (Optional) Apply minmax scaling
+    if use_minmax : 
+        scaler = MinMaxScaler()
+        data.loc[:, "1350":"2150"] = scaler.fit_transform(data.loc[:, "1350":"2150"])
     
     # Create figure
     fig, axs = plt.subplots(1, 2, figsize=(15, 5))
@@ -88,6 +96,16 @@ def plot_average_and_std(data, title):
     os.makedirs(path_save, exist_ok = True)
     fig.savefig(path_save + title + ".png")
 
-plot_average_and_std(data_beans, "Beans")
-plot_average_and_std(data_orange, "Orange")
-plot_average_and_std(data_potos, "Potos")
+plot_average_and_std(data_beans, "Beans", use_minmax)
+plot_average_and_std(data_orange, "Orange", use_minmax)
+plot_average_and_std(data_potos, "Potos", use_minmax)
+
+# print(data_beans.max())
+# print(data_beans.min())
+# print(data_orange.max())
+# print(data_orange.min())
+# print(data_potos.max())
+# print(data_potos.min())
+# print(data_beans.mean())
+# print(data_orange.mean())
+# print(data_potos.mean())
