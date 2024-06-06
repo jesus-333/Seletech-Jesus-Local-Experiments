@@ -24,10 +24,6 @@ train_dataset = datasets.NIRS_dataset_merged(config['training_config']['source_p
 test_dataset = datasets.NIRS_dataset_merged(config['training_config']['source_path_list'], idx_test)
 validation_dataset = datasets.NIRS_dataset_merged(config['training_config']['source_path_list'], idx_val)
 
-# Update model config and create model
-config['model_config']['config_body']['input_size_mems_1'] = full_dataset.data_mems_1.shape[1]
-config['model_config']['config_body']['input_size_mems_2'] = full_dataset.data_mems_2.shape[1]
-model = HydraNet.hydra_net_v1(config['model_config']['config_body'], config['model_config']['config_heads'])
 
 # Create Dataloader
 train_loader      = torch.utils.data.DataLoader(train_dataset,      batch_size = config['training_config']['batch_size'], shuffle = True)
@@ -59,13 +55,20 @@ def compute_and_save_metrics(model, loader, train_config, log_dict, data_type : 
     x_mems_1, x_mems_2 = x_mems_1.to(train_config['device']), x_mems_2.to(train_config['device'])
     metrics_per_head_list = model.compute_metrics_batch(x_mems_1, x_mems_2, source_array, true_labels)
 
-    for i in range(len(metrics_per_head_list )):
-        for metric in metrics_per_head_list : 
-            log_dict['{} head {} ({})'.format(metric, model.head_sources[i], data_type)] = metrics_per_head_list[i][metric]
+    for i in range(len(metrics_per_head_list)):
+        metrics_per_head = metrics_per_head_list[i]
+        for metric in metrics_per_head :
+            log_dict['{} head {} ({})'.format(metric, model.head_sources[i], data_type)] = metrics_per_head[metric]
 
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
 with wandb.init(project = 'Seletech-Jesus-Local-Experiments-Merge-Data', config = config) as run:
+
+
+    # Update model config and create model
+    config['model_config']['config_body']['input_size_mems_1'] = full_dataset.data_mems_1.shape[1]
+    config['model_config']['config_body']['input_size_mems_2'] = full_dataset.data_mems_2.shape[1]
+    model = HydraNet.hydra_net_v1(config['model_config']['config_body'], config['model_config']['config_heads'])
 
     train_config = config['training_config']
     notes = train_config['notes']
@@ -90,7 +93,7 @@ with wandb.init(project = 'Seletech-Jesus-Local-Experiments-Merge-Data', config 
                                   )
 
     # (OPTIONAL) Setup lr scheduler
-    if train_config['use_scheduler'] :
+    if train_config['use_lr_scheduler'] :
         lr_scheduler = torch.optim.lr_scheduler.ExponentialLR(optimizer, gamma = train_config['lr_decay_rate'])
     else:
         lr_scheduler = None
@@ -143,15 +146,16 @@ with wandb.init(project = 'Seletech-Jesus-Local-Experiments-Merge-Data', config 
 
         # (OPTIONAL) Print loss
         if train_config['print_var']:
-            pprint.pprint(log_dict)
-            # print("Epoch:{}".format(epoch))
-            # print("\t Train loss        = {}".format(train_loss.detach().cpu().float()))
-            # print("\t Validation loss   = {}".format(validation_loss.detach().cpu().float()))
-            #
-            # if lr_scheduler is not None: print("\t Learning rate     = {}".format(optimizer.param_groups[0]['lr']))
-            # if train_config['measure_metrics_during_training']:
-            #     for el in log_dict :
-            #         if 'Accuracy' in el : print("\t {} = {}".format(el, log_dict[el]))
+            # pprint.pprint(log_dict) # Too much information
+
+            print("Epoch:{}".format(epoch))
+            print("\t Train loss        = {}".format(train_loss.detach().cpu().float()))
+            print("\t Validation loss   = {}".format(validation_loss.detach().cpu().float()))
+
+            if lr_scheduler is not None: print("\t Learning rate     = {}".format(optimizer.param_groups[0]['lr']))
+            if train_config['measure_metrics_during_training']:
+                for el in log_dict :
+                    if 'accuracy' in el : print("\t {} = {}".format(el, log_dict[el]))
 
         # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
         # Log data on wandb

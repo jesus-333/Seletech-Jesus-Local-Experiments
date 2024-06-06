@@ -96,10 +96,9 @@ class hydra_net_v1(nn.Module) :
         labels_per_head_list = self.classify(x_mems_1, x_mems_2, source_array, return_as_index = True)
         metrics_per_head_list = []
         for i in range(len(labels_per_head_list)):
-            print(i, self.head_sources[i])
             predicted_labels_head = labels_per_head_list[i]
             true_labels_head = true_labels[source_array == self.head_sources[i]]
-            metrics_per_head_list = metrics.compute_metrics_from_labels(true_labels_head.cpu(), predicted_labels_head.cpu())
+            metrics_per_head_list.append(metrics.compute_metrics_from_labels(true_labels_head.cpu(), predicted_labels_head.cpu()))
 
         return metrics_per_head_list
 

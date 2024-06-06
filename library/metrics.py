@@ -65,7 +65,7 @@ def compute_specificity_binary(true_label, predict_label):
 
 def compute_confusion_matrix(true_label, predict_label):
     # Create the confusion matrix
-    confusion_matrix = np.zeros((len(set(true_label)), len(set(true_label))))
+    confusion_matrix = np.zeros((len(np.unique(true_label)), len(np.unique(true_label))))
     
     # Iterate through labels
     for i in range(len(true_label)):
@@ -78,6 +78,5 @@ def compute_confusion_matrix(true_label, predict_label):
     
     # Normalize between 0 and 1
     confusion_matrix /= len(true_label)
-    
     
     return confusion_matrix
