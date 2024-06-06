@@ -11,8 +11,8 @@ from library import datasets, HydraNet
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # Setup the training
 
-n_training_run = 5
-name_training_run = "train_PC_Lab_"
+n_training_run = 2
+name_training_run = "train_no_MINMAX_"
 
 # Get config
 config = json.load(open('training_scripts/config/config_1.json', 'r'))
@@ -75,11 +75,14 @@ for i in range(n_training_run) :
     if name_training_run is not None :
         name_training_run += "{}".format(i + 1)
         config['training_config']['name_training_run'] = name_training_run
-
-    with wandb.init(project = 'Seletech-Jesus-Local-Experiments-Merge-Data', config = config) as run:
+        
+   
+    notes = config['training_config']['notes']
+    name = config['training_config']['name_training_run'] if 'name_training_run' in config['training_config'] else None
+    
+    with wandb.init(project = 'Seletech-Jesus-Local-Experiments-Merge-Data', config = config, notes = notes, name = name) as run:
+        
         train_config = config['training_config']
-        notes = train_config['notes']
-        name = train_config['name_training_run'] if 'name_training_run' in train_config else None
         train_config['wandb_training'] = True
 
         # Setup artifact to save model
@@ -162,7 +165,7 @@ for i in range(n_training_run) :
                 if lr_scheduler is not None: print("\t Learning rate     = {}".format(optimizer.param_groups[0]['lr']))
                 if train_config['measure_metrics_during_training']:
                     for el in log_dict :
-                        if 'accuracy' in el : print("\t {} = {}".format(el, log_dict[el]))
+                        if 'accuracy' in el : print("\t {}\t= {}".format(el, log_dict[el]))
 
             # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
             # Log data on wandb
