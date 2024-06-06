@@ -64,7 +64,6 @@ def compute_and_save_metrics(model, loader, train_config, log_dict, data_type : 
 
 with wandb.init(project = 'Seletech-Jesus-Local-Experiments-Merge-Data', config = config) as run:
 
-
     # Update model config and create model
     config['model_config']['config_body']['input_size_mems_1'] = full_dataset.data_mems_1.shape[1]
     config['model_config']['config_body']['input_size_mems_2'] = full_dataset.data_mems_2.shape[1]
