@@ -11,7 +11,8 @@ from library import datasets, HydraNet
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # Setup the training
 
-n_training_run = 30
+n_training_run = 5
+name_training_run = "train_PC_Lab_"
 
 # Get config
 config = json.load(open('training_scripts/config/config_1.json', 'r'))
@@ -26,10 +27,6 @@ train_dataset = datasets.NIRS_dataset_merged(config['training_config']['source_p
 test_dataset = datasets.NIRS_dataset_merged(config['training_config']['source_path_list'], idx_test)
 validation_dataset = datasets.NIRS_dataset_merged(config['training_config']['source_path_list'], idx_val)
 
-# Update model config and create model
-config['model_config']['config_body']['input_size_mems_1'] = full_dataset.data_mems_1.shape[1]
-config['model_config']['config_body']['input_size_mems_2'] = full_dataset.data_mems_2.shape[1]
-model = HydraNet.hydra_net_v1(config['model_config']['config_body'], config['model_config']['config_heads'])
 
 # Create Dataloader
 train_loader      = torch.utils.data.DataLoader(train_dataset,      batch_size = config['training_config']['batch_size'], shuffle = True)
@@ -69,9 +66,17 @@ def compute_and_save_metrics(model, loader, train_config, log_dict, data_type : 
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
 for i in range(n_training_run) :
+    # Update model config and create model
+    config['model_config']['config_body']['input_size_mems_1'] = full_dataset.data_mems_1.shape[1]
+    config['model_config']['config_body']['input_size_mems_2'] = full_dataset.data_mems_2.shape[1]
+    model = HydraNet.hydra_net_v1(config['model_config']['config_body'], config['model_config']['config_heads'])
+    
+    # (OPTIONAL)
+    if name_training_run is not None :
+        name_training_run += "{}".format(i + 1)
+        config['training_config']['name_training_run'] = name_training_run
 
     with wandb.init(project = 'Seletech-Jesus-Local-Experiments-Merge-Data', config = config) as run:
-
         train_config = config['training_config']
         notes = train_config['notes']
         name = train_config['name_training_run'] if 'name_training_run' in train_config else None

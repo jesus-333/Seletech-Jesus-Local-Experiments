@@ -1,0 +1,15 @@
+{
+	"epochs" : {
+		"values" : [50, 100]
+	},
+	"lr_decay_rate" : {
+		"values" : [1, 0.99]
+	},
+
+	"lr" : {
+		"values" : [2e-3, 1e-3]
+	},
+	batch_size = dict(
+		values = [30, 40, 50],
+	),
+}
