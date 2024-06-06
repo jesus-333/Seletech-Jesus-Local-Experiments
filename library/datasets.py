@@ -65,15 +65,27 @@ class NIRS_dataset_merged(torch.utils.data.Dataset):
         self.label = torch.from_numpy(self.label).long()
 
 
-def get_idx_to_split_data(n_elements : int, percentage_split : float, seed = -1):
+def get_idx_to_split_data(n_elements : int, percentage_split : float, seed = -1, list_idx_to_sample = None):
     """
     Get to list of indices to split an array of data.
+    If list_to_sample is not passed the indices will go from 0 to n_elements - 1.
+    Instead if list_idx_to_sample is passed the indices will be sampled from that list.
     """
+
     # Use of the seed for reproducibility
     np.random.seed(seed)
 
     # Create idx vector
     idx = np.random.permutation(n_elements)
     size_1 = int(n_elements * percentage_split)
-    
-    return idx[0:size_1], idx[size_1:]
+
+    idx_set_1 = idx[0:size_1]
+    idx_set_2 = idx[size_1:]
+
+    if list_idx_to_sample is None :
+        return idx_set_1, idx_set_2
+    else :
+        if n_elements != len(list_idx_to_sample) : raise ValueError("Length of list_idx_to_sample and n_elements value must be the same")
+        list_idx_to_sample = np.asarray(list_idx_to_sample)
+
+        return list_idx_to_sample[idx_set_1], list_idx_to_sample[idx_set_2]

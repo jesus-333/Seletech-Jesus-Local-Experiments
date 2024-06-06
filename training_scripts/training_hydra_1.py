@@ -19,7 +19,7 @@ full_dataset = datasets.NIRS_dataset_merged(config['training_config']['source_pa
 
 # Divide the dataset in training, testing and validation
 idx_train, idx_test = datasets.get_idx_to_split_data(full_dataset.data_mems_1.shape[0], config['training_config']['percentage_split_train_test'], config['training_config']['seed'])
-idx_train, idx_val = datasets.get_idx_to_split_data(len(idx_train), config['training_config']['percentage_split_train_validation'], config['training_config']['seed'])
+idx_train, idx_val = datasets.get_idx_to_split_data(len(idx_train), config['training_config']['percentage_split_train_validation'], config['training_config']['seed'], idx_train)
 train_dataset = datasets.NIRS_dataset_merged(config['training_config']['source_path_list'], idx_train)
 test_dataset = datasets.NIRS_dataset_merged(config['training_config']['source_path_list'], idx_test)
 validation_dataset = datasets.NIRS_dataset_merged(config['training_config']['source_path_list'], idx_val)
