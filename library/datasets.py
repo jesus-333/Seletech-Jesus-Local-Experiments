@@ -19,7 +19,7 @@ class NIRS_dataset_merged(torch.utils.data.Dataset):
             if not os.path.exists(path):
                 raise FileNotFoundError(f"File {path} does not exist")
             else :
-                tmp_dataframe = pd.read_csv(path)
+                tmp_dataframe = pd.read_csv(path, index_col = 0)
                 merge_dataframe = pd.concat([merge_dataframe, tmp_dataframe], axis = 0)
                 
         if idx_to_ketp is not None : merge_dataframe = merge_dataframe.iloc[idx_to_ketp, :]
@@ -47,7 +47,7 @@ class NIRS_dataset_merged(torch.utils.data.Dataset):
         return self.data_mems_1[idx], self.data_mems_2[idx], self.label[idx], self.label_text[idx], self.source[idx]
 
     def compute_parameter_preprocess(self, merge_dataframe : pd.DataFrame, return_as_string : bool = True) :
-        starting_wavelength_dataframe = int(merge_dataframe.columns[1])
+        starting_wavelength_dataframe = int(merge_dataframe.columns[0])
         w = (starting_wavelength_dataframe - 1350) * 2
         tmp_wave_1_mems_1 = int(1350 + w / 2)
         tmp_wave_2_mems_1 = int(1650 - w / 2)
