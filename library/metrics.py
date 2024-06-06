@@ -14,11 +14,16 @@ def compute_metrics_from_labels(true_label, predict_label):
         accuracy    = accuracy_score(true_label, predict_label),
         cohen_kappa = cohen_kappa_score(true_label, predict_label),
         sensitivity = recall_score(true_label, predict_label, average = 'weighted'),
-        specificity = compute_specificity_multiclass(true_label, predict_label),
         f1          = f1_score(true_label, predict_label, average = 'weighted'),
-        # confusion_matrix = multilabel_confusion_matrix(true_label, predict_label),
-        confusion_matrix = compute_multiclass_confusion_matrix(true_label, predict_label),
+        confusion_matrix = compute_confusion_matrix(true_label, predict_label)
     )
+    
+    if len(set(true_label)) > 2 : 
+        specificity = compute_specificity_multiclass(true_label, predict_label)
+    else : 
+        specificity = compute_specificity_binary(true_label, predict_label)
+    computed_metrics["specificity"] = specificity
+        
     
     return computed_metrics
 
@@ -58,9 +63,9 @@ def compute_specificity_binary(true_label, predict_label):
 
     return specificity
 
-def compute_multiclass_confusion_matrix(true_label, predict_label):
+def compute_confusion_matrix(true_label, predict_label):
     # Create the confusion matrix
-    confusion_matrix = np.zeros((4, 4))
+    confusion_matrix = np.zeros((len(set(true_label)), len(set(true_label))))
     
     # Iterate through labels
     for i in range(len(true_label)):

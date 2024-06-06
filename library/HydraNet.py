@@ -77,15 +77,17 @@ class hydra_net_v1(nn.Module) :
         Directly classify an input by returning the label (return_as_index = True) or the probability distribution on the labels (return_as_index = False)
         """
         
-        labels_per_head_list = self.forward(x_mems_1, x_mems_2, source_array)
-
-        if return_as_index:
-            for i in range(len(labels_per_head_list)):
-                labels_per_head = labels_per_head_list[i]
-                predict_prob = torch.squeeze(torch.exp(labels_per_head).detach())
-                labels_per_head_list[i] = torch.argmax(predict_prob, dim = 1)
-
-        return labels_per_head_list
+        with torch.no_grad() :
+        
+            labels_per_head_list = self.forward(x_mems_1, x_mems_2, source_array)
+    
+            if return_as_index:
+                for i in range(len(labels_per_head_list)):
+                    labels_per_head = labels_per_head_list[i]
+                    predict_prob = torch.squeeze(torch.exp(labels_per_head).detach())
+                    labels_per_head_list[i] = torch.argmax(predict_prob, dim = 1)
+    
+            return labels_per_head_list
     
     def compute_metrics_batch(self, x_mems_1, x_mems_2, source_array, true_labels) :
         """
@@ -94,9 +96,10 @@ class hydra_net_v1(nn.Module) :
         labels_per_head_list = self.classify(x_mems_1, x_mems_2, source_array, return_as_index = True)
         metrics_per_head_list = []
         for i in range(len(labels_per_head_list)):
+            print(i, self.head_sources[i])
             predicted_labels_head = labels_per_head_list[i]
             true_labels_head = true_labels[source_array == self.head_sources[i]]
-            metrics_per_head_list = metrics.compute_metrics_from_labels(true_labels_head, predicted_labels_head)
+            metrics_per_head_list = metrics.compute_metrics_from_labels(true_labels_head.cpu(), predicted_labels_head.cpu())
 
         return metrics_per_head_list
 
@@ -148,10 +151,9 @@ def train_epoch(model, loss_function, optimizer, train_loader, train_config, log
         log_dict['train_loss_total'] = float(train_loss)
         for i in range(len(model.head_sources)) : log_dict['train_loss_{}'.format(model.head_sources[i])] = float(loss_per_head[model.head_sources[i]])
         
-        print("TRAIN LOSS")
-        pprint.pprint(log_dict)
+        # print("TRAIN LOSS")
+        # pprint.pprint(log_dict)
         
-    
     return train_loss
 
 
@@ -198,7 +200,7 @@ def validation_epoch(model, loss_function, validation_loader, train_config, log_
         log_dict['validation_loss_total'] = float(validation_loss)
         for i in range(len(model.head_sources)) : log_dict['validation_loss_{}'.format(model.head_sources[i])] = float(loss_per_head[model.head_sources[i]])
         
-        print("TRAIN LOSS")
-        pprint.pprint(log_dict)
+        # print("TRAIN LOSS")
+        # pprint.pprint(log_dict)
     
     return validation_loss
