@@ -47,6 +47,14 @@ def plot_average_and_std(data, title, use_minmax = False):
     
     # Get label
     labels_list = list(set(data["label_text"]))
+    
+    if 'orange' in labels_list :
+        update_label_orange = {'orange' : 'Orange Layer', 
+                               'white' : 'White Layer',
+                               'orangeDOWN_whiteUP' : 'Two Layer', 
+                               'whole_orange' : 'Whole Orange' }
+        for i in range(len(labels_list)):
+            labels_list[i] = update_label_orange[labels_list[i]]
 
     # (Optional) Apply minmax scaling
     if use_minmax : 

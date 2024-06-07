@@ -113,6 +113,6 @@ def compute_average_and_std(list_metrics, type_dataset) :
             avg_metrics[metric][plant] = np.nanmean(tmp_list)
             std_metrics[metric][plant] =  np.std(tmp_list)
     
-    print(string_to_print)
+    # print(string_to_print)
     return avg_metrics, std_metrics, string_to_print
 
