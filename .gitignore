@@ -22,4 +22,14 @@ TMP/
 TMP_File/
 Saved Results/beans_spectra/
 Saved Results/beans_spectra
-!/saved model/merged_data/  
+!/saved model/merged_data/
+!/saved model/merged_data/1/*
+!/saved model/merged_data/2/*
+!/saved model/merged_data/3/*
+!/saved model/merged_data/4/*
+!/saved model/merged_data/5/*
+!/saved model/merged_data/6/*
+!/saved model/merged_data/7/*
+!/saved model/merged_data/8/*
+!/saved model/merged_data/9/*
+!/saved model/merged_data/10/*
