@@ -86,11 +86,11 @@ for i in range(n_model) :
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # Print results
 
-string_to_print_TRAIN_END = metrics.compute_average_and_std(list_metrics_END, 'TRAIN')
-string_to_print_VALIDATION_END = metrics.compute_average_and_std(list_metrics_END, 'VALIDATION')
-string_to_print_TEST_END = metrics.compute_average_and_std(list_metrics_END, 'TEST')
+avg_metrics_TRAIN_END, std_metrics_TRAIND_END, string_to_print_TRAIN_END = metrics.compute_average_and_std(list_metrics_END, 'TRAIN')
+avg_metrics_VALIDATION_END, std_metrics_VALIDATION_END, string_to_print_VALIDATION_END = metrics.compute_average_and_std(list_metrics_END, 'VALIDATION')
+avg_metrics_TEST_END, std_metrics_TEST_END, string_to_print_TEST_END = metrics.compute_average_and_std(list_metrics_END, 'TEST')
 
-string_to_print_TRAIN_BEST = metrics.compute_average_and_std(list_metrics_BEST, 'TRAIN')
-string_to_print_VALIDATION_BEST = metrics.compute_average_and_std(list_metrics_BEST, 'VALIDATION')
-string_to_print_TEST_BEST = metrics.compute_average_and_std(list_metrics_BEST, 'TEST')
+avg_metrics_TRAIN_BEST, std_metrics_TRAIND_BEST, string_to_print_TRAIN_BEST = metrics.compute_average_and_std(list_metrics_BEST, 'TRAIN')
+avg_metrics_VALIDATION_BEST, std_metrics_VALIDATION_BEST, string_to_print_VALIDATION_BEST = metrics.compute_average_and_std(list_metrics_BEST, 'VALIDATION')
+avg_metrics_TEST_BEST, std_metrics_TEST_BEST, string_to_print_TEST_BEST = metrics.compute_average_and_std(list_metrics_BEST, 'TEST')
 

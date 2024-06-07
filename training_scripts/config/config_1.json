@@ -4,7 +4,7 @@
 			"input_size_mems_1" : -1,
 			"input_size_mems_2" : -1,
 			"hidden_size" : [
-				128,
+				128     ,
 				64,
 				32
 			]

@@ -85,6 +85,15 @@ def compute_average_and_std(list_metrics, type_dataset) :
     plant_list = ['beans', 'orange', 'potos']
     metrics_list = ['accuracy', 'sensitivity', 'specificity', 'f1', 'cohen_kappa', 'matthews_coef']
     string_to_print = ""
+    
+    avg_metrics = {}
+    std_metrics = {}
+    for metric in metrics_list : 
+        avg_metrics[metric] = {}
+        std_metrics[metric] = {}
+        for plant in plant_list: 
+            avg_metrics[metric][plant] = 0
+            std_metrics[metric][plant] = 0
 
     for metric in metrics_list :
         for plant in plant_list :
@@ -101,7 +110,9 @@ def compute_average_and_std(list_metrics, type_dataset) :
             # string_to_print += "{:.2f}±{:.2f}, {}\n".format(np.nanmean(tmp_list), np.std(tmp_list), plant)
             # string_to_print += "{:.2f}±{:.2f}, {}\n".format(np.nanmean(tmp_list), np.std(tmp_list), metric)
             string_to_print += "{:.2f}±{:.2f}\n".format(np.nanmean(tmp_list), np.std(tmp_list))
+            avg_metrics[metric][plant] = np.nanmean(tmp_list)
+            std_metrics[metric][plant] =  np.std(tmp_list)
     
     print(string_to_print)
-    return string_to_print
+    return avg_metrics, std_metrics, string_to_print
 
