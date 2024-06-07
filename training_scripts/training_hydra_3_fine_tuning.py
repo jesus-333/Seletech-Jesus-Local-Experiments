@@ -12,7 +12,7 @@ from library import datasets, HydraNet
 # Setup the training
 
 # Get config
-config = json.load(open('training_scripts/config/config_1.json', 'r'))
+config = json.load(open('training_scripts/config/config_fine_tuned.json', 'r'))
 
 # Get dataset
 full_dataset = datasets.NIRS_dataset_merged(config['training_config']['source_path_list'])
@@ -39,20 +39,26 @@ config['training_config']['idx_train'] = idx_train
 config['training_config']['idx_val']   = idx_val
 config['training_config']['idx_test']  = idx_test
 
+if config['training_config']['plant_to_fine_tune'] == 'beans' : head_to_use = 0
+if config['training_config']['plant_to_fine_tune'] == 'orange' : head_to_use = 1
+if config['training_config']['plant_to_fine_tune'] == 'potos' : head_to_use = 2
+
+for i in range(len(config['model_config']['config_heads']['head_sources'])) : config['model_config']['config_heads']['head_sources'][i] = config['training_config']['plant_to_fine_tune']
+
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
 def add_file_to_artifact(artifact, file_name):
     artifact.add_file(file_name)
     wandb.save(file_name)
 
-def compute_and_save_metrics(model, loader, train_config, log_dict, data_type : str) :
+def compute_and_save_metrics(model, loader, train_config, log_dict, data_type : str, head_to_use = -1) :
     # Get the dataset
     dataset = loader.dataset
     x_mems_1, x_mems_2, true_labels, labels_text, source_array = dataset[:]
 
     # Compute the Accuracy
     x_mems_1, x_mems_2 = x_mems_1.to(train_config['device']), x_mems_2.to(train_config['device'])
-    metrics_per_head_list = model.compute_metrics_batch(x_mems_1, x_mems_2, source_array, true_labels)
+    metrics_per_head_list = model.compute_metrics_batch(x_mems_1, x_mems_2, source_array, true_labels, head_to_use)
 
     for i in range(len(metrics_per_head_list)):
         metrics_per_head = metrics_per_head_list[i]
@@ -119,8 +125,8 @@ with wandb.init(project = 'Seletech-Jesus-Local-Experiments-Merge-Data', config 
         # (MANDATORY) Advance epoch, check validation loss and save the network
 
         # Advance epoch for train set (backward pass) and validation (no backward pass)
-        train_loss      = HydraNet.train_epoch(model, loss_function, optimizer, train_loader, train_config, log_dict)
-        validation_loss = HydraNet.validation_epoch(model, loss_function, validation_loader, train_config, log_dict)
+        train_loss      = HydraNet.train_epoch(model, loss_function, optimizer, train_loader, train_config, log_dict, head_to_use)
+        validation_loss = HydraNet.validation_epoch(model, loss_function, validation_loader, train_config, log_dict, head_to_use)
         
         # Save the new BEST model if a new minimum is reach for the validation loss
         if validation_loss < best_loss_val:
@@ -137,8 +143,8 @@ with wandb.init(project = 'Seletech-Jesus-Local-Experiments-Merge-Data', config 
 
         # Save the metrics in the log
         if train_config['measure_metrics_during_training']:
-            compute_and_save_metrics(model, train_loader, train_config, log_dict, 'TRAIN')
-            compute_and_save_metrics(model, validation_loader, train_config, log_dict, 'VALIDATION')
+            compute_and_save_metrics(model, train_loader, train_config, log_dict, 'TRAIN', head_to_use)
+            compute_and_save_metrics(model, validation_loader, train_config, log_dict, 'VALIDATION', head_to_use)
 
         # (OPTIONAL) Update learning rate (if a scheduler is provided)
         if lr_scheduler is not None:

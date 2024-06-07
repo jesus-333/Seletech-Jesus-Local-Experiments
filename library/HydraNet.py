@@ -56,30 +56,37 @@ class hydra_net_v1(nn.Module) :
         # List for the type of data to use for each head
         self.head_sources = config_heads['head_sources']
     
-    def forward(self, x_mems_1, x_mems_2, source_array) :
+    def forward(self, x_mems_1, x_mems_2, source_array, head_to_use = -1) :
         x_mems_1 = self.input_mems_1(x_mems_1)
         x_mems_2 = self.input_mems_2(x_mems_2)
         x = torch.cat([x_mems_1, x_mems_2], dim = 1).float()
         x = self.body(x)
         
         heads_output_list = []
-        for i in range(len(self.head_sources)) :
-            source = self.head_sources[i]
+        if head_to_use == -1 : 
+            for i in range(len(self.head_sources)) :
+                source = self.head_sources[i]
+                idx_source = np.asarray(source_array) == source
+                x_source = x[idx_source]
+                heads_output = self.heads[i](x_source)
+                heads_output_list.append(heads_output)
+        else : 
+            source = self.head_sources[head_to_use]
             idx_source = np.asarray(source_array) == source
             x_source = x[idx_source]
-            heads_output = self.heads[i](x_source)
+            heads_output = self.heads[head_to_use](x_source)
             heads_output_list.append(heads_output)
 
         return heads_output_list
 
-    def classify(self, x_mems_1, x_mems_2, source_array, return_as_index = True):
+    def classify(self, x_mems_1, x_mems_2, source_array, return_as_index = True, head_to_use = -1):
         """
         Directly classify an input by returning the label (return_as_index = True) or the probability distribution on the labels (return_as_index = False)
         """
         
         with torch.no_grad() :
         
-            labels_per_head_list = self.forward(x_mems_1, x_mems_2, source_array)
+            labels_per_head_list = self.forward(x_mems_1, x_mems_2, source_array, head_to_use)
     
             if return_as_index:
                 for i in range(len(labels_per_head_list)):
@@ -89,11 +96,11 @@ class hydra_net_v1(nn.Module) :
     
             return labels_per_head_list
     
-    def compute_metrics_batch(self, x_mems_1, x_mems_2, source_array, true_labels) :
+    def compute_metrics_batch(self, x_mems_1, x_mems_2, source_array, true_labels, head_to_use = -1) :
         """
         Compute accuracy, cohen_kappa, sensitivity, specificity, f1 and confusion matrix for each head
         """
-        labels_per_head_list = self.classify(x_mems_1, x_mems_2, source_array, return_as_index = True)
+        labels_per_head_list = self.classify(x_mems_1, x_mems_2, source_array, return_as_index = True, head_to_use = head_to_use)
         metrics_per_head_list = []
         for i in range(len(labels_per_head_list)):
             predicted_labels_head = labels_per_head_list[i]
@@ -102,7 +109,7 @@ class hydra_net_v1(nn.Module) :
 
         return metrics_per_head_list
 
-def train_epoch(model, loss_function, optimizer, train_loader, train_config, log_dict = None):
+def train_epoch(model, loss_function, optimizer, train_loader, train_config, log_dict = None, head_to_use = -1):
     # Set the model in training mode
     model.train()
 
@@ -122,11 +129,13 @@ def train_epoch(model, loss_function, optimizer, train_loader, train_config, log
         optimizer.zero_grad()
         
         # Networks forward pass
-        out = model(x_mems_1, x_mems_2, source_array)
+        out = model(x_mems_1, x_mems_2, source_array, head_to_use)
 
         # Compute the loss for each head
         batch_train_loss = 0
-        for i in range(len(model.head_sources)) :
+        if head_to_use == -1 : n_iteration = len(model.head_sources) 
+        else : n_iteration = 1
+        for i in range(n_iteration) :
             # Get the labels for each head
             predict_labels_head = out[i]
             true_labels_head = true_labels[source_array == model.head_sources[i]]
@@ -156,7 +165,7 @@ def train_epoch(model, loss_function, optimizer, train_loader, train_config, log
     return train_loss
 
 
-def validation_epoch(model, loss_function, validation_loader, train_config, log_dict = None):
+def validation_epoch(model, loss_function, validation_loader, train_config, log_dict = None, head_to_use = -1):
     # Set the model in training mode
     model.eval()
 
@@ -175,11 +184,13 @@ def validation_epoch(model, loss_function, validation_loader, train_config, log_
             source_array = np.asarray(source_array)
 
             # Networks forward pass
-            out = model(x_mems_1, x_mems_2, source_array)
+            out = model(x_mems_1, x_mems_2, source_array, head_to_use)
 
             # Compute the loss for each head
             batch_validation_loss  = 0
-            for i in range(len(model.head_sources)) :
+            if head_to_use == -1 : n_iteration = len(model.head_sources) 
+            else : n_iteration = 1
+            for i in range(n_iteration) :
                 # Get the labels for each head
                 predict_labels_head = out[i]
                 true_labels_head = true_labels[source_array == model.head_sources[i]]

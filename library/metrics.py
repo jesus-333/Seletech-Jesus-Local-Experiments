@@ -18,8 +18,8 @@ def compute_metrics_from_labels(true_label, predict_label):
         matthews_coef    = matthews_corrcoef(true_label, predict_label),
         confusion_matrix = compute_confusion_matrix(true_label, predict_label)
     )
-    
-    if len(set(true_label)) > 2 :
+
+    if len(np.unique(true_label)) > 2 :
         specificity = compute_specificity_multiclass(true_label, predict_label)
     else :
         specificity = compute_specificity_binary(true_label, predict_label)

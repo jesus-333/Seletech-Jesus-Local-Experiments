@@ -29,13 +29,14 @@
 		"source_path_list" : [
 			"data/merged_dataset/no_minmax_used_for_plot/potos.csv"
 		],
-		"path_weigths" : "saved model/merged_data/3/model_100.pth",
+		"plant_to_fine_tune" : "potos",
+		"path_weigths" : "saved model/merged_data/1/model_BEST.pth",
 		"percentage_split_train_test" : 0.8,
 		"percentage_split_train_validation" : 0.9,
 		"seed" : 42,
 		"batch_size" : 40,
 		"epochs" : 50,
-		"lr" : 1e-3,
+		"lr" : 7e-4,
 		"optimizer_weight_decay" : 1e-3,
 		"use_lr_scheduler" : true,
         "lr_decay_rate" : 0.999,
@@ -45,7 +46,7 @@
 		"model_artifact_name" : "HydraNet_1",
 		"path_to_save_model" : "Saved Model/hydra_1/",
 		"notes" : null,
-		"name_training_run" : "test_NOT_MINMAX",
+		"name_training_run" : "FINE_TUNING_POTOS",
         "print_var" : true
 	}
 }
