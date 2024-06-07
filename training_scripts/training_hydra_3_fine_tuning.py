@@ -24,7 +24,6 @@ train_dataset = datasets.NIRS_dataset_merged(config['training_config']['source_p
 test_dataset = datasets.NIRS_dataset_merged(config['training_config']['source_path_list'], idx_test)
 validation_dataset = datasets.NIRS_dataset_merged(config['training_config']['source_path_list'], idx_val)
 
-
 # Create Dataloader
 train_loader      = torch.utils.data.DataLoader(train_dataset,      batch_size = config['training_config']['batch_size'], shuffle = True)
 validation_loader = torch.utils.data.DataLoader(validation_dataset, batch_size = config['training_config']['batch_size'], shuffle = True)
@@ -62,12 +61,18 @@ def compute_and_save_metrics(model, loader, train_config, log_dict, data_type : 
 
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-with wandb.init(project = 'Seletech-Jesus-Local-Experiments-Merge-Data', config = config) as run:
+notes = config['training_config']['notes']
+name = config['training_config']['name_training_run'] if 'name_training_run' in config['training_config'] else None
+
+with wandb.init(project = 'Seletech-Jesus-Local-Experiments-Merge-Data', config = config, name = name, notes = notes) as run:
 
     # Update model config and create model
     config['model_config']['config_body']['input_size_mems_1'] = full_dataset.data_mems_1.shape[1]
     config['model_config']['config_body']['input_size_mems_2'] = full_dataset.data_mems_2.shape[1]
     model = HydraNet.hydra_net_v1(config['model_config']['config_body'], config['model_config']['config_heads'])
+
+    # Load model weights
+    model.load_state_dict(torch.load(config['training_config']['path_weigths'], map_location = 'cpu'))
 
     train_config = config['training_config']
     notes = train_config['notes']

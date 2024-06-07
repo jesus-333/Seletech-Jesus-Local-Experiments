@@ -62,7 +62,10 @@ def compute_and_save_metrics(model, loader, train_config, log_dict, data_type : 
 
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-with wandb.init(project = 'Seletech-Jesus-Local-Experiments-Merge-Data', config = config) as run:
+notes = config['training_config']['notes']
+name = config['training_config']['name_training_run'] if 'name_training_run' in config['training_config'] else None
+
+with wandb.init(project = 'Seletech-Jesus-Local-Experiments-Merge-Data', config = config, name = name, notes = notes) as run:
 
     # Update model config and create model
     config['model_config']['config_body']['input_size_mems_1'] = full_dataset.data_mems_1.shape[1]

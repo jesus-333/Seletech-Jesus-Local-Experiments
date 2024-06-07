@@ -97,9 +97,10 @@ def plot_average_and_std(data, title, use_minmax = False):
             fig = tmp_fig_list[i]
 
             ax.set_xlabel("Wavelength", fontsize = fontsize)
-            ax.legend()
+            ax.legend(fontsize = 16)
             # ax.set_title(title, fontsize = fontsize)
             ax.grid(True)
+            ax.tick_params(axis='both', which='major', labelsize = fontsize)
 
             fig.tight_layout()
             fig.show()

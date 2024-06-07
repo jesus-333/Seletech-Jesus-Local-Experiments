@@ -5,7 +5,7 @@ Functions used to compute various classification metrics
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
 import numpy as np
-from sklearn.metrics import cohen_kappa_score, accuracy_score, recall_score, f1_score, confusion_matrix
+from sklearn.metrics import cohen_kappa_score, accuracy_score, recall_score, f1_score, confusion_matrix, roc_auc_score, matthews_corrcoef
 
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
@@ -15,15 +15,15 @@ def compute_metrics_from_labels(true_label, predict_label):
         cohen_kappa = cohen_kappa_score(true_label, predict_label),
         sensitivity = recall_score(true_label, predict_label, average = 'weighted'),
         f1          = f1_score(true_label, predict_label, average = 'weighted'),
+        matthews_coef    = matthews_corrcoef(true_label, predict_label),
         confusion_matrix = compute_confusion_matrix(true_label, predict_label)
     )
     
-    if len(set(true_label)) > 2 : 
+    if len(set(true_label)) > 2 :
         specificity = compute_specificity_multiclass(true_label, predict_label)
-    else : 
+    else :
         specificity = compute_specificity_binary(true_label, predict_label)
     computed_metrics["specificity"] = specificity
-        
     
     return computed_metrics
 
@@ -80,3 +80,28 @@ def compute_confusion_matrix(true_label, predict_label):
     confusion_matrix /= len(true_label)
     
     return confusion_matrix
+
+def compute_average_and_std(list_metrics, type_dataset) :
+    plant_list = ['beans', 'orange', 'potos']
+    metrics_list = ['accuracy', 'sensitivity', 'specificity', 'f1', 'cohen_kappa', 'matthews_coef']
+    string_to_print = ""
+
+    for metric in metrics_list :
+        for plant in plant_list :
+            tmp_list = []
+            for i in range(len(list_metrics)) :
+                tmp_log_dict = list_metrics[i]
+
+                for el in tmp_log_dict :
+                    if metric in el and plant in el and type_dataset in el :
+                        tmp_list.append(tmp_log_dict[el])
+
+            # if metric == 'sensitivity' or metric == 'accuracy' : print(plant, np.mean(tmp_list))
+                
+            # string_to_print += "{:.2f}±{:.2f}, {}\n".format(np.nanmean(tmp_list), np.std(tmp_list), plant)
+            # string_to_print += "{:.2f}±{:.2f}, {}\n".format(np.nanmean(tmp_list), np.std(tmp_list), metric)
+            string_to_print += "{:.2f}±{:.2f}\n".format(np.nanmean(tmp_list), np.std(tmp_list))
+    
+    print(string_to_print)
+    return string_to_print
+
